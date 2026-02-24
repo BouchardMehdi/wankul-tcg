@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import "../styles/Home.css";
 
 import wankilLogo from '../assets/Wankil_Studio_Logo.png';
 import wankulLogo from '../assets/Wankul_Logo_Blanc.webp';

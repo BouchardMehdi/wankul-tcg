@@ -1,59 +1,47 @@
-import { getToken } from "../auth/token";
+export const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 type ApiFetchOptions = {
-  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  method?: string;
   body?: any;
-  auth?: boolean; // ✅ par défaut: true
+  token?: string | null;
   headers?: Record<string, string>;
 };
 
-/**
- * ✅ DEV: mets VITE_API_URL=http://localhost:3000 dans .env si tu veux
- * ✅ Sinon fallback sur http://localhost:3000
- */
-const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+export async function apiFetch<T = any>(
+  path: string,
+  options: ApiFetchOptions = {}
+): Promise<T> {
+  const { method = "GET", body, token, headers } = options;
 
-export async function apiFetch<T>(path: string, opts: ApiFetchOptions = {}): Promise<T> {
-  const method = opts.method ?? "GET";
+  // ✅ Tous les endpoints passent par /api
+  const url = `${API_BASE}/api${path.startsWith("/") ? path : `/${path}`}`;
 
-  const headers: Record<string, string> = {
-    ...(opts.headers ?? {}),
-  };
+  // ✅ Si aucun token n’est fourni, on le prend depuis localStorage
+  const resolvedToken =
+    token !== undefined ? token : localStorage.getItem("token");
 
-  // ✅ Auth par défaut, désactivable avec auth:false
-  if (opts.auth !== false) {
-    const token = getToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...(resolvedToken ? { Authorization: `Bearer ${resolvedToken}` } : {}),
+      ...(headers ?? {}),
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
 
-  let body: string | undefined;
-  if (opts.body !== undefined) {
-    headers["Content-Type"] = "application/json";
-    body = JSON.stringify(opts.body);
-  }
-
-  // path doit commencer par /
-  const url = `${API_BASE}${path}`;
-
-  const res = await fetch(url, { method, headers, body });
-
-  const contentType = res.headers.get("content-type") ?? "";
-  const isJson = contentType.includes("application/json");
-
-  const payload = isJson
-    ? await res.json().catch(() => null)
-    : await res.text().catch(() => "");
+  const data = await res.json().catch(() => ({} as any));
 
   if (!res.ok) {
     const msg =
-      (payload &&
-        typeof payload === "object" &&
-        ((payload as any).message || (payload as any).error)) ||
-      (typeof payload === "string" && payload.slice(0, 200)) ||
-      `HTTP ${res.status}`;
+      typeof data?.message === "string"
+        ? data.message
+        : Array.isArray(data?.message)
+        ? data.message.join(", ")
+        : `Erreur API (${res.status})`;
 
     throw new Error(msg);
   }
 
-  return payload as T;
+  return data as T;
 }

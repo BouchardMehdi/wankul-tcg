@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles.css";
+import "../styles/Menu.css";
 
 import { getMe, getWallet } from "../api/me";
 import type { MeResponse, WalletResponse } from "../api/me";
@@ -306,7 +307,7 @@ export default function Menu() {
             </div>
           </div>
         </div>
-      </section>
+      </section><br/>
 
       <section className="container mt-3">
         <div className="panel">

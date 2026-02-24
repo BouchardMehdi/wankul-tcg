@@ -1,0 +1,599 @@
+/* =========================
+   COLLECTION PAGE
+========================= */
+
+.collectionPage {
+  width: 100%;
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.collectionShell {
+  width: 100%;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(12, 16, 28, 0.62);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.collectionHeader {
+  padding: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+}
+
+.collectionHeader h2 {
+  margin: 0 0 10px 0;
+  font-size: 30px;
+  font-weight: 950;
+}
+
+/* Filters */
+.filterCard { margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+
+.filterRow {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 1100px) { .filterRow { grid-template-columns: 1fr 1fr; } }
+
+.filterGroup { display: grid; gap: 6px; }
+
+.filterLabel { font-size: 12px; font-weight: 900; opacity: 0.75; }
+
+.filterInput,
+.filterSelect {
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.22);
+  color: rgba(240,245,255,0.96);
+  padding: 0 12px;
+  outline: none;
+}
+.filterInput:focus,
+.filterSelect:focus {
+  border-color: rgba(155, 92, 255, 0.55);
+  box-shadow: 0 0 0 4px rgba(155, 92, 255, 0.14);
+}
+.filterSelect option {
+  background: rgba(12, 16, 28, 0.98);
+  color: rgba(240,245,255,0.96);
+}
+
+.filterRow--bottom {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.checkLine { display: inline-flex; align-items: center; gap: 10px; font-weight: 900; opacity: 0.88; }
+.filterActions { display: flex; align-items: center; gap: 10px; }
+
+/* Buttons */
+.btn {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
+  color: rgba(240,245,255,0.96);
+  font-weight: 950;
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(.2,.8,.2,1), filter 160ms cubic-bezier(.2,.8,.2,1);
+}
+.btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.btn-primary { border: 0; background: linear-gradient(135deg, #ff4d6d, #9b5cff); box-shadow: 0 16px 55px rgba(255,77,109,0.18); }
+
+/* Pagination */
+.collectionTopBar {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.small { font-weight: 900; opacity: 0.9; }
+
+.pager { display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pager .btn { height: 38px; border-radius: 12px; }
+
+.pagerJump { display: inline-flex; align-items: center; gap: 8px; margin-left: 6px; }
+
+.pageInput {
+  width: 76px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.22);
+  color: rgba(240,245,255,0.96);
+  padding: 0 10px;
+  outline: none;
+  font-weight: 950;
+}
+.pageInput:focus {
+  border-color: rgba(155, 92, 255, 0.55);
+  box-shadow: 0 0 0 4px rgba(155, 92, 255, 0.14);
+}
+.pageHint { font-size: 12px; font-weight: 900; opacity: 0.75; }
+
+/* Grid */
+.collectionBody { padding: 14px; }
+
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 1400px) { .cardsGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 1200px) { .cardsGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 860px)  { .cardsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px)  { .cardsGrid { grid-template-columns: 1fr; } }
+
+/* =========================
+   CARD
+========================= */
+
+.cardTile {
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  overflow: visible;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.22);
+}
+
+.cardTile__imgWrap {
+  --rx: 0deg;
+  --ry: 0deg;
+  --hx: 50%;
+  --hy: 50%;
+
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.25);
+  overflow: hidden;
+
+  transform-style: preserve-3d;
+
+  transform: translateY(-6px);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+
+  transition: transform 160ms cubic-bezier(.2,.8,.2,1), filter 160ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms cubic-bezier(.2,.8,.2,1);
+  will-change: transform;
+}
+
+.cardTile:hover .cardTile__imgWrap {
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(-8px);
+  filter: brightness(1.04);
+}
+
+.cardTile__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scale(1.02);
+}
+
+.cardTile__dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 2;
+}
+
+.cardTile__lock {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  padding: 9px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(0,0,0,0.65);
+  color: rgba(240,245,255,0.96);
+  font-weight: 950;
+  font-size: 12px;
+  text-align: center;
+  z-index: 6;
+}
+
+.cardTile.is-locked .cardTile__img {
+  filter: grayscale(1) brightness(0.85) contrast(1.05);
+}
+
+.cardTile__meta {
+  margin-top: -6px;
+  padding: 10px 12px 12px;
+  background: rgba(0,0,0,0.14);
+  border-radius: 0 0 20px 20px;
+  position: relative; /* IMPORTANT */
+}
+
+.cardTile__qty {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(0,0,0,0.65);
+  font-weight: 950;
+  font-size: 12px;
+}
+.cardTile__name {
+  font-weight: 950;
+  font-size: 14px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardTile__sub {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 10;
+}
+
+/* Fancybox click target */
+.cardTile__zoom {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: zoom-in;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Click target fancybox */
+.cardTile__zoom {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: zoom-in;
+  text-decoration: none;
+  color: inherit;
+}
+
+.cardTile__zoom:focus {
+  outline: none;
+}
+
+/* évite que l’ancre casse le layout */
+.cardTile__zoom .cardTile__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* =========================================================
+   TERRAIN ONLY (grille)
+   Objectif: pas de crop, rendu "letterbox" propre
+========================================================= */
+
+.cardTile--terrain .cardTile__imgWrap {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.cardTile--terrain .cardTile__img {
+  object-fit: contain !important; /* important: empêche le crop */
+  background: transparent;
+  filter: none;
+}
+
+/* Optionnel: un léger padding intérieur pour respirer */
+.cardTile--terrain .cardTile__zoom {
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.fancybox__slide.fb-terrain-rotate .f-panzoom__viewport {
+  transform: rotate(90deg) !important;
+  transform-origin: center center;
+}
+
+/* Better centering */
+.fancybox__slide.fb-terrain-rotate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fancybox__slide.fb-terrain-rotate .fancybox__content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pill {
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(240,245,255,0.90);
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.collectionBottomBar {
+  padding: 14px;
+  border-top: 1px solid rgba(255,255,255,0.10);
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ======================================================
+   ✅ HOLO SYSTEM – HOVER ONLY
+====================================================== */
+
+@keyframes foilShift {
+  0%   { background-position: 0% 0%, 0% 0%, 0% 0%; }
+  50%  { background-position: 100% 60%, 60% 100%, 100% 0%; }
+  100% { background-position: 0% 0%, 0% 0%, 0% 0%; }
+}
+
+@keyframes foilSparkle {
+  0%   { background-position: 0 0, 0 0; opacity: 0.00; }
+  50%  { background-position: 18px 26px, 12px 10px; opacity: 0.30; }
+  100% { background-position: 0 0, 0 0; opacity: 0.00; }
+}
+
+/* Déclare les variables foil sur toutes les cartes holo */
+.cardTile.rarity-u1 .cardTile__imgWrap,
+.cardTile.rarity-u2 .cardTile__imgWrap,
+.cardTile.rarity-leg-bronze .cardTile__imgWrap,
+.cardTile.rarity-leg-silver .cardTile__imgWrap,
+.cardTile.rarity-leg-gold .cardTile__imgWrap,
+.cardTile.rarity-booster-gold .cardTile__imgWrap,
+.cardTile.rarity-starter .cardTile__imgWrap {
+  /* palette par défaut */
+  --foilA: rgba(255, 64, 140, 0.85);
+  --foilB: rgba(140, 90, 255, 0.78);
+  --foilC: rgba(60, 210, 255, 0.78);
+  --foilD: rgba(255, 230, 150, 0.72);
+
+  /* ✅ stops personnalisables */
+  --foilRainbowStops:
+    var(--foilA) 0%,
+    var(--foilB) 14%,
+    var(--foilC) 28%,
+    var(--foilD) 42%,
+    var(--foilA) 56%;
+
+  --foilOpacity: 0;
+  --foilBlend: color-dodge;
+}
+
+/* Layers invisibles de base */
+.cardTile.rarity-u1 .cardTile__imgWrap::before,
+.cardTile.rarity-u2 .cardTile__imgWrap::before,
+.cardTile.rarity-leg-bronze .cardTile__imgWrap::before,
+.cardTile.rarity-leg-silver .cardTile__imgWrap::before,
+.cardTile.rarity-leg-gold .cardTile__imgWrap::before,
+.cardTile.rarity-booster-gold .cardTile__imgWrap::before,
+.cardTile.rarity-starter .cardTile__imgWrap::before {
+  content: "";
+  position: absolute;
+  inset: -28%;
+  pointer-events: none;
+  z-index: 4;
+
+  opacity: 0;
+  mix-blend-mode: var(--foilBlend);
+  filter: saturate(1.55) contrast(1.18) brightness(1.06);
+
+  background-image:
+    radial-gradient(720px 420px at var(--hx) var(--hy),
+      rgba(255,255,255,0.82),
+      rgba(255,255,255,0.26) 30%,
+      transparent 64%),
+
+    repeating-linear-gradient(120deg, var(--foilRainbowStops)),
+
+    repeating-linear-gradient(
+      35deg,
+      rgba(255,255,255,0.14) 0%,
+      rgba(255,255,255,0.00) 18%,
+      rgba(255,255,255,0.10) 36%,
+      rgba(255,255,255,0.00) 54%
+    );
+
+  background-size: 140% 140%, 220% 220%, 160% 160%;
+  background-position: 0% 0%, 0% 0%, 0% 0%;
+  transition: opacity 160ms cubic-bezier(.2,.8,.2,1);
+}
+
+.cardTile.rarity-u1 .cardTile__imgWrap::after,
+.cardTile.rarity-u2 .cardTile__imgWrap::after,
+.cardTile.rarity-leg-bronze .cardTile__imgWrap::after,
+.cardTile.rarity-leg-silver .cardTile__imgWrap::after,
+.cardTile.rarity-leg-gold .cardTile__imgWrap::after,
+.cardTile.rarity-booster-gold .cardTile__imgWrap::after,
+.cardTile.rarity-starter .cardTile__imgWrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+
+  opacity: 0;
+  mix-blend-mode: overlay;
+
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.06) 0px,
+      rgba(255,255,255,0.00) 2px,
+      rgba(255,255,255,0.00) 7px
+    ),
+    radial-gradient(rgba(255,255,255,0.40) 1px, transparent 1.9px);
+
+  background-size: 100% 100%, 16px 16px;
+  transition: opacity 160ms cubic-bezier(.2,.8,.2,1);
+}
+
+/* Activation au hover */
+.cardTile.rarity-u1:hover .cardTile__imgWrap::before,
+.cardTile.rarity-u2:hover .cardTile__imgWrap::before,
+.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap::before,
+.cardTile.rarity-leg-silver:hover .cardTile__imgWrap::before,
+.cardTile.rarity-leg-gold:hover .cardTile__imgWrap::before,
+.cardTile.rarity-booster-gold:hover .cardTile__imgWrap::before,
+.cardTile.rarity-starter:hover .cardTile__imgWrap::before {
+  opacity: var(--foilOpacity);
+  animation: foilShift 6.5s ease-in-out infinite;
+}
+
+.cardTile.rarity-u1:hover .cardTile__imgWrap::after,
+.cardTile.rarity-u2:hover .cardTile__imgWrap::after,
+.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap::after,
+.cardTile.rarity-leg-silver:hover .cardTile__imgWrap::after,
+.cardTile.rarity-leg-gold:hover .cardTile__imgWrap::after,
+.cardTile.rarity-booster-gold:hover .cardTile__imgWrap::after,
+.cardTile.rarity-starter:hover .cardTile__imgWrap::after {
+  opacity: 0.30;
+  animation: foilSparkle 4.5s ease-in-out infinite;
+}
+
+/* ✅ IMPORTANT : si la carte est LOCKED -> AUCUN HOLO, même au hover */
+.cardTile.is-locked .cardTile__imgWrap::before,
+.cardTile.is-locked .cardTile__imgWrap::after,
+.cardTile.is-locked:hover .cardTile__imgWrap::before,
+.cardTile.is-locked:hover .cardTile__imgWrap::after {
+  opacity: 0 !important;
+  animation: none !important;
+}
+
+/* ---------- U1 / U2 : palette de ta capture + punchy ---------- */
+.cardTile.rarity-u1 .cardTile__imgWrap,
+.cardTile.rarity-u2 .cardTile__imgWrap {
+  --foilOpacity: 0.86;
+  --foilBlend: color-dodge;
+
+  --foilRainbowStops:
+    rgba(215, 103, 20, 0.75) 0%,
+    rgba(28, 78, 73, 0.75) 10%,
+    rgba(215, 197, 55, 0.75) 15%,
+    rgba(126, 201, 64, 0.75) 20%,
+    rgba(79, 176, 169, 0.75) 25%,
+    rgba(138, 161, 255, 0.75) 30%,
+    rgba(177, 107, 204, 0.75) 35%,
+    rgba(215, 103, 20, 0.75) 45%;
+}
+
+/* Glow au hover pour U1/U2 */
+.cardTile.rarity-u1:hover .cardTile__imgWrap,
+.cardTile.rarity-u2:hover .cardTile__imgWrap {
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.35),
+    0 0 36px rgba(155, 92, 255, 0.24);
+}
+
+/* U1 : holo surtout fond (centre masqué) */
+.cardTile.rarity-u1:hover .cardTile__imgWrap::before {
+  -webkit-mask-image: radial-gradient(closest-side at 50% 48%, transparent 0 30%, #000 58%);
+          mask-image: radial-gradient(closest-side at 50% 48%, transparent 0 30%, #000 58%);
+}
+
+/* ✅ U2 : holo sur toute la carte -> PAS DE MASQUE U2 */
+
+/* ---------- STARTER PACK : holo sur toute la carte ---------- */
+.cardTile.rarity-starter .cardTile__imgWrap {
+  /* tu peux choisir la palette que tu veux. Ici je mets la même que U2 (capture) */
+  --foilOpacity: 0.80;
+  --foilBlend: color-dodge;
+
+  --foilRainbowStops:
+    rgba(215, 103, 20, 0.75) 0%,
+    rgba(28, 78, 73, 0.75) 10%,
+    rgba(215, 197, 55, 0.75) 15%,
+    rgba(126, 201, 64, 0.75) 20%,
+    rgba(79, 176, 169, 0.75) 25%,
+    rgba(138, 161, 255, 0.75) 30%,
+    rgba(177, 107, 204, 0.75) 35%,
+    rgba(215, 103, 20, 0.75) 45%;
+}
+
+/* ---------- LEGENDARY : métal doux ---------- */
+.cardTile.rarity-leg-bronze .cardTile__imgWrap,
+.cardTile.rarity-leg-silver .cardTile__imgWrap,
+.cardTile.rarity-leg-gold .cardTile__imgWrap,
+.cardTile.rarity-booster-gold .cardTile__imgWrap {
+  --foilOpacity: 0.38;
+  --foilBlend: screen;
+}
+
+/* Bronze */
+.cardTile.rarity-leg-bronze { border-color: rgba(255,165,100,0.26); }
+.cardTile.rarity-leg-bronze .cardTile__imgWrap {
+  --foilA: rgba(255, 140, 70, 0.78);
+  --foilB: rgba(220, 120, 70, 0.70);
+  --foilC: rgba(255, 200, 140, 0.66);
+  --foilD: rgba(255, 245, 220, 0.56);
+}
+.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap {
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.35),
+    0 0 26px rgba(255, 155, 90, 0.14),
+    inset 0 0 0 2px rgba(255,155,90,0.18);
+}
+
+/* Silver */
+.cardTile.rarity-leg-silver { border-color: rgba(210,230,255,0.26); }
+.cardTile.rarity-leg-silver .cardTile__imgWrap {
+  --foilA: rgba(235, 245, 255, 0.72);
+  --foilB: rgba(200, 220, 235, 0.66);
+  --foilC: rgba(170, 200, 220, 0.60);
+  --foilD: rgba(255, 255, 255, 0.52);
+}
+.cardTile.rarity-leg-silver:hover .cardTile__imgWrap {
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.35),
+    0 0 22px rgba(220,235,255,0.12),
+    inset 0 0 0 2px rgba(220,235,255,0.16);
+}
+
+/* Gold + Booster Gold */
+.cardTile.rarity-leg-gold,
+.cardTile.rarity-booster-gold { border-color: rgba(255,214,120,0.30); }
+
+.cardTile.rarity-leg-gold .cardTile__imgWrap,
+.cardTile.rarity-booster-gold .cardTile__imgWrap {
+  --foilA: rgba(255, 210, 90, 0.78);
+  --foilB: rgba(255, 170, 70, 0.72);
+  --foilC: rgba(255, 240, 170, 0.62);
+  --foilD: rgba(255, 255, 240, 0.54);
+}
+.cardTile.rarity-leg-gold:hover .cardTile__imgWrap,
+.cardTile.rarity-booster-gold:hover .cardTile__imgWrap {
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.35),
+    0 0 26px rgba(255,214,120,0.14),
+    inset 0 0 0 2px rgba(255,214,120,0.18);
+}
+
+/* Sparkle moins fort sur légendaires */
+.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap::after,
+.cardTile.rarity-leg-silver:hover .cardTile__imgWrap::after,
+.cardTile.rarity-leg-gold:hover .cardTile__imgWrap::after,
+.cardTile.rarity-booster-gold:hover .cardTile__imgWrap::after {
+  opacity: 0.18;
+}
+

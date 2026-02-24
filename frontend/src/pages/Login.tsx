@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles.css";
+import "../styles/Login.css";
 import { useAuth } from "../auth/AuthContext";
+import { apiFetch } from "../api/http";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { setToken } = useAuth(); // ✅ IMPORTANT
+  const { setToken } = useAuth();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -16,31 +18,24 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:3000/auth/login", {
+      const data = await apiFetch<{
+        access_token?: string;
+        token?: string;
+        accessToken?: string;
+      }>("/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: { username, password },
       });
 
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(data.message || `Erreur de connexion (${res.status})`);
-      }
-
       const token = data.access_token ?? data.token ?? data.accessToken;
-      if (!token) {
-        throw new Error("Token manquant dans la réponse du serveur");
-      }
+      if (!token) throw new Error("Token manquant dans la réponse du serveur");
 
-      // ✅ NE PAS écrire direct localStorage
-      // ✅ Mets à jour le state du AuthContext
       setToken(token);
 
-      // ✅ replace pour éviter retour arrière vers login
+      // ✅ redirection directe
       navigate("/menu", { replace: true });
     } catch (err: any) {
-      setError(err.message || "Erreur inconnue");
+      setError(err?.message || "Erreur inconnue");
     }
   };
 
@@ -57,6 +52,7 @@ export default function Login() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
+              autoComplete="username"
             />
           </div>
 
@@ -67,6 +63,7 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
             />
           </div>
 

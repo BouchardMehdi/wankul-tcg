@@ -12,9 +12,9 @@ export type WalletResponse = {
 };
 
 export async function getMe() {
-  return apiFetch<MeResponse>("/me", { method: "GET" });
+  return apiFetch("/me", { method: "GET" });
 }
 
 export async function getWallet() {
-  return apiFetch<WalletResponse>("/me/wallet", { method: "GET" });
+  return apiFetch("/me/wallet", { method: "GET" });
 }

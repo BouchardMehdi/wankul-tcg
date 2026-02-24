@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles.css";
+import "../styles/Register.css";
+import { apiFetch } from "../api/http";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -8,8 +10,10 @@ export default function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [code, setCode] = useState("");
+
   const [step, setStep] = useState<"register" | "verify">("register");
+  const [code, setCode] = useState("");
+
   const [error, setError] = useState("");
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -17,23 +21,14 @@ export default function Register() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:3000/auth/register", {
+      await apiFetch("/auth/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, email, password }),
+        body: { username, email, password },
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Erreur d'inscription");
-      }
 
       setStep("verify");
     } catch (err: any) {
-      setError(err.message);
+      setError(err?.message || "Erreur inconnue");
     }
   };
 
@@ -42,23 +37,14 @@ export default function Register() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:3000/auth/verify", {
+      await apiFetch("/auth/verify", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, code }),
+        body: { email, code },
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Code invalide");
-      }
 
       navigate("/login");
     } catch (err: any) {
-      setError(err.message);
+      setError(err?.message || "Erreur inconnue");
     }
   };
 
@@ -77,6 +63,7 @@ export default function Register() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
+                  autoComplete="username"
                 />
               </div>
 
@@ -87,6 +74,7 @@ export default function Register() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="email"
                 />
               </div>
 
@@ -97,6 +85,7 @@ export default function Register() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  autoComplete="new-password"
                 />
               </div>
 
@@ -109,9 +98,7 @@ export default function Register() {
 
             <p className="auth-link">
               Déjà un compte ?{" "}
-              <span onClick={() => navigate("/login")}>
-                Se connecter
-              </span>
+              <span onClick={() => navigate("/login")}>Se connecter</span>
             </p>
           </>
         ) : (
@@ -127,6 +114,7 @@ export default function Register() {
                   onChange={(e) => setCode(e.target.value)}
                   maxLength={6}
                   required
+                  inputMode="numeric"
                 />
               </div>
 

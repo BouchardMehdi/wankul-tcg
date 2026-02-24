@@ -1,19 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles.css";
+import "../styles/Collection.css";
 
 import { fetchAllCards, type CardDto } from "../api/cards";
 import { fetchOwnedCollection, type OwnedCardRow } from "../api/collection";
-
 import { useAuth } from "../auth/AuthContext";
+
 import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
 
+import { Fancybox } from "@fancyapps/ui";
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
+
 const PAGE_SIZE = 25;
-
-// même base que apiFetch
-const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-
-type CollectionCard = CardDto & { quantity: number };
 
 type Filters = {
   q: string;
@@ -30,20 +29,6 @@ function uniqSorted(values: Array<string | null | undefined>) {
   );
 }
 
-function resolveImg(imageUrl: string) {
-  const url = (imageUrl ?? "").trim();
-  if (!url) return "";
-
-  // URL absolue déjà OK
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-
-  // backend renvoie typiquement "/cards/xxx.webp"
-  if (url.startsWith("/")) return `${API_BASE}${url}`;
-
-  // "cards/xxx.webp"
-  return `${API_BASE}/${url}`;
-}
-
 function seasonRank(season?: string | null, extension?: string | null, seasonNumber?: number | null) {
   if (typeof seasonNumber === "number" && seasonNumber > 0) return seasonNumber;
   const s = (season ?? extension ?? "").toLowerCase();
@@ -54,7 +39,7 @@ function seasonRank(season?: string | null, extension?: string | null, seasonNum
   return 99;
 }
 
-function compareCards(a: CollectionCard, b: CollectionCard) {
+function compareCards(a: any, b: any) {
   const sa = seasonRank(a.season, a.extension, a.seasonNumber ?? null);
   const sb = seasonRank(b.season, b.extension, b.seasonNumber ?? null);
   if (sa !== sb) return sa - sb;
@@ -66,6 +51,130 @@ function compareCards(a: CollectionCard, b: CollectionCard) {
   return (a.key ?? "").localeCompare(b.key ?? "");
 }
 
+/**
+ * Normalise la rareté DB -> clé CSS.
+ * Ajout: starter pack
+ */
+function normalizeRarity(raw?: string | null) {
+  const s0 = (raw ?? "").toString();
+
+  // Match "(U1)" / "(U2)"
+  const m = s0.match(/\((u1|u2)\)/i);
+  if (m?.[1]) return m[1].toLowerCase();
+
+  const s = s0
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // ✅ Starter pack
+  if (s.includes("starter")) return "starter";
+
+  // Booster gold
+  if (s.includes("booster gold") || (s.includes("booster") && s.includes("gold")) || s === "gold")
+    return "booster-gold";
+
+  // U1 / U2
+  if (s.includes("u1") || s.includes("ultra rare u1") || s.includes("ultra rare 1") || s.includes("ultra 1"))
+    return "u1";
+  if (s.includes("u2") || s.includes("ultra rare u2") || s.includes("ultra rare 2") || s.includes("ultra 2"))
+    return "u2";
+
+  // Legendary
+  const isLegendary = s.includes("legendaire") || s.includes("legendary") || s.startsWith("leg ");
+  if (isLegendary && s.includes("bronze")) return "leg-bronze";
+  if (isLegendary && (s.includes("argent") || s.includes("silver"))) return "leg-silver";
+  if (isLegendary && (s.includes("or") || s.includes("gold"))) return "leg-gold";
+
+  return "";
+}
+
+/** Parallax hover sur imgWrap */
+function handleImgParallaxMove(e: React.MouseEvent<HTMLDivElement>) {
+  const el = e.currentTarget;
+  const rect = el.getBoundingClientRect();
+
+  const x = (e.clientX - rect.left) / rect.width; // 0..1
+  const y = (e.clientY - rect.top) / rect.height; // 0..1
+
+  const dx = x - 0.5;
+  const dy = y - 0.5;
+
+  const max = 10; // deg
+  const ry = dx * max * 2;
+  const rx = -dy * max * 2;
+
+  el.style.setProperty("--rx", `${rx.toFixed(2)}deg`);
+  el.style.setProperty("--ry", `${ry.toFixed(2)}deg`);
+  el.style.setProperty("--hx", `${(x * 100).toFixed(1)}%`);
+  el.style.setProperty("--hy", `${(y * 100).toFixed(1)}%`);
+}
+
+function handleImgParallaxLeave(e: React.MouseEvent<HTMLDivElement>) {
+  const el = e.currentTarget;
+  el.style.setProperty("--rx", `0deg`);
+  el.style.setProperty("--ry", `0deg`);
+  el.style.setProperty("--hx", `50%`);
+  el.style.setProperty("--hy", `50%`);
+}
+
+const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+function resolveImg(imageUrl?: string | null) {
+  const url = (imageUrl ?? "").trim();
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (url.startsWith("/")) return `${API_BASE}${url}`;
+  return `${API_BASE}/${url}`;
+}
+
+/* =========================
+   ✅ Pager hors du composant
+========================= */
+type PagerProps = {
+  pageSafe: number;
+  totalPages: number;
+  pageInput: string;
+  setPageInput: (v: string) => void;
+  goPrev: () => void;
+  goNext: () => void;
+  jumpToPage: () => void;
+};
+
+function Pager({ pageSafe, totalPages, pageInput, setPageInput, goPrev, goNext, jumpToPage }: PagerProps) {
+  return (
+    <div className="pager">
+      <button className="btn" onClick={goPrev} disabled={pageSafe <= 1}>
+        ⟨
+      </button>
+      <button className="btn" onClick={goNext} disabled={pageSafe >= totalPages}>
+        ⟩
+      </button>
+
+      <div className="pagerJump">
+        <span className="pageHint">Page</span>
+        <input
+          className="pageInput"
+          type="number"
+          min={1}
+          max={totalPages}
+          value={pageInput}
+          onChange={(e) => setPageInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") jumpToPage();
+          }}
+        />
+        <span className="pageHint">/ {totalPages}</span>
+        <button className="btn btn-primary" onClick={jumpToPage}>
+          Go
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Collection() {
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -73,6 +182,7 @@ export default function Collection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
+  const [pageInput, setPageInput] = useState("1");
 
   const [allCards, setAllCards] = useState<CardDto[]>([]);
   const [ownedRows, setOwnedRows] = useState<OwnedCardRow[]>([]);
@@ -86,6 +196,56 @@ export default function Collection() {
     ownedOnly: false,
   });
 
+  // ✅ Fancybox bind + watcher (fiable même si les events Fancybox sont capricieux)
+  useEffect(() => {
+    const fb: any = Fancybox;
+
+    fb.bind('[data-fancybox="wankul-cards"]', {
+      groupAll: true,
+      hideScrollbar: true,
+      dragToClose: false,
+      Images: { zoom: true },
+      Thumbs: { autoStart: true },
+    });
+
+    // Watcher: applique la classe uniquement à la slide courante
+    let rafId = 0;
+    const tick = () => {
+      try {
+        const instance = fb.getInstance?.();
+        if (instance) {
+          const slide = instance.getSlide?.();
+          if (slide?.el) {
+            // On retire la classe de toutes les slides (sinon elle "reste" sur d'anciennes)
+            if (Array.isArray(instance.slides)) {
+              for (const s of instance.slides) {
+                s?.el?.classList?.remove("fb-terrain-rotate");
+              }
+            }
+
+            const triggerEl = slide?.triggerEl as HTMLElement | null;
+            const isTerrain = triggerEl?.dataset?.terrain === "1";
+            slide.el.classList.toggle("fb-terrain-rotate", !!isTerrain);
+          }
+        }
+      } catch {
+        // noop
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      try {
+        fb.destroy();
+      } catch {
+        // noop
+      }
+    };
+  }, []);
+
   const handleLogout = () => {
     logout();
     navigate("/", { replace: true });
@@ -94,12 +254,12 @@ export default function Collection() {
   const updateFilter = <K extends keyof Filters>(key: K, value: Filters[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(1);
+    setPageInput("1");
   };
 
   const load = async () => {
     setLoading(true);
     setError("");
-
     try {
       const [cardsRes, ownedRes] = await Promise.all([fetchAllCards(), fetchOwnedCollection()]);
       setAllCards(Array.isArray(cardsRes) ? cardsRes : []);
@@ -117,15 +277,15 @@ export default function Collection() {
 
   const ownedMap = useMemo(() => {
     const m = new Map<number, number>();
-    for (const row of ownedRows) {
+    for (const row of ownedRows as any[]) {
       const id = row?.card?.id;
       if (typeof id === "number") m.set(id, Number(row.quantity ?? 0));
     }
     return m;
   }, [ownedRows]);
 
-  const merged: CollectionCard[] = useMemo(() => {
-    const list = allCards.map((c) => ({ ...c, quantity: ownedMap.get(c.id) ?? 0 }));
+  const merged: any[] = useMemo(() => {
+    const list = (allCards as any[]).map((c) => ({ ...c, quantity: ownedMap.get(c.id) ?? 0 }));
     list.sort(compareCards);
     return list;
   }, [allCards, ownedMap]);
@@ -142,16 +302,16 @@ export default function Collection() {
     const q = filters.q.trim().toLowerCase();
 
     return merged.filter((c) => {
-      const owned = c.quantity > 0;
+      const owned = (c.quantity ?? 0) > 0;
 
       if (filters.ownedOnly && !owned) return false;
       if (filters.season && (c.season ?? c.extension ?? "") !== filters.season) return false;
-      if (filters.rarity && c.rarity !== filters.rarity) return false;
+      if (filters.rarity && (c.rarity ?? "") !== filters.rarity) return false;
       if (filters.type && (c.type ?? "") !== filters.type) return false;
       if (filters.artist && (c.artist ?? "") !== filters.artist) return false;
 
       if (q) {
-        const hay = `${c.name} ${c.key} ${c.number ?? ""} ${c.rarity} ${c.type ?? ""} ${c.artist ?? ""}`.toLowerCase();
+        const hay = `${c.name} ${c.key ?? ""} ${c.number ?? ""} ${c.rarity ?? ""} ${c.type ?? ""} ${c.artist ?? ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
 
@@ -163,13 +323,42 @@ export default function Collection() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pageSafe = Math.min(Math.max(1, page), totalPages);
 
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+      setPageInput(String(totalPages));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPages]);
+
   const pageItems = useMemo(() => {
     const start = (pageSafe - 1) * PAGE_SIZE;
     return filtered.slice(start, start + PAGE_SIZE);
   }, [filtered, pageSafe]);
 
-  const goPrev = () => setPage((p) => Math.max(1, p - 1));
-  const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
+  const goPrev = () => {
+    setPage((p) => {
+      const next = Math.max(1, p - 1);
+      setPageInput(String(next));
+      return next;
+    });
+  };
+
+  const goNext = () => {
+    setPage((p) => {
+      const next = Math.min(totalPages, p + 1);
+      setPageInput(String(next));
+      return next;
+    });
+  };
+
+  const jumpToPage = () => {
+    const n = Number(pageInput);
+    if (!Number.isFinite(n)) return;
+    const clamped = Math.min(Math.max(1, Math.floor(n)), totalPages);
+    setPage(clamped);
+    setPageInput(String(clamped));
+  };
 
   return (
     <div className="app-shell">
@@ -182,21 +371,24 @@ export default function Collection() {
           </Link>
 
           <nav className="topbar__nav">
-            <Link className="topbar__link" to="/booster">Booster</Link>
-            <Link className="topbar__link is-active" to="/collection">Collection</Link>
-            <button className="topbar__logout" onClick={handleLogout}>Se déconnecter</button>
+            <Link className="topbar__link" to="/booster">
+              Booster
+            </Link>
+            <Link className="topbar__link is-active" to="/collection">
+              Collection
+            </Link>
+            <button className="topbar__logout" onClick={handleLogout}>
+              Se déconnecter
+            </button>
           </nav>
         </div>
       </header>
 
-      <section className="container mt-3">
-        <div className="panel">
-          <div className="panel-inner">
+      <section className="collectionPage">
+        <div className="collectionShell">
+          <div className="collectionHeader">
             <div className="section-title">
               <h2>Collection</h2>
-              <p className="small">
-                Tri: Saison 1→4 puis Numéro • 5 cartes/ligne • 25/page • Chargées: <b>{allCards.length}</b>
-              </p>
             </div>
 
             <div className="filterCard">
@@ -215,7 +407,11 @@ export default function Collection() {
                   <label className="filterLabel">Saison</label>
                   <select className="filterSelect" value={filters.season} onChange={(e) => updateFilter("season", e.target.value)}>
                     <option value="">Toutes</option>
-                    {options.seasons.map((s) => <option key={s} value={s}>{s}</option>)}
+                    {options.seasons.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -223,7 +419,11 @@ export default function Collection() {
                   <label className="filterLabel">Rareté</label>
                   <select className="filterSelect" value={filters.rarity} onChange={(e) => updateFilter("rarity", e.target.value)}>
                     <option value="">Toutes</option>
-                    {options.rarities.map((r) => <option key={r} value={r}>{r}</option>)}
+                    {options.rarities.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -231,7 +431,11 @@ export default function Collection() {
                   <label className="filterLabel">Type</label>
                   <select className="filterSelect" value={filters.type} onChange={(e) => updateFilter("type", e.target.value)}>
                     <option value="">Tous</option>
-                    {options.types.map((t) => <option key={t} value={t}>{t}</option>)}
+                    {options.types.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -239,7 +443,11 @@ export default function Collection() {
                   <label className="filterLabel">Artiste</label>
                   <select className="filterSelect" value={filters.artist} onChange={(e) => updateFilter("artist", e.target.value)}>
                     <option value="">Tous</option>
-                    {options.artists.map((a) => <option key={a} value={a}>{a}</option>)}
+                    {options.artists.map((a) => (
+                      <option key={a} value={a}>
+                        {a}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -252,16 +460,17 @@ export default function Collection() {
 
                 <div className="filterActions">
                   <button
-                    className="btn btn-secondary"
+                    className="btn"
                     type="button"
                     onClick={() => {
                       setFilters({ q: "", season: "", rarity: "", type: "", artist: "", ownedOnly: false });
                       setPage(1);
+                      setPageInput("1");
                     }}
                   >
                     Réinitialiser
                   </button>
-                  <button className="btn btn-secondary" type="button" onClick={load}>
+                  <button className="btn btn-primary" type="button" onClick={load}>
                     Rafraîchir
                   </button>
                 </div>
@@ -274,47 +483,102 @@ export default function Collection() {
               <div className="mt-3">
                 <div className="alert alert-error">{error}</div>
               </div>
-            ) : (
-              <>
-                <div className="collectionTopBar mt-3">
-                  <div className="small">
-                    Page <b>{pageSafe}</b> / <b>{totalPages}</b> • Total: <b>{total}</b>
-                  </div>
-                  <div className="pager">
-                    <button className="btn btn-secondary" onClick={goPrev} disabled={pageSafe <= 1}>◀</button>
-                    <button className="btn btn-secondary" onClick={goNext} disabled={pageSafe >= totalPages}>▶</button>
-                  </div>
-                </div>
+            ) : null}
+          </div>
 
-                <div className="cardsGrid">
-                  {pageItems.map((c) => {
-                    const owned = c.quantity > 0;
-                    const src = resolveImg(c.imageUrl);
+          {!loading && !error && (
+            <div className="collectionTopBar">
+              <div className="small">
+                Page <b>{pageSafe}</b> / <b>{totalPages}</b> • Total: <b>{total}</b>
+              </div>
 
-                    return (
-                      <div key={c.id} className={`cardTile ${owned ? "" : "is-locked"}`}>
-                        <div className="cardTile__imgWrap">
+              <Pager
+                pageSafe={pageSafe}
+                totalPages={totalPages}
+                pageInput={pageInput}
+                setPageInput={setPageInput}
+                goPrev={goPrev}
+                goNext={goNext}
+                jumpToPage={jumpToPage}
+              />
+            </div>
+          )}
+
+          {!loading && !error && (
+            <div className="collectionBody">
+              <div className="cardsGrid">
+                {pageItems.map((c: any) => {
+                  const owned = (c.quantity ?? 0) > 0;
+                  const src = resolveImg(c.imageUrl ?? c.image ?? c.img ?? "");
+                  const rk = normalizeRarity(c.rarity);
+                  const rarityCls = rk ? `rarity-${rk}` : "";
+
+                  const isTerrain = String(c.type ?? "").toLowerCase().includes("terrain");
+
+                  return (
+                    <div key={c.id} className={`cardTile ${owned ? "" : "is-locked"} ${rarityCls}`} data-rarity={rk}>
+                      <div
+                        className="cardTile__imgWrap"
+                        onMouseMove={handleImgParallaxMove}
+                        onMouseLeave={handleImgParallaxLeave}
+                        style={
+                          {
+                            ["--rx" as any]: "0deg",
+                            ["--ry" as any]: "0deg",
+                            ["--hx" as any]: "50%",
+                            ["--hy" as any]: "50%",
+                          } as any
+                        }
+                      >
+                        {owned ? (
+                          <a
+                            className="cardTile__zoom"
+                            href={src}
+                            data-fancybox="wankul-cards"
+                            data-caption={`${c.name}${c.rarity ? ` • ${c.rarity}` : ""}`}
+                            data-terrain={isTerrain ? "1" : "0"}
+                          >
+                            <img className="cardTile__img" src={src} alt={c.name} />
+                          </a>
+                        ) : (
                           <img className="cardTile__img" src={src} alt={c.name} />
-                          {!owned && <div className="cardTile__lock">NON DÉBLOQUÉE</div>}
-                          {owned && c.quantity > 1 && <div className="cardTile__qty">x{c.quantity}</div>}
-                        </div>
+                        )}
 
-                        <div className="cardTile__meta">
-                          <div className="cardTile__name">{c.name}</div>
-                          <div className="cardTile__sub">
-                            <span className="pill">{c.rarity}</span>
-                            <span className="pill">
-                              {c.season ?? c.extension ?? "—"} {typeof c.number === "number" ? `#${c.number}` : ""}
-                            </span>
-                          </div>
+                        {!owned && <div className="cardTile__dim" />}
+                        {!owned && <div className="cardTile__lock">NON DÉBLOQUÉE</div>}
+                      </div>
+
+                      <div className="cardTile__meta">
+                        <div className="cardTile__name">{c.name}</div>
+                        {owned && (c.quantity ?? 0) > 1 && <div className="cardTile__qty">x{c.quantity}</div>}
+
+                        <div className="cardTile__sub">
+                          <span className="pill">{c.rarity}</span>
+                          <span className="pill">
+                            {c.season ?? c.extension ?? "—"} {typeof c.number === "number" ? `#${c.number}` : ""}
+                          </span>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {!loading && !error && (
+            <div className="collectionBottomBar">
+              <Pager
+                pageSafe={pageSafe}
+                totalPages={totalPages}
+                pageInput={pageInput}
+                setPageInput={setPageInput}
+                goPrev={goPrev}
+                goNext={goNext}
+                jumpToPage={jumpToPage}
+              />
+            </div>
+          )}
         </div>
       </section>
     </div>
