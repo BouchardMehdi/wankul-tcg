@@ -1,0 +1,658 @@
+.openingPage { padding: 18px 0 42px; }
+
+.openingHeader {
+  margin-top: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.openingTitle { margin: 0; font-weight: 950; font-size: 26px; }
+
+.openingStage { margin-top: 14px; padding: 18px; min-height: 580px; }
+
+/* ✅ crédits inline (header) */
+.creditInline {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  font-weight: 900;
+  opacity: 0.95;
+}
+
+/* =========================
+   PACK
+========================= */
+
+.packZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0 22px;
+}
+.openingBtn { width: 240px; }
+
+.pack {
+  position: relative;
+  width: 300px;
+  height: 420px;
+  border-radius: 18px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pack::before,
+.pack::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--pack-img);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 18px;
+  box-shadow: var(--shadow-md);
+  will-change: transform, clip-path, opacity;
+}
+
+.pack::before {
+  clip-path: polygon(0 0, 100% 0, 100% 52%, 0 52%);
+  transform-origin: 50% 52%;
+}
+.pack::after {
+  clip-path: polygon(0 52%, 100% 52%, 100% 100%, 0 100%);
+  transform-origin: 50% 52%;
+}
+
+.pack__hint {
+  position: absolute;
+  bottom: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 900;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.pack.is-shaking { animation: packShake 900ms ease-in-out infinite; }
+@keyframes packShake {
+  0% { transform: translateX(0) rotate(0deg); }
+  20% { transform: translateX(-6px) rotate(-0.9deg); }
+  40% { transform: translateX(6px) rotate(0.9deg); }
+  60% { transform: translateX(-4px) rotate(-0.6deg); }
+  80% { transform: translateX(4px) rotate(0.6deg); }
+  100% { transform: translateX(0) rotate(0deg); }
+}
+
+.pack.is-opening::before { animation: tearTop 900ms cubic-bezier(.2,.9,.2,1) forwards; }
+.pack.is-opening::after  { animation: pullBottom 900ms cubic-bezier(.2,.9,.2,1) forwards; }
+
+@keyframes tearTop {
+  0% { transform: translateY(0) rotate(0deg); clip-path: polygon(0 0, 100% 0, 100% 52%, 0 52%); }
+  45% { clip-path: polygon(0 0, 100% 0, 100% 47%, 0 56%); }
+  100% { transform: translateY(-36px) rotate(-7deg); clip-path: polygon(0 0, 100% 0, 100% 45%, 0 58%); opacity: 0.92; }
+}
+@keyframes pullBottom {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(10px); opacity: 0.98; }
+}
+
+.emergingCard {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%) translateY(30px) scale(0.92);
+  width: 210px;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 16px 45px rgba(0,0,0,0.55);
+  opacity: 0;
+  pointer-events: none;
+}
+.emergingCard.is-emerging { animation: emerge 900ms cubic-bezier(.2,.9,.2,1) forwards; }
+@keyframes emerge {
+  0% { opacity: 0; transform: translate(-50%, -50%) translateY(45px) scale(0.90); }
+  45% { opacity: 1; transform: translate(-50%, -50%) translateY(0px) scale(0.96); }
+  100% { opacity: 1; transform: translate(-50%, -50%) translateY(-22px) scale(1.00); }
+}
+
+/* =========================
+   REVEAL
+========================= */
+
+.revealZone { display: flex; flex-direction: column; gap: 12px; }
+.revealTop { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.revealControls { display: flex; gap: 10px; align-items: center; }
+
+.stackArea {
+  position: relative;
+  height: 430px;
+  display: grid;
+  place-items: center;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.stackBack {
+  width: 280px;
+  height: 380px;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 1px solid var(--border2);
+  box-shadow: 0 16px 55px rgba(0,0,0,0.55);
+  background: rgba(255,255,255,0.03);
+  position: absolute;
+  opacity: 0.95;
+}
+.stackBack--1 { transform: translateY(10px) translateX(-12px) rotate(-4deg); }
+.stackBack--2 { transform: translateY(6px) translateX(10px) rotate(3deg); opacity: 0.85; }
+.stackBack--3 { transform: translateY(2px) translateX(-4px) rotate(1deg); opacity: 0.72; }
+
+/* =========================
+   CARD WRAP
+========================= */
+
+.openingCardWrap {
+  --hx: 50%;
+  --hy: 50%;
+
+  --drag-x: 0px;
+  --drag-rot: 0deg;
+  --throw-x: 0px;
+  --throw-rot: 0deg;
+  --throw-ms: 360ms;
+
+  width: 280px;
+  height: 380px;
+  position: relative;
+  border-radius: 18px;
+
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.03);
+  box-shadow: 0 16px 55px rgba(0,0,0,0.55);
+
+  transform: translateX(var(--drag-x)) rotate(var(--drag-rot));
+  transition: transform 220ms cubic-bezier(.2,.9,.2,1);
+
+  will-change: transform, opacity;
+  cursor: grab;
+}
+.openingCardWrap.is-dragging { transition: none; cursor: grabbing; }
+
+.openingCardWrap.fly-out {
+  animation: flyOut var(--throw-ms) cubic-bezier(.2,.9,.2,1) forwards;
+}
+@keyframes flyOut {
+  from { opacity: 1; transform: translateX(var(--drag-x)) rotate(var(--drag-rot)); }
+  to   { opacity: 0; transform: translateX(var(--throw-x)) rotate(var(--throw-rot)); }
+}
+
+.faceCard {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 18px;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.swipeHint {
+  text-align: center;
+  font-weight: 800;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+/* =========================
+   ✅ NEW overlay (fix: ne prend plus de place)
+========================= */
+
+.newRibbon {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 7;
+  pointer-events: none;
+
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.45);
+  font-weight: 950;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
+
+.openingCardWrap.is-new .newRibbon {
+  animation: newPop 650ms cubic-bezier(.2,.9,.2,1) both;
+}
+@keyframes newPop {
+  0% { transform: translateY(-6px) scale(0.92); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* =========================
+   HOLO
+========================= */
+
+@keyframes foilShift {
+  0%   { background-position: 0% 0%, 0% 0%, 0% 0%; }
+  50%  { background-position: 100% 60%, 60% 100%, 100% 0%; }
+  100% { background-position: 0% 0%, 0% 0%, 0% 0%; }
+}
+@keyframes foilSparkle {
+  0%   { background-position: 0 0, 0 0; opacity: 0.00; }
+  50%  { background-position: 18px 26px, 12px 10px; opacity: 0.30; }
+  100% { background-position: 0 0, 0 0; opacity: 0.00; }
+}
+
+.openingCardWrap {
+  transition:
+    transform 220ms cubic-bezier(.2,.9,.2,1),
+    box-shadow 350ms ease;
+  overflow: hidden;
+}
+
+/* HOLO */
+.openingCardWrap.is-rare::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: color-dodge;
+  opacity: 0.70;
+
+  background-image:
+    radial-gradient(
+      320px 220px at 50% 40%,
+      rgba(255,255,255,0.60),
+      rgba(255,255,255,0.18) 30%,
+      transparent 65%
+    ),
+    var(--holo-gradient);
+
+  background-size: 140% 140%, 220% 220%;
+  animation: foilShift 7s ease-in-out infinite;
+}
+
+.openingCardWrap.is-rare::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  opacity: 0.22;
+
+  background-image:
+    radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1.9px);
+
+  background-size: 16px 16px;
+  animation: foilSparkle 5s ease-in-out infinite;
+}
+
+.openingCardWrap.rarity-u1,
+.openingCardWrap.rarity-u2 {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(215, 103, 20, 0.55) 0%,
+      rgba(28, 78, 73, 0.55) 10%,
+      rgba(215, 197, 55, 0.55) 15%,
+      rgba(126, 201, 64, 0.55) 20%,
+      rgba(79, 176, 169, 0.55) 25%,
+      rgba(138, 161, 255, 0.55) 30%,
+      rgba(177, 107, 204, 0.55) 35%,
+      rgba(215, 103, 20, 0.55) 45%
+    );
+}
+
+.openingCardWrap.rarity-leg-bronze {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(205, 127, 50, 0.55) 0%,
+      rgba(255, 170, 110, 0.55) 20%,
+      rgba(150, 85, 40, 0.55) 40%,
+      rgba(205, 127, 50, 0.55) 60%
+    );
+}
+
+.openingCardWrap.rarity-leg-silver {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(220, 230, 240, 0.55) 0%,
+      rgba(180, 200, 220, 0.55) 20%,
+      rgba(240, 245, 255, 0.55) 40%,
+      rgba(200, 210, 220, 0.55) 60%
+    );
+}
+
+.openingCardWrap.rarity-leg-gold {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(255, 215, 0, 0.6) 0%,
+      rgba(255, 230, 120, 0.6) 20%,
+      rgba(200, 160, 0, 0.6) 40%,
+      rgba(255, 215, 0, 0.6) 60%
+    );
+}
+
+/* =========================
+   EDGE GLOW
+========================= */
+
+@keyframes edgeShimmer {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.edgeGlow {
+  position: absolute;
+  inset: -8px;
+  border-radius: 24px;
+  pointer-events: none;
+  z-index: 4;
+
+  background: conic-gradient(
+    from 0deg,
+    rgba(255,255,255,0.0),
+    var(--edge),
+    rgba(255,255,255,0.0),
+    var(--edge),
+    rgba(255,255,255,0.0)
+  );
+
+  opacity: 0.16;
+  filter:
+    blur(0.2px)
+    drop-shadow(0 0 calc(12px * var(--edgePow)) var(--edge));
+}
+
+.openingCardWrap.is-rare { --edgePow: 1.0; }
+
+.openingCardWrap.rarity-u1.is-rare { --edge: rgba(168, 110, 255, 0.95); --edgePow: 1.05; }
+.openingCardWrap.rarity-u2.is-rare { --edge: rgba(255, 92, 120, 0.95); --edgePow: 1.12; }
+.openingCardWrap.rarity-leg-bronze.is-rare { --edge: rgba(255, 170, 110, 0.92); --edgePow: 1.10; }
+.openingCardWrap.rarity-leg-silver.is-rare { --edge: rgba(230, 245, 255, 0.95); --edgePow: 1.18; }
+.openingCardWrap.rarity-leg-gold.is-rare { --edge: rgba(255, 230, 150, 0.98); --edgePow: 1.30; }
+
+.openingCardWrap.is-rare .edgeGlow {
+  animation: edgeShimmer 3.2s linear infinite;
+}
+
+.openingCardWrap.is-rare {
+  transition: box-shadow 400ms ease;
+  box-shadow:
+    0 16px 55px rgba(0,0,0,0.55),
+    0 0 28px var(--glow),
+    0 0 72px var(--glow);
+}
+
+.openingCardWrap.rarity-u1.is-rare { --glow: rgba(150, 110, 255, 0.55); }
+.openingCardWrap.rarity-u2.is-rare { --glow: rgba(255, 80, 120, 0.55); }
+.openingCardWrap.rarity-leg-bronze.is-rare { --glow: rgba(255, 170, 110, 0.6); }
+.openingCardWrap.rarity-leg-silver.is-rare { --glow: rgba(210, 230, 255, 0.65); }
+.openingCardWrap.rarity-leg-gold.is-rare { --glow: rgba(255, 220, 120, 0.75); }
+
+@keyframes rareEdgeBurst {
+  0%   { opacity: 0.05; filter: blur(0.2px) drop-shadow(0 0 0px var(--edge)); }
+  25%  { opacity: 0.55; filter: blur(0.2px) drop-shadow(0 0 22px var(--edge)); }
+  70%  { opacity: 0.30; filter: blur(0.2px) drop-shadow(0 0 16px var(--edge)); }
+  100% { opacity: 0.18; filter: blur(0.2px) drop-shadow(0 0 12px var(--edge)); }
+}
+.openingCardWrap.rare-appear.is-rare .edgeGlow {
+  animation:
+    rareEdgeBurst 720ms ease-out 0ms 1,
+    edgeShimmer 2.8s linear 720ms infinite;
+}
+
+/* =========================
+   11th surprise FX
+========================= */
+
+.surpriseRing {
+  position: absolute;
+  inset: -14px;
+  border-radius: 26px;
+  pointer-events: none;
+  z-index: 4;
+
+  background: conic-gradient(
+    from 0deg,
+    rgba(255,255,255,0.00),
+    rgba(255,255,255,0.75),
+    rgba(255,255,255,0.00),
+    rgba(255,255,255,0.55),
+    rgba(255,255,255,0.00)
+  );
+
+  opacity: 0;
+  mix-blend-mode: screen;
+  filter: blur(0.3px);
+}
+
+@keyframes surpriseFlash {
+  0%   { opacity: 0; transform: scale(0.92) rotate(0deg); }
+  20%  { opacity: 0.85; }
+  100% { opacity: 0; transform: scale(1.08) rotate(220deg); }
+}
+.openingCardWrap.surprise-appear .surpriseRing {
+  animation: surpriseFlash 700ms ease-out 1;
+}
+
+/* scintillement (sparkles + shine) */
+.surpriseSparkles {
+  position: absolute;
+  inset: -14%;
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0;
+
+  background-image:
+    radial-gradient(rgba(255,255,255,0.90) 1px, transparent 1.9px),
+    radial-gradient(rgba(255,255,255,0.60) 1px, transparent 1.9px),
+    radial-gradient(rgba(255,255,255,0.40) 1px, transparent 1.9px);
+
+  background-size: 18px 18px, 26px 26px, 34px 34px;
+  background-position: 0 0, 14px 10px, 22px 18px;
+
+  mix-blend-mode: screen;
+  filter: blur(0.2px);
+}
+
+@keyframes surpriseSparkle {
+  0%   { opacity: 0.10; transform: scale(1); }
+  50%  { opacity: 0.45; transform: scale(1.01); }
+  100% { opacity: 0.10; transform: scale(1); }
+}
+
+.surpriseShine {
+  position: absolute;
+  inset: -40%;
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0;
+
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255,255,255,0.0) 42%,
+    rgba(255,255,255,0.55) 50%,
+    rgba(255,255,255,0.0) 58%,
+    transparent 100%
+  );
+
+  transform: translateX(-40%) rotate(8deg);
+  mix-blend-mode: screen;
+}
+
+@keyframes shineSweep {
+  0%   { opacity: 0.0; transform: translateX(-50%) rotate(8deg); }
+  35%  { opacity: 0.75; }
+  60%  { opacity: 0.40; transform: translateX(40%) rotate(8deg); }
+  100% { opacity: 0.0; transform: translateX(60%) rotate(8deg); }
+}
+
+.openingCardWrap.surprise-appear .surpriseSparkles {
+  opacity: 1;
+  animation: surpriseSparkle 1.25s ease-in-out infinite;
+}
+.openingCardWrap.surprise-appear .surpriseShine {
+  opacity: 1;
+  animation: shineSweep 1.35s ease-in-out infinite;
+}
+
+/* =========================
+   SUMMARY
+========================= */
+
+.summaryZone { display: flex; flex-direction: column; gap: 14px; }
+
+.summaryTitle {
+  font-weight: 950;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.summaryCreditsPill {
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  font-weight: 950;
+  opacity: 0.95;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 980px) {
+  .summaryGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.summaryCardWrap {
+  position: relative;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.14);
+  overflow: hidden;
+  background: rgba(255,255,255,0.03);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.summaryCard {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+/* ✅ NOUVELLE tag */
+.summaryNewTag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 6;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.45);
+  font-weight: 950;
+  font-size: 12px;
+}
+
+/* ✅ crédits par carte en overlay (sinon ça réduit l’image) */
+.summaryCreditTag {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 6;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.45);
+  font-weight: 950;
+  font-size: 12px;
+}
+
+/* summary glow */
+.summaryCardWrap.is-rare { --glow: rgba(155, 92, 255, 0.16); }
+.summaryCardWrap.rarity-u1.is-rare { --glow: rgba(140, 90, 255, 0.22); --edge: rgba(168, 110, 255, 0.95); --edgePow: 1.0; }
+.summaryCardWrap.rarity-u2.is-rare { --glow: rgba(255, 77, 109, 0.20); --edge: rgba(255, 92, 120, 0.95); --edgePow: 1.15; }
+.summaryCardWrap.rarity-leg-bronze.is-rare { --glow: rgba(255, 155, 90, 0.18); --edge: rgba(255, 170, 110, 0.92); --edgePow: 1.10; }
+.summaryCardWrap.rarity-leg-silver.is-rare { --glow: rgba(210, 230, 255, 0.18); --edge: rgba(230, 245, 255, 0.95); --edgePow: 1.20; }
+.summaryCardWrap.rarity-leg-gold.is-rare { --glow: rgba(255, 220, 120, 0.20); --edge: rgba(255, 230, 150, 0.98); --edgePow: 1.35; }
+
+.summaryCardWrap.is-rare {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35), 0 0 26px var(--glow);
+}
+
+/* summary holo */
+.summaryCardWrap.is-rare::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: color-dodge;
+  opacity: 0.70;
+
+  background-image:
+    radial-gradient(320px 220px at 50% 40%, rgba(255,255,255,0.60), rgba(255,255,255,0.18) 30%, transparent 65%),
+    repeating-linear-gradient(120deg,
+      rgba(215, 103, 20, 0.55) 0%,
+      rgba(28, 78, 73, 0.55) 10%,
+      rgba(215, 197, 55, 0.55) 15%,
+      rgba(126, 201, 64, 0.55) 20%,
+      rgba(79, 176, 169, 0.55) 25%,
+      rgba(138, 161, 255, 0.55) 30%,
+      rgba(177, 107, 204, 0.55) 35%,
+      rgba(215, 103, 20, 0.55) 45%
+    );
+
+  background-size: 140% 140%, 220% 220%;
+  animation: foilShift 7.0s ease-in-out infinite;
+}
+.summaryCardWrap.is-rare::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  opacity: 0.22;
+
+  background-image: radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1.9px);
+  background-size: 16px 16px;
+  animation: foilSparkle 5.0s ease-in-out infinite;
+}
+
+.edgeGlow--summary {
+  inset: -6px;
+  border-radius: 18px;
+  opacity: 0.16;
+  filter:
+    blur(0.2px)
+    drop-shadow(0 0 calc(8px * var(--edgePow)) var(--edge));
+}
+
+.summaryActions { display: flex; flex-wrap: wrap; gap: 10px; }

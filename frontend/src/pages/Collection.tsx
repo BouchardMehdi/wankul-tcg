@@ -371,11 +371,11 @@ export default function Collection() {
           </Link>
 
           <nav className="topbar__nav">
-            <Link className="topbar__link" to="/booster">
-              Booster
+            <Link className="topbar__link" to="/menu">
+              Menu
             </Link>
-            <Link className="topbar__link is-active" to="/collection">
-              Collection
+            <Link className="topbar__link is-active" to="/booster">
+              Booster
             </Link>
             <button className="topbar__logout" onClick={handleLogout}>
               Se déconnecter

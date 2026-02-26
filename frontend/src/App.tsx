@@ -4,16 +4,17 @@ import { useAuth } from "./auth/AuthContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+
 import Menu from "./pages/Menu";
 import Collection from "./pages/Collection";
+import Booster from "./pages/Booster";
+import Opening from "./pages/Opening";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
-
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
-
   return <>{children}</>;
 }
 
@@ -21,27 +22,15 @@ export default function App() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div style={{ padding: 40 }}>Chargement...</div>;
+    return <div className="container">Chargement...</div>;
   }
 
   return (
     <Routes>
       {/* Public */}
-      <Route path="/" element={<Home />} />
-
-      <Route
-        path="/login"
-        element={
-          isAuthenticated ? <Navigate to="/menu" replace /> : <Login />
-        }
-      />
-
-      <Route
-        path="/register"
-        element={
-          isAuthenticated ? <Navigate to="/menu" replace /> : <Register />
-        }
-      />
+      <Route path="/" element={isAuthenticated ? <Navigate to="/menu" replace /> : <Home />} />
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/menu" replace /> : <Login />} />
+      <Route path="/register" element={isAuthenticated ? <Navigate to="/menu" replace /> : <Register />} />
 
       {/* Private */}
       <Route
@@ -52,12 +41,27 @@ export default function App() {
           </PrivateRoute>
         }
       />
-
-        <Route
+      <Route
         path="/collection"
         element={
           <PrivateRoute>
             <Collection />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/booster"
+        element={
+          <PrivateRoute>
+            <Booster />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/opening"
+        element={
+          <PrivateRoute>
+            <Opening />
           </PrivateRoute>
         }
       />

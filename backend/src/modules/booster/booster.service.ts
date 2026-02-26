@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Card } from '../cards/card.entity';
@@ -15,6 +15,11 @@ type BoosterBuild = {
   hasGTO: boolean;
   hasTicketOr: boolean;
   creditsBreakdown: ReturnType<EconomyService['computeBoosterCredits']>;
+};
+
+type NewCardsMeta = {
+  newCardIds: number[];
+  newCardKeys: string[];
 };
 
 @Injectable()
@@ -69,12 +74,12 @@ export class BoosterService {
   }
 
   private pickOne<T>(arr: T[], label: string): T {
-    if (!arr.length) throw new Error(`No cards found for pool: ${label}`);
+    if (!arr.length) throw new BadRequestException(`Aucune carte trouvée pour: ${label}`);
     return arr[this.randInt(arr.length)];
   }
 
   private pickUnique(pool: Card[], already: Set<number>, label: string): Card {
-    if (!pool.length) throw new Error(`No cards found for pool: ${label}`);
+    if (!pool.length) throw new BadRequestException(`Aucune carte trouvée pour: ${label}`);
 
     // si pool trop petit, accepte doublons
     if (pool.length <= already.size) return this.pickOne(pool, label);
@@ -291,6 +296,29 @@ export class BoosterService {
     return { breakdown, hasGTO, hasTicketOr };
   }
 
+  /**
+   * Détermine les nouvelles cartes (première obtention), à partir de ownedBefore.
+   * - déduplique par cardId (si doublon dans le booster => une seule fois)
+   */
+  private computeNewCardsMeta(args: { cards: Card[]; ownedBefore: Map<number, number> }): NewCardsMeta {
+    const newCardIds: number[] = [];
+    const newCardKeys: string[] = [];
+
+    const seen = new Set<number>();
+    for (const c of args.cards) {
+      if (seen.has(c.id)) continue;
+      seen.add(c.id);
+
+      const qty = args.ownedBefore.get(c.id) ?? 0;
+      if (qty === 0) {
+        newCardIds.push(c.id);
+        if (c.key) newCardKeys.push(c.key);
+      }
+    }
+
+    return { newCardIds, newCardKeys };
+  }
+
   // =========================================================
   // API : OPEN BOOSTER (unité) — saison requise
   // =========================================================
@@ -306,6 +334,9 @@ export class BoosterService {
       const cardIds = cards.map((c) => c.id);
 
       const ownedBefore = await this.users.getOwnedMap(userId, cardIds);
+
+      // ✅ nouvelles cartes (avant upsert)
+      const newMeta = this.computeNewCardsMeta({ cards, ownedBefore });
 
       // update collection (bulk)
       await this.users.addCardsToUserBulk(userId, cardIds, manager);
@@ -328,8 +359,14 @@ export class BoosterService {
       return {
         payment,
         season,
-        cards: this.sortByRarityForDisplay(cards),
+        // ✅ on ajoute isNew pour l'UX front
+        cards: this.sortByRarityForDisplay(cards).map((c) => ({
+          ...c,
+          isNew: newMeta.newCardIds.includes(c.id),
+        })),
         credits: breakdown,
+        creditsEarnedTotal: breakdown.total,
+        ...newMeta,
         flags: { hasGTO, hasTicketOr },
       };
     });
@@ -372,6 +409,9 @@ export class BoosterService {
 
       const ownedBefore = await this.users.getOwnedMap(userId, allCardIds);
 
+      // ✅ nouvelles cartes (avant upsert)
+      const newMeta = this.computeNewCardsMeta({ cards: allCards, ownedBefore });
+
       await this.users.addCardsToUserBulk(userId, allCardIds, manager);
 
       // crédits par booster
@@ -407,11 +447,19 @@ export class BoosterService {
           goldIndex: hasGoldBooster ? goldIndex : null,
           forcedLegendaryIndex,
         },
-        boosters: boosters.map((b) => this.sortByRarityForDisplay(b)),
+        // ✅ isNew sur chaque carte pour l'opening display aussi
+        boosters: boosters.map((b) =>
+          this.sortByRarityForDisplay(b).map((c) => ({
+            ...c,
+            isNew: newMeta.newCardIds.includes(c.id),
+          })),
+        ),
         credits: {
           display: displayBreakdown,
           boosters: boosterBreakdowns,
         },
+        creditsEarnedTotal: displayBreakdown.total,
+        ...newMeta,
       };
     });
   }
@@ -436,7 +484,6 @@ export class BoosterService {
         })) as any,
       } as any);
     } catch {
-      // si ton entity ne correspond plus exactement, on ignore (le gameplay ne doit pas casser)
     }
   }
 

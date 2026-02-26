@@ -321,6 +321,7 @@
   align-items: center;
   justify-content: center;
 }
+
 .pill {
   font-size: 11px;
   font-weight: 900;
@@ -340,48 +341,22 @@
 }
 
 /* ======================================================
-   ✅ HOLO SYSTEM – HOVER ONLY
+   ✅ HOLO SYSTEM — IDENTIQUE À OPENING (HOVER ONLY)
 ====================================================== */
 
 @keyframes foilShift {
-  0%   { background-position: 0% 0%, 0% 0%, 0% 0%; }
-  50%  { background-position: 100% 60%, 60% 100%, 100% 0%; }
-  100% { background-position: 0% 0%, 0% 0%, 0% 0%; }
+  0%   { background-position: 0% 0%, 0% 0%; }
+  50%  { background-position: 100% 60%, 60% 100%; }
+  100% { background-position: 0% 0%, 0% 0%; }
 }
 
 @keyframes foilSparkle {
-  0%   { background-position: 0 0, 0 0; opacity: 0.00; }
-  50%  { background-position: 18px 26px, 12px 10px; opacity: 0.30; }
-  100% { background-position: 0 0, 0 0; opacity: 0.00; }
+  0%   { background-position: 0 0; opacity: 0.12; }
+  50%  { background-position: 18px 26px; opacity: 0.28; }
+  100% { background-position: 0 0; opacity: 0.12; }
 }
 
-/* Déclare les variables foil sur toutes les cartes holo */
-.cardTile.rarity-u1 .cardTile__imgWrap,
-.cardTile.rarity-u2 .cardTile__imgWrap,
-.cardTile.rarity-leg-bronze .cardTile__imgWrap,
-.cardTile.rarity-leg-silver .cardTile__imgWrap,
-.cardTile.rarity-leg-gold .cardTile__imgWrap,
-.cardTile.rarity-booster-gold .cardTile__imgWrap,
-.cardTile.rarity-starter .cardTile__imgWrap {
-  /* palette par défaut */
-  --foilA: rgba(255, 64, 140, 0.85);
-  --foilB: rgba(140, 90, 255, 0.78);
-  --foilC: rgba(60, 210, 255, 0.78);
-  --foilD: rgba(255, 230, 150, 0.72);
-
-  /* ✅ stops personnalisables */
-  --foilRainbowStops:
-    var(--foilA) 0%,
-    var(--foilB) 14%,
-    var(--foilC) 28%,
-    var(--foilD) 42%,
-    var(--foilA) 56%;
-
-  --foilOpacity: 0;
-  --foilBlend: color-dodge;
-}
-
-/* Layers invisibles de base */
+/* Base invisible */
 .cardTile.rarity-u1 .cardTile__imgWrap::before,
 .cardTile.rarity-u2 .cardTile__imgWrap::before,
 .cardTile.rarity-leg-bronze .cardTile__imgWrap::before,
@@ -391,33 +366,22 @@
 .cardTile.rarity-starter .cardTile__imgWrap::before {
   content: "";
   position: absolute;
-  inset: -28%;
+  inset: -20%;
   pointer-events: none;
   z-index: 4;
-
   opacity: 0;
-  mix-blend-mode: var(--foilBlend);
-  filter: saturate(1.55) contrast(1.18) brightness(1.06);
 
   background-image:
-    radial-gradient(720px 420px at var(--hx) var(--hy),
-      rgba(255,255,255,0.82),
-      rgba(255,255,255,0.26) 30%,
-      transparent 64%),
+    radial-gradient(
+      320px 220px at 50% 40%,
+      rgba(255,255,255,0.6),
+      rgba(255,255,255,0.18) 30%,
+      transparent 65%
+    ),
+    var(--holo-gradient);
 
-    repeating-linear-gradient(120deg, var(--foilRainbowStops)),
-
-    repeating-linear-gradient(
-      35deg,
-      rgba(255,255,255,0.14) 0%,
-      rgba(255,255,255,0.00) 18%,
-      rgba(255,255,255,0.10) 36%,
-      rgba(255,255,255,0.00) 54%
-    );
-
-  background-size: 140% 140%, 220% 220%, 160% 160%;
-  background-position: 0% 0%, 0% 0%, 0% 0%;
-  transition: opacity 160ms cubic-bezier(.2,.8,.2,1);
+  background-size: 140% 140%, 220% 220%;
+  transition: opacity 180ms ease;
 }
 
 .cardTile.rarity-u1 .cardTile__imgWrap::after,
@@ -432,24 +396,16 @@
   inset: 0;
   pointer-events: none;
   z-index: 4;
-
   opacity: 0;
-  mix-blend-mode: overlay;
 
   background-image:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255,255,255,0.06) 0px,
-      rgba(255,255,255,0.00) 2px,
-      rgba(255,255,255,0.00) 7px
-    ),
-    radial-gradient(rgba(255,255,255,0.40) 1px, transparent 1.9px);
+    radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1.9px);
 
-  background-size: 100% 100%, 16px 16px;
-  transition: opacity 160ms cubic-bezier(.2,.8,.2,1);
+  background-size: 16px 16px;
+  transition: opacity 180ms ease;
 }
 
-/* Activation au hover */
+/* Activation hover */
 .cardTile.rarity-u1:hover .cardTile__imgWrap::before,
 .cardTile.rarity-u2:hover .cardTile__imgWrap::before,
 .cardTile.rarity-leg-bronze:hover .cardTile__imgWrap::before,
@@ -457,8 +413,8 @@
 .cardTile.rarity-leg-gold:hover .cardTile__imgWrap::before,
 .cardTile.rarity-booster-gold:hover .cardTile__imgWrap::before,
 .cardTile.rarity-starter:hover .cardTile__imgWrap::before {
-  opacity: var(--foilOpacity);
-  animation: foilShift 6.5s ease-in-out infinite;
+  opacity: 0.75;
+  animation: foilShift 7s ease-in-out infinite;
 }
 
 .cardTile.rarity-u1:hover .cardTile__imgWrap::after,
@@ -468,11 +424,11 @@
 .cardTile.rarity-leg-gold:hover .cardTile__imgWrap::after,
 .cardTile.rarity-booster-gold:hover .cardTile__imgWrap::after,
 .cardTile.rarity-starter:hover .cardTile__imgWrap::after {
-  opacity: 0.30;
-  animation: foilSparkle 4.5s ease-in-out infinite;
+  opacity: 0.22;
+  animation: foilSparkle 5s ease-in-out infinite;
 }
 
-/* ✅ IMPORTANT : si la carte est LOCKED -> AUCUN HOLO, même au hover */
+/* Désactive si locked */
 .cardTile.is-locked .cardTile__imgWrap::before,
 .cardTile.is-locked .cardTile__imgWrap::after,
 .cardTile.is-locked:hover .cardTile__imgWrap::before,
@@ -481,119 +437,61 @@
   animation: none !important;
 }
 
-/* ---------- U1 / U2 : palette de ta capture + punchy ---------- */
-.cardTile.rarity-u1 .cardTile__imgWrap,
-.cardTile.rarity-u2 .cardTile__imgWrap {
-  --foilOpacity: 0.86;
-  --foilBlend: color-dodge;
+/* ======================================================
+   🎨 COULEURS — IDENTIQUES À OPENING
+====================================================== */
 
-  --foilRainbowStops:
-    rgba(215, 103, 20, 0.75) 0%,
-    rgba(28, 78, 73, 0.75) 10%,
-    rgba(215, 197, 55, 0.75) 15%,
-    rgba(126, 201, 64, 0.75) 20%,
-    rgba(79, 176, 169, 0.75) 25%,
-    rgba(138, 161, 255, 0.75) 30%,
-    rgba(177, 107, 204, 0.75) 35%,
-    rgba(215, 103, 20, 0.75) 45%;
+/* 🌈 Rainbow (U1 / U2 / Starter) */
+.cardTile.rarity-u1,
+.cardTile.rarity-u2,
+.cardTile.rarity-starter {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(215, 103, 20, 0.55) 0%,
+      rgba(28, 78, 73, 0.55) 10%,
+      rgba(215, 197, 55, 0.55) 15%,
+      rgba(126, 201, 64, 0.55) 20%,
+      rgba(79, 176, 169, 0.55) 25%,
+      rgba(138, 161, 255, 0.55) 30%,
+      rgba(177, 107, 204, 0.55) 35%,
+      rgba(215, 103, 20, 0.55) 45%
+    );
 }
 
-/* Glow au hover pour U1/U2 */
-.cardTile.rarity-u1:hover .cardTile__imgWrap,
-.cardTile.rarity-u2:hover .cardTile__imgWrap {
-  box-shadow:
-    0 18px 40px rgba(0,0,0,0.35),
-    0 0 36px rgba(155, 92, 255, 0.24);
+/* 🟤 Bronze */
+.cardTile.rarity-leg-bronze {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(205, 127, 50, 0.55) 0%,
+      rgba(255, 170, 110, 0.55) 20%,
+      rgba(150, 85, 40, 0.55) 40%,
+      rgba(205, 127, 50, 0.55) 60%
+    );
 }
 
-/* U1 : holo surtout fond (centre masqué) */
-.cardTile.rarity-u1:hover .cardTile__imgWrap::before {
-  -webkit-mask-image: radial-gradient(closest-side at 50% 48%, transparent 0 30%, #000 58%);
-          mask-image: radial-gradient(closest-side at 50% 48%, transparent 0 30%, #000 58%);
+/* ⚪ Silver */
+.cardTile.rarity-leg-silver {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(220, 230, 240, 0.55) 0%,
+      rgba(180, 200, 220, 0.55) 20%,
+      rgba(240, 245, 255, 0.55) 40%,
+      rgba(200, 210, 220, 0.55) 60%
+    );
 }
 
-/* ✅ U2 : holo sur toute la carte -> PAS DE MASQUE U2 */
-
-/* ---------- STARTER PACK : holo sur toute la carte ---------- */
-.cardTile.rarity-starter .cardTile__imgWrap {
-  /* tu peux choisir la palette que tu veux. Ici je mets la même que U2 (capture) */
-  --foilOpacity: 0.80;
-  --foilBlend: color-dodge;
-
-  --foilRainbowStops:
-    rgba(215, 103, 20, 0.75) 0%,
-    rgba(28, 78, 73, 0.75) 10%,
-    rgba(215, 197, 55, 0.75) 15%,
-    rgba(126, 201, 64, 0.75) 20%,
-    rgba(79, 176, 169, 0.75) 25%,
-    rgba(138, 161, 255, 0.75) 30%,
-    rgba(177, 107, 204, 0.75) 35%,
-    rgba(215, 103, 20, 0.75) 45%;
-}
-
-/* ---------- LEGENDARY : métal doux ---------- */
-.cardTile.rarity-leg-bronze .cardTile__imgWrap,
-.cardTile.rarity-leg-silver .cardTile__imgWrap,
-.cardTile.rarity-leg-gold .cardTile__imgWrap,
-.cardTile.rarity-booster-gold .cardTile__imgWrap {
-  --foilOpacity: 0.38;
-  --foilBlend: screen;
-}
-
-/* Bronze */
-.cardTile.rarity-leg-bronze { border-color: rgba(255,165,100,0.26); }
-.cardTile.rarity-leg-bronze .cardTile__imgWrap {
-  --foilA: rgba(255, 140, 70, 0.78);
-  --foilB: rgba(220, 120, 70, 0.70);
-  --foilC: rgba(255, 200, 140, 0.66);
-  --foilD: rgba(255, 245, 220, 0.56);
-}
-.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap {
-  box-shadow:
-    0 18px 40px rgba(0,0,0,0.35),
-    0 0 26px rgba(255, 155, 90, 0.14),
-    inset 0 0 0 2px rgba(255,155,90,0.18);
-}
-
-/* Silver */
-.cardTile.rarity-leg-silver { border-color: rgba(210,230,255,0.26); }
-.cardTile.rarity-leg-silver .cardTile__imgWrap {
-  --foilA: rgba(235, 245, 255, 0.72);
-  --foilB: rgba(200, 220, 235, 0.66);
-  --foilC: rgba(170, 200, 220, 0.60);
-  --foilD: rgba(255, 255, 255, 0.52);
-}
-.cardTile.rarity-leg-silver:hover .cardTile__imgWrap {
-  box-shadow:
-    0 18px 40px rgba(0,0,0,0.35),
-    0 0 22px rgba(220,235,255,0.12),
-    inset 0 0 0 2px rgba(220,235,255,0.16);
-}
-
-/* Gold + Booster Gold */
+/* 🟡 Gold + Booster Gold */
 .cardTile.rarity-leg-gold,
-.cardTile.rarity-booster-gold { border-color: rgba(255,214,120,0.30); }
-
-.cardTile.rarity-leg-gold .cardTile__imgWrap,
-.cardTile.rarity-booster-gold .cardTile__imgWrap {
-  --foilA: rgba(255, 210, 90, 0.78);
-  --foilB: rgba(255, 170, 70, 0.72);
-  --foilC: rgba(255, 240, 170, 0.62);
-  --foilD: rgba(255, 255, 240, 0.54);
+.cardTile.rarity-booster-gold {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(255, 215, 0, 0.6) 0%,
+      rgba(255, 230, 120, 0.6) 20%,
+      rgba(200, 160, 0, 0.6) 40%,
+      rgba(255, 215, 0, 0.6) 60%
+    );
 }
-.cardTile.rarity-leg-gold:hover .cardTile__imgWrap,
-.cardTile.rarity-booster-gold:hover .cardTile__imgWrap {
-  box-shadow:
-    0 18px 40px rgba(0,0,0,0.35),
-    0 0 26px rgba(255,214,120,0.14),
-    inset 0 0 0 2px rgba(255,214,120,0.18);
-}
-
-/* Sparkle moins fort sur légendaires */
-.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap::after,
-.cardTile.rarity-leg-silver:hover .cardTile__imgWrap::after,
-.cardTile.rarity-leg-gold:hover .cardTile__imgWrap::after,
-.cardTile.rarity-booster-gold:hover .cardTile__imgWrap::after {
-  opacity: 0.18;
-}
-

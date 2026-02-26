@@ -84,10 +84,10 @@ export class UsersService {
 
     await em.query(
       `
-      INSERT INTO user_cards (userId, cardId, quantity)
-      VALUES ${valuesSql}
-      ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)
-      `,
+    INSERT INTO user_cards (user_id, card_id, quantity)
+    VALUES ${valuesSql}
+    ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)
+    `,
       params,
     );
   }
