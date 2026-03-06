@@ -21,13 +21,13 @@ import { StatsModule } from './modules/stats/stats.module';
 
     TypeOrmModule.forRoot(typeOrmConfig()),
 
-    // ✅ Sert backend/public/*
+    // Sert backend/public/*
     // backend/public/cards/xxx.webp -> http://localhost:3000/cards/xxx.webp
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
-      serveRoot: '/',
-      exclude: ['/api*'], // OK même si tu n'as pas /api
-    }),
+   ServeStaticModule.forRoot({
+  rootPath: join(__dirname, '..', 'public'),
+  serveRoot: '/',
+  exclude: ['/api', '/api/*rest'],
+}),
 
     UsersModule,
     AuthModule,

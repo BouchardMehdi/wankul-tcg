@@ -24,6 +24,7 @@ export default function Register() {
       await apiFetch("/auth/register", {
         method: "POST",
         body: { username, email, password },
+        auth: false,
       });
 
       setStep("verify");
@@ -37,9 +38,10 @@ export default function Register() {
     setError("");
 
     try {
-      await apiFetch("/auth/verify", {
+      await apiFetch("/auth/verify-email", {
         method: "POST",
-        body: { email, code },
+        body: { username, code },
+        auth: false,
       });
 
       navigate("/login");
