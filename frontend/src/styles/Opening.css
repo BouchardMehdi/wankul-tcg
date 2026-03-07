@@ -9,11 +9,17 @@
   gap: 12px;
 }
 
+.openingHeader__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
 .openingTitle { margin: 0; font-weight: 950; font-size: 26px; }
 
 .openingStage { margin-top: 14px; padding: 18px; min-height: 580px; }
 
-/* ✅ crédits inline (header) */
 .creditInline {
   display: inline-flex;
   align-items: center;
@@ -25,9 +31,95 @@
   opacity: 0.95;
 }
 
-/* =========================
-   PACK
-========================= */
+.displayRemainingPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  box-shadow: var(--shadow-sm);
+}
+
+.displayRemainingPill__img {
+  width: 42px;
+  height: 58px;
+  object-fit: contain;
+}
+
+.displayRemainingPill__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.displayRemainingPill__label {
+  font-size: 11px;
+  opacity: 0.8;
+  font-weight: 800;
+}
+
+.skipToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.skipToggleBtn:hover {
+  transform: translateY(-1px);
+}
+
+.skipToggleBtn.is-on {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.22);
+}
+
+.skipToggleBtn__track {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.16);
+  border: 1px solid rgba(255,255,255,0.16);
+  position: relative;
+  flex: 0 0 auto;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.skipToggleBtn.is-on .skipToggleBtn__track {
+  background: linear-gradient(90deg, #ff5c93, #9d5cff);
+  border-color: transparent;
+}
+
+.skipToggleBtn__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.28);
+  transition: transform 160ms ease;
+}
+
+.skipToggleBtn.is-on .skipToggleBtn__thumb {
+  transform: translateX(18px);
+}
+
+.skipToggleBtn__label {
+  line-height: 1;
+}
 
 .packZone {
   display: flex;
@@ -36,6 +128,7 @@
   gap: 14px;
   padding: 10px 0 22px;
 }
+
 .openingBtn { width: 240px; }
 
 .pack {
@@ -45,6 +138,11 @@
   border-radius: 18px;
   cursor: pointer;
   user-select: none;
+}
+
+.pack--display {
+  width: 420px;
+  height: 320px;
 }
 
 .pack::before,
@@ -61,10 +159,16 @@
   will-change: transform, clip-path, opacity;
 }
 
+.pack--display::before,
+.pack--display::after {
+  clip-path: none;
+}
+
 .pack::before {
   clip-path: polygon(0 0, 100% 0, 100% 52%, 0 52%);
   transform-origin: 50% 52%;
 }
+
 .pack::after {
   clip-path: polygon(0 52%, 100% 52%, 100% 100%, 0 100%);
   transform-origin: 50% 52%;
@@ -81,6 +185,7 @@
 }
 
 .pack.is-shaking { animation: packShake 900ms ease-in-out infinite; }
+
 @keyframes packShake {
   0% { transform: translateX(0) rotate(0deg); }
   20% { transform: translateX(-6px) rotate(-0.9deg); }
@@ -93,11 +198,17 @@
 .pack.is-opening::before { animation: tearTop 900ms cubic-bezier(.2,.9,.2,1) forwards; }
 .pack.is-opening::after  { animation: pullBottom 900ms cubic-bezier(.2,.9,.2,1) forwards; }
 
+.pack--display.is-opening::before,
+.pack--display.is-opening::after {
+  animation: none;
+}
+
 @keyframes tearTop {
   0% { transform: translateY(0) rotate(0deg); clip-path: polygon(0 0, 100% 0, 100% 52%, 0 52%); }
   45% { clip-path: polygon(0 0, 100% 0, 100% 47%, 0 56%); }
   100% { transform: translateY(-36px) rotate(-7deg); clip-path: polygon(0 0, 100% 0, 100% 45%, 0 58%); opacity: 0.92; }
 }
+
 @keyframes pullBottom {
   0% { transform: translateY(0); }
   100% { transform: translateY(10px); opacity: 0.98; }
@@ -116,16 +227,96 @@
   opacity: 0;
   pointer-events: none;
 }
+
 .emergingCard.is-emerging { animation: emerge 900ms cubic-bezier(.2,.9,.2,1) forwards; }
+
 @keyframes emerge {
   0% { opacity: 0; transform: translate(-50%, -50%) translateY(45px) scale(0.90); }
   45% { opacity: 1; transform: translate(-50%, -50%) translateY(0px) scale(0.96); }
   100% { opacity: 1; transform: translate(-50%, -50%) translateY(-22px) scale(1.00); }
 }
 
-/* =========================
-   REVEAL
-========================= */
+.displayIntro {
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.displayIntro__scene {
+  position: relative;
+  width: min(720px, 100%);
+  height: 380px;
+}
+
+.displayIntro__display {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 360px;
+  max-width: 70%;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  filter: drop-shadow(0 22px 36px rgba(0,0,0,0.42));
+  animation: displayFloat 1300ms ease-in-out infinite alternate;
+}
+
+@keyframes displayFloat {
+  from { transform: translate(-50%, -50%) translateY(0px); }
+  to { transform: translate(-50%, -50%) translateY(-6px); }
+}
+
+.displayIntro__booster {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 140px;
+  height: 200px;
+  object-fit: contain;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.82);
+  filter: drop-shadow(0 16px 26px rgba(0,0,0,0.36));
+}
+
+.displayIntro__booster--1 { animation: displayBoosterOut1 1.4s ease-out forwards; }
+.displayIntro__booster--2 { animation: displayBoosterOut2 1.4s ease-out .08s forwards; }
+.displayIntro__booster--3 { animation: displayBoosterOut3 1.4s ease-out .16s forwards; }
+.displayIntro__booster--4 { animation: displayBoosterOut4 1.4s ease-out .24s forwards; }
+.displayIntro__booster--5 { animation: displayBoosterOut5 1.4s ease-out .32s forwards; }
+
+@keyframes displayBoosterOut1 {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.82); }
+  30% { opacity: 1; }
+  100% { opacity: 1; transform: translate(calc(-50% - 180px), calc(-50% - 95px)) rotate(-18deg) scale(0.96); }
+}
+@keyframes displayBoosterOut2 {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.82); }
+  30% { opacity: 1; }
+  100% { opacity: 1; transform: translate(calc(-50% - 95px), calc(-50% - 120px)) rotate(-8deg) scale(0.96); }
+}
+@keyframes displayBoosterOut3 {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.82); }
+  30% { opacity: 1; }
+  100% { opacity: 1; transform: translate(calc(-50% + 0px), calc(-50% - 132px)) rotate(0deg) scale(0.96); }
+}
+@keyframes displayBoosterOut4 {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.82); }
+  30% { opacity: 1; }
+  100% { opacity: 1; transform: translate(calc(-50% + 95px), calc(-50% - 120px)) rotate(8deg) scale(0.96); }
+}
+@keyframes displayBoosterOut5 {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.82); }
+  30% { opacity: 1; }
+  100% { opacity: 1; transform: translate(calc(-50% + 180px), calc(-50% - 95px)) rotate(18deg) scale(0.96); }
+}
+
+.displayIntro__text {
+  font-weight: 900;
+  font-size: 15px;
+  opacity: 0.9;
+}
 
 .revealZone { display: flex; flex-direction: column; gap: 12px; }
 .revealTop { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -151,45 +342,43 @@
   position: absolute;
   opacity: 0.95;
 }
+
 .stackBack--1 { transform: translateY(10px) translateX(-12px) rotate(-4deg); }
 .stackBack--2 { transform: translateY(6px) translateX(10px) rotate(3deg); opacity: 0.85; }
 .stackBack--3 { transform: translateY(2px) translateX(-4px) rotate(1deg); opacity: 0.72; }
 
-/* =========================
-   CARD WRAP
-========================= */
-
 .openingCardWrap {
   --hx: 50%;
   --hy: 50%;
-
   --drag-x: 0px;
   --drag-rot: 0deg;
   --throw-x: 0px;
   --throw-rot: 0deg;
-  --throw-ms: 360ms;
+  --throw-ms: 280ms;
 
   width: 280px;
   height: 380px;
   position: relative;
   border-radius: 18px;
-
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.14);
   background: rgba(255,255,255,0.03);
   box-shadow: 0 16px 55px rgba(0,0,0,0.55);
-
   transform: translateX(var(--drag-x)) rotate(var(--drag-rot));
   transition: transform 220ms cubic-bezier(.2,.9,.2,1);
-
   will-change: transform, opacity;
   cursor: grab;
 }
-.openingCardWrap.is-dragging { transition: none; cursor: grabbing; }
+
+.openingCardWrap.is-dragging {
+  transition: none;
+  cursor: grabbing;
+}
 
 .openingCardWrap.fly-out {
   animation: flyOut var(--throw-ms) cubic-bezier(.2,.9,.2,1) forwards;
 }
+
 @keyframes flyOut {
   from { opacity: 1; transform: translateX(var(--drag-x)) rotate(var(--drag-rot)); }
   to   { opacity: 0; transform: translateX(var(--throw-x)) rotate(var(--throw-rot)); }
@@ -206,24 +395,12 @@
   pointer-events: none;
 }
 
-.swipeHint {
-  text-align: center;
-  font-weight: 800;
-  font-size: 12px;
-  opacity: 0.75;
-}
-
-/* =========================
-   ✅ NEW overlay (fix: ne prend plus de place)
-========================= */
-
 .newRibbon {
   position: absolute;
   top: 10px;
   left: 10px;
   z-index: 7;
   pointer-events: none;
-
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.18);
@@ -236,34 +413,24 @@
 .openingCardWrap.is-new .newRibbon {
   animation: newPop 650ms cubic-bezier(.2,.9,.2,1) both;
 }
+
 @keyframes newPop {
   0% { transform: translateY(-6px) scale(0.92); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
-
-/* =========================
-   HOLO
-========================= */
 
 @keyframes foilShift {
   0%   { background-position: 0% 0%, 0% 0%, 0% 0%; }
   50%  { background-position: 100% 60%, 60% 100%, 100% 0%; }
   100% { background-position: 0% 0%, 0% 0%, 0% 0%; }
 }
+
 @keyframes foilSparkle {
   0%   { background-position: 0 0, 0 0; opacity: 0.00; }
   50%  { background-position: 18px 26px, 12px 10px; opacity: 0.30; }
   100% { background-position: 0 0, 0 0; opacity: 0.00; }
 }
 
-.openingCardWrap {
-  transition:
-    transform 220ms cubic-bezier(.2,.9,.2,1),
-    box-shadow 350ms ease;
-  overflow: hidden;
-}
-
-/* HOLO */
 .openingCardWrap.is-rare::before {
   content: "";
   position: absolute;
@@ -272,16 +439,9 @@
   pointer-events: none;
   mix-blend-mode: color-dodge;
   opacity: 0.70;
-
   background-image:
-    radial-gradient(
-      320px 220px at 50% 40%,
-      rgba(255,255,255,0.60),
-      rgba(255,255,255,0.18) 30%,
-      transparent 65%
-    ),
+    radial-gradient(320px 220px at 50% 40%, rgba(255,255,255,0.60), rgba(255,255,255,0.18) 30%, transparent 65%),
     var(--holo-gradient);
-
   background-size: 140% 140%, 220% 220%;
   animation: foilShift 7s ease-in-out infinite;
 }
@@ -294,10 +454,7 @@
   pointer-events: none;
   mix-blend-mode: overlay;
   opacity: 0.22;
-
-  background-image:
-    radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1.9px);
-
+  background-image: radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1.9px);
   background-size: 16px 16px;
   animation: foilSparkle 5s ease-in-out infinite;
 }
@@ -351,10 +508,6 @@
     );
 }
 
-/* =========================
-   EDGE GLOW
-========================= */
-
 @keyframes edgeShimmer {
   0%   { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -366,7 +519,6 @@
   border-radius: 24px;
   pointer-events: none;
   z-index: 4;
-
   background: conic-gradient(
     from 0deg,
     rgba(255,255,255,0.0),
@@ -375,20 +527,18 @@
     var(--edge),
     rgba(255,255,255,0.0)
   );
-
   opacity: 0.16;
-  filter:
-    blur(0.2px)
-    drop-shadow(0 0 calc(12px * var(--edgePow)) var(--edge));
+  filter: blur(0.2px) drop-shadow(0 0 calc(12px * var(--edgePow)) var(--edge));
 }
 
 .openingCardWrap.is-rare { --edgePow: 1.0; }
-
 .openingCardWrap.rarity-u1.is-rare { --edge: rgba(168, 110, 255, 0.95); --edgePow: 1.05; }
 .openingCardWrap.rarity-u2.is-rare { --edge: rgba(255, 92, 120, 0.95); --edgePow: 1.12; }
 .openingCardWrap.rarity-leg-bronze.is-rare { --edge: rgba(255, 170, 110, 0.92); --edgePow: 1.10; }
 .openingCardWrap.rarity-leg-silver.is-rare { --edge: rgba(230, 245, 255, 0.95); --edgePow: 1.18; }
 .openingCardWrap.rarity-leg-gold.is-rare { --edge: rgba(255, 230, 150, 0.98); --edgePow: 1.30; }
+.openingCardWrap.rarity-gold-ticket-winner.is-rare { --edge: rgba(255, 208, 90, 0.96); --edgePow: 1.18; }
+.openingCardWrap.rarity-gold-ticket.is-rare { --edge: rgba(255, 238, 170, 0.94); --edgePow: 1.1; }
 
 .openingCardWrap.is-rare .edgeGlow {
   animation: edgeShimmer 3.2s linear infinite;
@@ -407,6 +557,8 @@
 .openingCardWrap.rarity-leg-bronze.is-rare { --glow: rgba(255, 170, 110, 0.6); }
 .openingCardWrap.rarity-leg-silver.is-rare { --glow: rgba(210, 230, 255, 0.65); }
 .openingCardWrap.rarity-leg-gold.is-rare { --glow: rgba(255, 220, 120, 0.75); }
+.openingCardWrap.rarity-gold-ticket-winner.is-rare { --glow: rgba(255, 208, 90, 0.68); }
+.openingCardWrap.rarity-gold-ticket.is-rare { --glow: rgba(255, 235, 160, 0.55); }
 
 @keyframes rareEdgeBurst {
   0%   { opacity: 0.05; filter: blur(0.2px) drop-shadow(0 0 0px var(--edge)); }
@@ -414,15 +566,12 @@
   70%  { opacity: 0.30; filter: blur(0.2px) drop-shadow(0 0 16px var(--edge)); }
   100% { opacity: 0.18; filter: blur(0.2px) drop-shadow(0 0 12px var(--edge)); }
 }
+
 .openingCardWrap.rare-appear.is-rare .edgeGlow {
   animation:
     rareEdgeBurst 720ms ease-out 0ms 1,
     edgeShimmer 2.8s linear 720ms infinite;
 }
-
-/* =========================
-   11th surprise FX
-========================= */
 
 .surpriseRing {
   position: absolute;
@@ -430,7 +579,6 @@
   border-radius: 26px;
   pointer-events: none;
   z-index: 4;
-
   background: conic-gradient(
     from 0deg,
     rgba(255,255,255,0.00),
@@ -439,7 +587,6 @@
     rgba(255,255,255,0.55),
     rgba(255,255,255,0.00)
   );
-
   opacity: 0;
   mix-blend-mode: screen;
   filter: blur(0.3px);
@@ -450,26 +597,23 @@
   20%  { opacity: 0.85; }
   100% { opacity: 0; transform: scale(1.08) rotate(220deg); }
 }
+
 .openingCardWrap.surprise-appear .surpriseRing {
   animation: surpriseFlash 700ms ease-out 1;
 }
 
-/* scintillement (sparkles + shine) */
 .surpriseSparkles {
   position: absolute;
   inset: -14%;
   z-index: 6;
   pointer-events: none;
   opacity: 0;
-
   background-image:
     radial-gradient(rgba(255,255,255,0.90) 1px, transparent 1.9px),
     radial-gradient(rgba(255,255,255,0.60) 1px, transparent 1.9px),
     radial-gradient(rgba(255,255,255,0.40) 1px, transparent 1.9px);
-
   background-size: 18px 18px, 26px 26px, 34px 34px;
   background-position: 0 0, 14px 10px, 22px 18px;
-
   mix-blend-mode: screen;
   filter: blur(0.2px);
 }
@@ -486,7 +630,6 @@
   z-index: 6;
   pointer-events: none;
   opacity: 0;
-
   background: linear-gradient(
     120deg,
     transparent 0%,
@@ -495,7 +638,6 @@
     rgba(255,255,255,0.0) 58%,
     transparent 100%
   );
-
   transform: translateX(-40%) rotate(8deg);
   mix-blend-mode: screen;
 }
@@ -511,14 +653,11 @@
   opacity: 1;
   animation: surpriseSparkle 1.25s ease-in-out infinite;
 }
+
 .openingCardWrap.surprise-appear .surpriseShine {
   opacity: 1;
   animation: shineSweep 1.35s ease-in-out infinite;
 }
-
-/* =========================
-   SUMMARY
-========================= */
 
 .summaryZone { display: flex; flex-direction: column; gap: 14px; }
 
@@ -546,8 +685,17 @@
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
 }
+
 @media (max-width: 980px) {
   .summaryGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.summaryGrid--displayFinal {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 980px) {
+  .summaryGrid--displayFinal { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .summaryCardWrap {
@@ -566,7 +714,6 @@
   display: block;
 }
 
-/* ✅ NOUVELLE tag */
 .summaryNewTag {
   position: absolute;
   top: 10px;
@@ -580,7 +727,6 @@
   font-size: 12px;
 }
 
-/* ✅ crédits par carte en overlay (sinon ça réduit l’image) */
 .summaryCreditTag {
   position: absolute;
   top: 10px;
@@ -594,19 +740,19 @@
   font-size: 12px;
 }
 
-/* summary glow */
 .summaryCardWrap.is-rare { --glow: rgba(155, 92, 255, 0.16); }
 .summaryCardWrap.rarity-u1.is-rare { --glow: rgba(140, 90, 255, 0.22); --edge: rgba(168, 110, 255, 0.95); --edgePow: 1.0; }
 .summaryCardWrap.rarity-u2.is-rare { --glow: rgba(255, 77, 109, 0.20); --edge: rgba(255, 92, 120, 0.95); --edgePow: 1.15; }
 .summaryCardWrap.rarity-leg-bronze.is-rare { --glow: rgba(255, 155, 90, 0.18); --edge: rgba(255, 170, 110, 0.92); --edgePow: 1.10; }
 .summaryCardWrap.rarity-leg-silver.is-rare { --glow: rgba(210, 230, 255, 0.18); --edge: rgba(230, 245, 255, 0.95); --edgePow: 1.20; }
 .summaryCardWrap.rarity-leg-gold.is-rare { --glow: rgba(255, 220, 120, 0.20); --edge: rgba(255, 230, 150, 0.98); --edgePow: 1.35; }
+.summaryCardWrap.rarity-gold-ticket-winner.is-rare { --glow: rgba(255, 210, 90, 0.18); --edge: rgba(255, 208, 90, 0.96); --edgePow: 1.18; }
+.summaryCardWrap.rarity-gold-ticket.is-rare { --glow: rgba(255, 235, 160, 0.15); --edge: rgba(255, 238, 170, 0.94); --edgePow: 1.08; }
 
 .summaryCardWrap.is-rare {
   box-shadow: 0 10px 30px rgba(0,0,0,0.35), 0 0 26px var(--glow);
 }
 
-/* summary holo */
 .summaryCardWrap.is-rare::before {
   content: "";
   position: absolute;
@@ -615,10 +761,10 @@
   pointer-events: none;
   mix-blend-mode: color-dodge;
   opacity: 0.70;
-
   background-image:
     radial-gradient(320px 220px at 50% 40%, rgba(255,255,255,0.60), rgba(255,255,255,0.18) 30%, transparent 65%),
-    repeating-linear-gradient(120deg,
+    repeating-linear-gradient(
+      120deg,
       rgba(215, 103, 20, 0.55) 0%,
       rgba(28, 78, 73, 0.55) 10%,
       rgba(215, 197, 55, 0.55) 15%,
@@ -628,10 +774,10 @@
       rgba(177, 107, 204, 0.55) 35%,
       rgba(215, 103, 20, 0.55) 45%
     );
-
   background-size: 140% 140%, 220% 220%;
   animation: foilShift 7.0s ease-in-out infinite;
 }
+
 .summaryCardWrap.is-rare::after {
   content: "";
   position: absolute;
@@ -640,7 +786,6 @@
   pointer-events: none;
   mix-blend-mode: overlay;
   opacity: 0.22;
-
   background-image: radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1.9px);
   background-size: 16px 16px;
   animation: foilSparkle 5.0s ease-in-out infinite;
@@ -650,9 +795,11 @@
   inset: -6px;
   border-radius: 18px;
   opacity: 0.16;
-  filter:
-    blur(0.2px)
-    drop-shadow(0 0 calc(8px * var(--edgePow)) var(--edge));
+  filter: blur(0.2px) drop-shadow(0 0 calc(8px * var(--edgePow)) var(--edge));
 }
 
-.summaryActions { display: flex; flex-wrap: wrap; gap: 10px; }
+.summaryActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

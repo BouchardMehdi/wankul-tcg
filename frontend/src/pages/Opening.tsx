@@ -8,10 +8,40 @@ import "../styles/Opening.css";
 import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
 import { useAuth } from "../auth/AuthContext";
 import { getEconomyMe, type EconomySnapshot } from "../api/economy";
-import { openBooster, type SeasonName } from "../api/booster";
+import { openBooster, openDisplay, type SeasonName } from "../api/booster";
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-const IS_DEV = import.meta.env.DEV;
+const SKIP_STORAGE_KEY = "wankul_skip_opening_animations";
+
+const CARD_BACK = new URL("../assets/wankul_back.webp", import.meta.url).href;
+
+const BOOSTER_IMG: Record<SeasonName, string> = {
+  Origins: new URL("../assets/boosters/booster_origin.png", import.meta.url).href,
+  Campus: new URL("../assets/boosters/booster_campus.png", import.meta.url).href,
+  Battle: new URL("../assets/boosters/booster_battle.png", import.meta.url).href,
+  Stellar: new URL("../assets/boosters/booster_stellar.png", import.meta.url).href,
+};
+
+const DISPLAY_IMG: Record<SeasonName, string> = {
+  Origins: new URL("../assets/boosters/display_origin.webp", import.meta.url).href,
+  Campus: new URL("../assets/boosters/display_campus.webp", import.meta.url).href,
+  Battle: new URL("../assets/boosters/display_battle.webp", import.meta.url).href,
+  Stellar: new URL("../assets/boosters/display_stellar.webp", import.meta.url).href,
+};
+
+type OpeningStatePayload = {
+  kind: "booster" | "display";
+  season: SeasonName;
+  result: any;
+};
+
+type Phase =
+  | "idle"
+  | "display-intro"
+  | "opening"
+  | "reveal"
+  | "summary"
+  | "display-final-summary";
 
 function resolveImg(imageUrl?: string | null) {
   const url = (imageUrl ?? "").trim();
@@ -21,30 +51,10 @@ function resolveImg(imageUrl?: string | null) {
   return `${API_BASE}/${url}`;
 }
 
-const CARD_BACK = new URL("../assets/wankul_back.webp", import.meta.url).href;
-const CARD_TEST = new URL("../assets/wankul_PGW_1.webp", import.meta.url).href;
-
-// Boosters
-const BOOSTER_IMG: Record<SeasonName, string> = {
-  Origins: new URL("../assets/boosters/booster_origin.png", import.meta.url).href,
-  Campus: new URL("../assets/boosters/booster_campus.png", import.meta.url).href,
-  Battle: new URL("../assets/boosters/booster_battle.png", import.meta.url).href,
-  Stellar: new URL("../assets/boosters/booster_stellar.png", import.meta.url).href,
-};
-
-type OpeningStatePayload = {
-  kind: "booster" | "display";
-  season: SeasonName;
-  result: any;
-};
-
-type Phase = "idle" | "opening" | "reveal" | "summary";
-
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-/** Normalise la rareté DB -> clé CSS */
 function normalizeRarity(raw?: string | null) {
   const s0 = (raw ?? "").toString();
 
@@ -60,64 +70,100 @@ function normalizeRarity(raw?: string | null) {
     .trim();
 
   if (s.includes("starter")) return "starter";
+  if (s.includes("gagnant") && s.includes("ticket")) return "gold-ticket-winner";
+  if (s.includes("ticket")) return "gold-ticket";
+  if (s.includes("u1") || s.includes("ultra rare u1") || s.includes("ultra rare 1")) return "u1";
+  if (s.includes("u2") || s.includes("ultra rare u2") || s.includes("ultra rare 2")) return "u2";
+  if (s.includes("commune") && s.includes("peu")) return "uncommon";
+  if (s === "commune" || s.includes(" commune")) return "common";
+  if (s === "rare" || s.startsWith("rare ")) return "rare";
+  if (s.includes("terrain")) return "terrain";
 
-  if (s.includes("u1") || s.includes("ultra rare u1") || s.includes("ultra rare 1") || s.includes("ultra 1"))
-    return "u1";
-  if (s.includes("u2") || s.includes("ultra rare u2") || s.includes("ultra rare 2") || s.includes("ultra 2"))
-    return "u2";
-
-  const isLegendary = s.includes("legendaire") || s.includes("legendary") || s.startsWith("leg ");
+  const isLegendary = s.includes("legendaire") || s.includes("legendary");
   if (isLegendary && s.includes("bronze")) return "leg-bronze";
   if (isLegendary && (s.includes("argent") || s.includes("silver"))) return "leg-silver";
-  if (isLegendary && (s.includes("or") || s.includes("gold"))) return "leg-gold";
+  if (isLegendary && (s.includes("or") || s.includes("gold") || s.includes("doree"))) return "leg-gold";
 
   return "";
 }
 
+function boosterSummaryRank(card: any) {
+  const key = normalizeRarity(card?.rarity ?? "");
+  switch (key) {
+    case "common":
+      return 1;
+    case "uncommon":
+      return 2;
+    case "rare":
+      return 3;
+    case "u1":
+      return 4;
+    case "u2":
+      return 5;
+    case "leg-bronze":
+      return 6;
+    case "leg-silver":
+      return 7;
+    case "leg-gold":
+      return 8;
+    case "gold-ticket-winner":
+      return 9;
+    case "gold-ticket":
+      return 10;
+    default:
+      return 999;
+  }
+}
+
+function displaySummaryRank(card: any) {
+  const key = normalizeRarity(card?.rarity ?? "");
+  switch (key) {
+    case "leg-gold":
+      return 8;
+    case "leg-silver":
+      return 7;
+    case "leg-bronze":
+      return 6;
+    case "u2":
+      return 5;
+    case "u1":
+      return 4;
+    case "gold-ticket-winner":
+      return 3;
+    case "gold-ticket":
+      return 2;
+    default:
+      return 0;
+  }
+}
+
 function isRareForFx(rarityKey: string) {
-  return ["u1", "u2", "leg-bronze", "leg-silver", "leg-gold"].includes(rarityKey);
-}
-
-/** ✅ Pack test FX (toutes raretés) — images = dos (suffisant pour voir les FX) */
-function buildFxTestPack() {
-  const img = CARD_TEST;
-
   return [
-    { id: "t1", name: "Commune (test)", rarity: "Commune", imageUrl: img },
-    { id: "t2", name: "Peu commune (test)", rarity: "Peu commune", imageUrl: img },
-    { id: "t3", name: "Rare (test)", rarity: "Rare", imageUrl: img },
-
-    { id: "t4", name: "U1 (test)", rarity: "Ultra Rare (U1)", imageUrl: img },
-    { id: "t5", name: "U2 (test)", rarity: "Ultra Rare (U2)", imageUrl: img },
-
-    { id: "t6", name: "Légendaire bronze (test)", rarity: "Légendaire bronze", imageUrl: img },
-    { id: "t7", name: "Légendaire argent (test)", rarity: "Légendaire argent", imageUrl: img },
-    { id: "t8", name: "Légendaire or (test)", rarity: "Légendaire dorée", imageUrl: img },
-
-    { id: "t9", name: "U1 bis (test)", rarity: "Ultra Rare (U1)", imageUrl: img },
-    { id: "t10", name: "Rare bis (test)", rarity: "Rare", imageUrl: img },
-
-    // 11ème carte => surprise (index 10)
-    { id: "t11", name: "11ème Surprise (test)", rarity: "Ticket d’or", imageUrl: img },
-  ];
+    "u1",
+    "u2",
+    "leg-bronze",
+    "leg-silver",
+    "leg-gold",
+    "gold-ticket-winner",
+    "gold-ticket",
+  ].includes(rarityKey);
 }
 
-/**
- * ✅ ECON TABLE (fallback affichage)
- * IMPORTANT: newValue REMPLACE baseValue si carte est nouvelle.
- * Ce fallback n’est utilisé que si le backend ne renvoie aucun crédit.
- */
+function isRareOrBetter(card: any) {
+  return isRareForFx(normalizeRarity(card?.rarity ?? ""));
+}
+
 const ECON_BASE: Record<string, number> = {
   Terrain: 0,
   Commune: 2,
-  'Peu commune': 4,
+  "Peu commune": 4,
   Rare: 10,
-  'Ultra Rare (U1)': 36,
-  'Ultra Rare (U2)': 56,
-  'Légendaire bronze': 120,
-  'Légendaire argent': 280,
-  'Légendaire dorée': 560,
-  'Booster Gold': 56,
+  "Ultra Rare (U1)": 36,
+  "Ultra Rare (U2)": 56,
+  "Légendaire bronze": 120,
+  "Légendaire argent": 280,
+  "Légendaire dorée": 560,
+  "Booster Gold": 56,
   "Gagnant ticket d'or": 10,
   "Ticket d'or": 0,
 };
@@ -125,22 +171,29 @@ const ECON_BASE: Record<string, number> = {
 const ECON_NEW: Record<string, number> = {
   Terrain: 10,
   Commune: 12,
-  'Peu commune': 20,
+  "Peu commune": 20,
   Rare: 40,
-  'Ultra Rare (U1)': 140,
-  'Ultra Rare (U2)': 220,
-  'Légendaire bronze': 440,
-  'Légendaire argent': 1000,
-  'Légendaire dorée': 2800,
-  'Booster Gold': 220,
+  "Ultra Rare (U1)": 140,
+  "Ultra Rare (U2)": 220,
+  "Légendaire bronze": 440,
+  "Légendaire argent": 1000,
+  "Légendaire dorée": 2800,
+  "Booster Gold": 220,
   "Gagnant ticket d'or": 25,
   "Ticket d'or": 0,
 };
 
-/** Helper: extrait un total crédit depuis différents shapes possibles */
+function fallbackCardCredits(card: any, isNew: boolean) {
+  const rarity = String(card?.rarity ?? "");
+  const base = ECON_BASE[rarity] ?? 0;
+  const nw = ECON_NEW[rarity] ?? base;
+  return isNew ? nw : base;
+}
+
 function extractCreditsTotal(result: any): number | null {
   const candidates = [
     result?.creditsEarned,
+    result?.creditsEarnedTotal,
     result?.creditsGained,
     result?.totalCredits,
     result?.breakdown?.total,
@@ -150,6 +203,7 @@ function extractCreditsTotal(result: any): number | null {
     result?.economy?.earnedCredits,
     result?.economy?.creditsEarned,
     result?.economy?.totalEarned,
+    result?.credits?.display?.total,
   ];
 
   for (const v of candidates) {
@@ -158,39 +212,29 @@ function extractCreditsTotal(result: any): number | null {
   return null;
 }
 
-/**
- * Helper: extrait un map "cardId -> crédits" si backend le fournit :
- * - soit chaque carte a earnedCredits / creditsEarned
- * - soit result.cardCredits = [{ cardId, credits }]
- * - soit result.cardCredits = number[] (par index)
- */
 function extractPerCardCredits(result: any, cards: any[]): Map<string | number, number> {
   const m = new Map<string | number, number>();
 
-  // 1) Credits directement dans les cartes
   for (const c of cards) {
     const id = c?.id ?? c?.cardId ?? c?.key ?? null;
     const v = c?.earnedCredits ?? c?.creditsEarned ?? c?.credits ?? null;
     if (id != null && typeof v === "number" && Number.isFinite(v)) m.set(id, v);
   }
 
-  // 2) cardCredits: [{cardId, credits}]
-  const arrObj = result?.cardCredits;
-  if (Array.isArray(arrObj) && arrObj.length && typeof arrObj[0] === "object") {
-    for (const row of arrObj) {
+  const cardCredits = result?.cardCredits;
+  if (Array.isArray(cardCredits) && cardCredits.length && typeof cardCredits[0] === "object") {
+    for (const row of cardCredits) {
       const id = row?.cardId ?? row?.id;
       const v = row?.credits ?? row?.earnedCredits ?? row?.value;
       if (id != null && typeof v === "number" && Number.isFinite(v)) m.set(id, v);
     }
   }
 
-  // 3) cardCredits: number[] aligné sur cards[]
-  const arrNum = result?.cardCredits;
-  if (Array.isArray(arrNum) && arrNum.length && typeof arrNum[0] === "number") {
-    for (let i = 0; i < Math.min(arrNum.length, cards.length); i++) {
+  if (Array.isArray(cardCredits) && cardCredits.length && typeof cardCredits[0] === "number") {
+    for (let i = 0; i < Math.min(cardCredits.length, cards.length); i++) {
       const c = cards[i];
       const id = c?.id ?? c?.cardId ?? c?.key ?? i;
-      const v = arrNum[i];
+      const v = cardCredits[i];
       if (typeof v === "number" && Number.isFinite(v)) m.set(id, v);
     }
   }
@@ -198,12 +242,10 @@ function extractPerCardCredits(result: any, cards: any[]): Map<string | number, 
   return m;
 }
 
-/** Helper: récupère les IDs des cartes "nouvelles" si backend le fournit */
 function extractNewCardIds(result: any): Set<number | string> {
   const s = new Set<number | string>();
 
   const candidates = [result?.newCardIds, result?.newCards, result?.unlockedCardIds, result?.unlockedCards];
-
   for (const v of candidates) {
     if (Array.isArray(v)) {
       for (const x of v) {
@@ -213,7 +255,6 @@ function extractNewCardIds(result: any): Set<number | string> {
     }
   }
 
-  // fallback: cartes qui ont isNew
   const cards = result?.cards;
   if (Array.isArray(cards)) {
     for (const c of cards) {
@@ -221,15 +262,32 @@ function extractNewCardIds(result: any): Set<number | string> {
     }
   }
 
+  const boosters = result?.boosters;
+  if (Array.isArray(boosters)) {
+    for (const booster of boosters) {
+      if (!Array.isArray(booster)) continue;
+      for (const c of booster) {
+        if (c?.isNew && (typeof c?.id === "number" || typeof c?.id === "string")) s.add(c.id);
+      }
+    }
+  }
+
   return s;
 }
 
-/** Fallback: calcule les crédits d’une carte si backend ne renvoie rien */
-function fallbackCardCredits(card: any, isNew: boolean) {
-  const rarity = String(card?.rarity ?? "");
-  const base = ECON_BASE[rarity] ?? 0;
-  const nw = ECON_NEW[rarity] ?? base;
-  return isNew ? nw : base; // ✅ remplace, n’additionne pas
+function dedupeCards(cards: any[]) {
+  const seen = new Set<string | number>();
+  const out: any[] = [];
+
+  for (const c of cards) {
+    const id = c?.id ?? c?.cardId ?? c?.key;
+    if (id == null) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(c);
+  }
+
+  return out;
 }
 
 export default function Opening() {
@@ -247,33 +305,144 @@ export default function Opening() {
   const [cards, setCards] = useState<any[]>([]);
   const [index, setIndex] = useState(0);
 
-  // ✅ crédits affichés (issus du backend si dispo)
+  const [displayBoosters, setDisplayBoosters] = useState<any[][]>([]);
+  const [displayBoosterIndex, setDisplayBoosterIndex] = useState(0);
+  const [displayStarted, setDisplayStarted] = useState(false);
+
   const [creditsTotal, setCreditsTotal] = useState<number | null>(null);
   const [perCardCredits, setPerCardCredits] = useState<Map<string | number, number>>(new Map());
   const [newCardIds, setNewCardIds] = useState<Set<string | number>>(new Set());
 
-  // Drag
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-
-  // fly-out parameters
   const [flyOut, setFlyOut] = useState(false);
   const [throwX, setThrowX] = useState(0);
   const [throwRot, setThrowRot] = useState(0);
-  const [throwMs, setThrowMs] = useState(360);
+  const [throwMs, setThrowMs] = useState(280);
   const [animatingNext, setAnimatingNext] = useState(false);
 
-  const pointerIdRef = useRef<number | null>(null);
-  const startXRef = useRef<number>(0);
-  const lastMoveXRef = useRef<number>(0);
-  const lastMoveTRef = useRef<number>(0);
-  const velocityRef = useRef<number>(0);
+  const [skipAnimations, setSkipAnimations] = useState(false);
 
-  // holo target
   const cardWrapRef = useRef<HTMLDivElement | null>(null);
+  const pointerIdRef = useRef<number | null>(null);
+  const startXRef = useRef(0);
+  const lastMoveXRef = useRef(0);
+  const lastMoveTRef = useRef(0);
+  const velocityRef = useRef(0);
+  const timeoutsRef = useRef<number[]>([]);
 
-  // ✅ Test FX toggle
-  const [fxTestEnabled, setFxTestEnabled] = useState(false);
+  const season: SeasonName = state?.season ?? "Origins";
+  const isDisplayMode = state?.kind === "display";
+  const boosterImg = BOOSTER_IMG[season];
+  const displayImg = DISPLAY_IMG[season];
+
+  function queueTimeout(cb: () => void, ms: number) {
+    const id = window.setTimeout(cb, ms);
+    timeoutsRef.current.push(id);
+    return id;
+  }
+
+  function clearQueuedTimeouts() {
+    for (const id of timeoutsRef.current) window.clearTimeout(id);
+    timeoutsRef.current = [];
+  }
+
+  function clearMotionState() {
+    setDragX(0);
+    setIsDragging(false);
+    setFlyOut(false);
+    setThrowX(0);
+    setThrowRot(0);
+    setThrowMs(280);
+    setAnimatingNext(false);
+    pointerIdRef.current = null;
+    velocityRef.current = 0;
+  }
+
+  function prepareBoosterCards(boosterCards: any[]) {
+    setCards(Array.isArray(boosterCards) ? boosterCards : []);
+    setIndex(0);
+    clearMotionState();
+  }
+
+  useEffect(() => {
+    const saved = localStorage.getItem(SKIP_STORAGE_KEY);
+    setSkipAnimations(saved === "1");
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(SKIP_STORAGE_KEY, skipAnimations ? "1" : "0");
+  }, [skipAnimations]);
+
+  useEffect(() => {
+    return () => clearQueuedTimeouts();
+  }, []);
+
+  useEffect(() => {
+    if (!state?.season || !state?.result) {
+      navigate("/booster", { replace: true });
+      return;
+    }
+
+    clearQueuedTimeouts();
+
+    const boosters = Array.isArray(state.result?.boosters) ? state.result.boosters : [];
+    const firstBoosterCards = Array.isArray(boosters[0]) ? boosters[0] : [];
+    const boosterCards = Array.isArray(state.result?.cards) ? state.result.cards : [];
+
+    setDisplayBoosters(boosters);
+    setDisplayBoosterIndex(0);
+    setDisplayStarted(false);
+
+    setCards(state.kind === "display" ? [] : boosterCards);
+    setIndex(0);
+
+    setCreditsTotal(extractCreditsTotal(state.result));
+    setNewCardIds(extractNewCardIds(state.result));
+
+    const flatCards = state.kind === "display"
+      ? boosters.flatMap((b: any) => (Array.isArray(b) ? b : []))
+      : boosterCards;
+    setPerCardCredits(extractPerCardCredits(state.result, flatCards));
+
+    setOpeningLock(false);
+    clearMotionState();
+
+    if (state.kind === "display" && firstBoosterCards.length === 0) {
+      navigate("/booster", { replace: true });
+      return;
+    }
+
+    if (skipAnimations) {
+      if (state.kind === "display") {
+        setPhase("display-final-summary");
+        setDisplayStarted(true);
+      } else {
+        setPhase("summary");
+      }
+    } else {
+      setPhase("idle");
+    }
+  }, [state?.kind, state?.season, state?.result, navigate, skipAnimations]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoadingEco(true);
+        const snap = await getEconomyMe();
+        setEco(snap);
+      } finally {
+        setLoadingEco(false);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    const el = cardWrapRef.current;
+    if (!el) return;
+    el.style.setProperty("--hx", "50%");
+    el.style.setProperty("--hy", "50%");
+  }, [index, phase]);
 
   function handleHoloMove(e: React.MouseEvent) {
     const el = cardWrapRef.current;
@@ -290,70 +459,9 @@ export default function Opening() {
   function handleHoloLeave() {
     const el = cardWrapRef.current;
     if (!el) return;
-    el.style.setProperty("--hx", `50%`);
-    el.style.setProperty("--hy", `50%`);
+    el.style.setProperty("--hx", "50%");
+    el.style.setProperty("--hy", "50%");
   }
-
-  useEffect(() => {
-    const el = cardWrapRef.current;
-    if (!el) return;
-    el.style.setProperty("--hx", `50%`);
-    el.style.setProperty("--hy", `50%`);
-  }, [index, phase]);
-
-  useEffect(() => {
-    if (!state?.season || !state?.result) {
-      navigate("/booster", { replace: true });
-      return;
-    }
-
-    // cards
-    let arr: any[] = [];
-    if (state.kind === "booster") {
-      arr = Array.isArray(state.result?.cards) ? state.result.cards : [];
-    } else {
-      const flat = Array.isArray(state.result?.boosters) ? state.result.boosters.flat?.() ?? [] : [];
-      arr = Array.isArray(flat) ? flat : [];
-    }
-    setCards(arr);
-
-    // ✅ crédits / new cards (depuis backend si dispo)
-    setCreditsTotal(extractCreditsTotal(state.result));
-    setNewCardIds(extractNewCardIds(state.result));
-    setPerCardCredits(extractPerCardCredits(state.result, arr));
-
-    setIndex(0);
-    setPhase("idle");
-    setOpeningLock(false);
-
-    setDragX(0);
-    setIsDragging(false);
-    setFlyOut(false);
-    setThrowX(0);
-    setThrowRot(0);
-    setThrowMs(360);
-    setAnimatingNext(false);
-
-    pointerIdRef.current = null;
-    velocityRef.current = 0;
-
-    setFxTestEnabled(false);
-  }, [state?.kind, state?.season, state?.result, navigate]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoadingEco(true);
-        const snap = await getEconomyMe();
-        setEco(snap);
-      } finally {
-        setLoadingEco(false);
-      }
-    })();
-  }, []);
-
-  const season: SeasonName = state?.season ?? "Origins";
-  const boosterImg = BOOSTER_IMG[season];
 
   const total = cards.length;
   const current = cards[index] ?? null;
@@ -361,6 +469,101 @@ export default function Opening() {
   const rarityKey = useMemo(() => normalizeRarity(current?.rarity ?? ""), [current?.rarity]);
   const isRare = useMemo(() => isRareForFx(rarityKey), [rarityKey]);
   const isSurprise11 = useMemo(() => index === 10, [index]);
+
+  const currentId = current?.id ?? current?.cardId ?? current?.key ?? index;
+  const isCurrentNew = newCardIds.has(currentId);
+
+  const currentCredits =
+    perCardCredits.get(currentId) ??
+    current?.earnedCredits ??
+    current?.creditsEarned ??
+    (current ? fallbackCardCredits(current, isCurrentNew) : null);
+
+  const displayBoosterCount = displayBoosters.length;
+  const remainingBoosters = Math.max(0, displayBoosterCount - displayBoosterIndex - 1);
+
+  const currentBoosterCreditsTotal = useMemo(() => {
+    let sum = 0;
+    for (let i = 0; i < cards.length; i++) {
+      const c = cards[i];
+      const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
+      const isNew = newCardIds.has(cid);
+      const cc =
+        perCardCredits.get(cid) ??
+        c?.earnedCredits ??
+        c?.creditsEarned ??
+        fallbackCardCredits(c, isNew);
+
+      sum += typeof cc === "number" && Number.isFinite(cc) ? cc : 0;
+    }
+    return sum;
+  }, [cards, perCardCredits, newCardIds]);
+
+  const sortedBoosterSummaryCards = useMemo(() => {
+    return [...cards].sort((a, b) => {
+      const byRarity = boosterSummaryRank(a) - boosterSummaryRank(b);
+      if (byRarity !== 0) return byRarity;
+
+      const aName = String(a?.name ?? "");
+      const bName = String(b?.name ?? "");
+      return aName.localeCompare(bName, "fr", { sensitivity: "base" });
+    });
+  }, [cards]);
+
+  const computedTotalCredits = useMemo(() => {
+    if (typeof creditsTotal === "number" && Number.isFinite(creditsTotal)) return creditsTotal;
+
+    const sourceCards = isDisplayMode
+      ? displayBoosters.flatMap((b) => (Array.isArray(b) ? b : []))
+      : cards;
+
+    let sum = 0;
+    for (let i = 0; i < sourceCards.length; i++) {
+      const c = sourceCards[i];
+      const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
+      const isNew = newCardIds.has(cid);
+      const cc =
+        perCardCredits.get(cid) ??
+        c?.earnedCredits ??
+        c?.creditsEarned ??
+        fallbackCardCredits(c, isNew);
+
+      sum += typeof cc === "number" && Number.isFinite(cc) ? cc : 0;
+    }
+    return sum;
+  }, [creditsTotal, isDisplayMode, displayBoosters, cards, perCardCredits, newCardIds]);
+
+  const displaySummaryCards = useMemo(() => {
+    if (!isDisplayMode) return [];
+
+    const flat = displayBoosters.flatMap((b) => (Array.isArray(b) ? b : []));
+    const selected = dedupeCards(
+      flat.filter((c, i) => {
+        const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
+        return newCardIds.has(cid) || isRareOrBetter(c);
+      })
+    );
+
+    return selected.sort((a, b) => {
+      const aId = a?.id ?? a?.cardId ?? a?.key;
+      const bId = b?.id ?? b?.cardId ?? b?.key;
+
+      const aNew = newCardIds.has(aId);
+      const bNew = newCardIds.has(bId);
+
+      const aGroup = aNew ? 1 : 0;
+      const bGroup = bNew ? 1 : 0;
+
+      if (aGroup !== bGroup) return aGroup - bGroup;
+
+      const byRarity = displaySummaryRank(b) - displaySummaryRank(a);
+      if (byRarity !== 0) return byRarity;
+
+      const aName = String(a?.name ?? "");
+      const bName = String(b?.name ?? "");
+      return aName.localeCompare(bName, "fr", { sensitivity: "base" });
+    });
+  }, [isDisplayMode, displayBoosters, newCardIds]);
 
   const openAnotherLabel = useMemo(() => {
     const free = (eco?.freeBoosterCharges ?? 0) > 0;
@@ -370,98 +573,109 @@ export default function Opening() {
     return "Ouvrir un autre";
   }, [eco?.freeBoosterCharges, eco?.costs?.booster]);
 
+  const openAnotherDisplayLabel = useMemo(() => {
+    const free = (eco?.freeDisplayCharges ?? 0) > 0;
+    if (free) return "Ouvrir une autre display";
+    const price = eco?.costs?.display;
+    if (typeof price === "number") return `Ouvrir une autre display • ${price} crédits`;
+    return "Ouvrir une autre display";
+  }, [eco?.freeDisplayCharges, eco?.costs?.display]);
+
+  const dragRot = useMemo(() => clamp(dragX * 0.06, -14, 14), [dragX]);
+  const rarityCls = rarityKey ? `rarity-${rarityKey}` : "";
+  const rareAppearCls = phase === "reveal" && isRare ? "rare-appear" : "";
+  const surpriseCls = phase === "reveal" && isSurprise11 ? "surprise-appear" : "";
+
   function handleLogout() {
     logout();
     navigate("/", { replace: true });
   }
 
-  function startOpening() {
-    if (openingLock) return;
-    if (!total && !fxTestEnabled) return;
-
-    setOpeningLock(true);
+  function beginRevealSequence(boosterCards: any[]) {
+    prepareBoosterCards(boosterCards);
     setPhase("opening");
 
-    window.setTimeout(() => {
-      if (fxTestEnabled) {
-        const pack = buildFxTestPack();
-        setCards(pack);
-        setIndex(0);
-
-        // reset affichage crédits en test
-        setCreditsTotal(null);
-        setNewCardIds(new Set());
-        setPerCardCredits(new Map());
-      } else {
-        setIndex(0);
-      }
-
+    queueTimeout(() => {
       setPhase("reveal");
       setOpeningLock(false);
-
-      setDragX(0);
-      setIsDragging(false);
-      setFlyOut(false);
-      setThrowX(0);
-      setThrowRot(0);
-      setThrowMs(360);
-      setAnimatingNext(false);
-
-      pointerIdRef.current = null;
-      velocityRef.current = 0;
-    }, 1200);
+    }, 1100);
   }
 
-  function goNextWithInertia() {
-    if (phase !== "reveal") return;
-    if (animatingNext) return;
+  function startOpening() {
+    if (openingLock) return;
+
+    clearQueuedTimeouts();
+    setOpeningLock(true);
+
+    if (skipAnimations) {
+      if (isDisplayMode) {
+        setDisplayStarted(true);
+        setPhase("display-final-summary");
+      } else {
+        setPhase("summary");
+      }
+      setOpeningLock(false);
+      return;
+    }
+
+    if (isDisplayMode) {
+      if (!displayStarted) {
+        setPhase("display-intro");
+        setDisplayStarted(true);
+
+        queueTimeout(() => {
+          const boosterCards = Array.isArray(displayBoosters[0]) ? displayBoosters[0] : [];
+          beginRevealSequence(boosterCards);
+        }, 1700);
+        return;
+      }
+
+      const boosterCards = Array.isArray(displayBoosters[displayBoosterIndex])
+        ? displayBoosters[displayBoosterIndex]
+        : [];
+      beginRevealSequence(boosterCards);
+      return;
+    }
+
+    beginRevealSequence(cards);
+  }
+
+  function animateNext(direction: 1 | -1) {
+    if (phase !== "reveal" || animatingNext) return;
 
     if (index >= total - 1) {
       setPhase("summary");
       return;
     }
 
-    const v = velocityRef.current;
-    const dirSign = dragX !== 0 ? Math.sign(dragX) : v !== 0 ? Math.sign(v) : 1;
-
-    const extra = clamp(v * 520, -220, 220);
-    const finalX = clamp(dragX + extra + dirSign * 140, -520, 520);
-    const finalRot = clamp(finalX * 0.06, -18, 18);
-
-    const speed = Math.abs(v);
-    const ms = clamp(420 - speed * 240, 240, 420);
-
     setAnimatingNext(true);
-    setThrowX(finalX);
-    setThrowRot(finalRot);
-    setThrowMs(ms);
     setFlyOut(true);
+    setThrowMs(280);
+    setThrowX(direction > 0 ? 230 : -230);
+    setThrowRot(direction > 0 ? 12 : -12);
 
-    window.setTimeout(() => {
-      setIndex((i) => Math.min(total - 1, i + 1));
+    queueTimeout(() => {
+      setIndex((prev) => prev + 1);
+      clearMotionState();
+    }, 280);
+  }
 
-      setDragX(0);
-      setIsDragging(false);
-      setFlyOut(false);
-      setThrowX(0);
-      setThrowRot(0);
-      setThrowMs(360);
-      setAnimatingNext(false);
-
-      pointerIdRef.current = null;
-      velocityRef.current = 0;
-    }, ms);
+  function handleNextClick() {
+    if (phase !== "reveal" || animatingNext) return;
+    if (index >= total - 1) {
+      setPhase("summary");
+      return;
+    }
+    animateNext(1);
   }
 
   function onCardPointerDown(e: React.PointerEvent) {
-    if (phase !== "reveal") return;
-    if (animatingNext) return;
+    if (phase !== "reveal" || animatingNext) return;
 
     pointerIdRef.current = e.pointerId;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 
     startXRef.current = e.clientX;
-
     lastMoveXRef.current = e.clientX;
     lastMoveTRef.current = performance.now();
     velocityRef.current = 0;
@@ -471,15 +685,13 @@ export default function Opening() {
   }
 
   function onCardPointerMove(e: React.PointerEvent) {
-    if (phase !== "reveal") return;
-    if (!isDragging) return;
+    if (phase !== "reveal" || !isDragging) return;
     if (pointerIdRef.current !== e.pointerId) return;
 
     const now = performance.now();
     const dx = e.clientX - startXRef.current;
 
-    const clamped = clamp(dx, -190, 190);
-    setDragX(clamped);
+    setDragX(clamp(dx, -190, 190));
 
     const dt = Math.max(1, now - lastMoveTRef.current);
     const vx = (e.clientX - lastMoveXRef.current) / dt;
@@ -490,19 +702,21 @@ export default function Opening() {
   }
 
   function onCardPointerUp(e: React.PointerEvent) {
-    if (phase !== "reveal") return;
-    if (!isDragging) return;
+    if (phase !== "reveal" || !isDragging) return;
     if (pointerIdRef.current !== e.pointerId) return;
+
+    const dist = dragX;
+    const vel = velocityRef.current;
+    const dir = dist < 0 || vel < 0 ? -1 : 1;
 
     pointerIdRef.current = null;
     setIsDragging(false);
 
-    const v = velocityRef.current;
-    const distOk = Math.abs(dragX) >= 70;
-    const velOk = Math.abs(v) >= 0.55;
+    const distOk = Math.abs(dist) >= 70;
+    const velOk = Math.abs(vel) >= 0.55;
 
     if (distOk || velOk) {
-      goNextWithInertia();
+      animateNext(dir as 1 | -1);
     } else {
       setDragX(0);
       velocityRef.current = 0;
@@ -510,24 +724,12 @@ export default function Opening() {
   }
 
   async function openAnother() {
-    if (openingLock) return;
+    if (openingLock || isDisplayMode) return;
+
     setOpeningLock(true);
+    clearQueuedTimeouts();
 
     try {
-      if (fxTestEnabled) {
-        setPhase("idle");
-        setIndex(0);
-        setDragX(0);
-        setIsDragging(false);
-        setFlyOut(false);
-        setThrowX(0);
-        setThrowRot(0);
-        setThrowMs(360);
-        setAnimatingNext(false);
-        startOpening();
-        return;
-      }
-
       const res = await openBooster(season);
 
       await refreshWallet();
@@ -535,73 +737,73 @@ export default function Opening() {
         const snap = await getEconomyMe();
         setEco(snap);
       } catch {
-        // noop
+        //
       }
 
-      const arr = Array.isArray(res?.cards) ? res.cards : [];
-      setCards(arr);
-
-      setCreditsTotal(extractCreditsTotal(res));
-      setNewCardIds(extractNewCardIds(res));
-      setPerCardCredits(extractPerCardCredits(res, arr));
-
-      setIndex(0);
-      setPhase("idle");
-
-      setDragX(0);
-      setIsDragging(false);
-      setFlyOut(false);
-      setThrowX(0);
-      setThrowRot(0);
-      setThrowMs(360);
-      setAnimatingNext(false);
-
-      pointerIdRef.current = null;
-      velocityRef.current = 0;
-
-      navigate("/opening", { replace: true, state: { kind: "booster", season, result: res } });
+      navigate("/opening", {
+        replace: true,
+        state: { kind: "booster", season, result: res },
+      });
     } finally {
       setOpeningLock(false);
     }
   }
 
-  const dragRot = useMemo(() => clamp(dragX * 0.06, -14, 14), [dragX]);
+  async function openAnotherDisplay() {
+    if (openingLock || !isDisplayMode) return;
 
-  const rarityCls = rarityKey ? `rarity-${rarityKey}` : "";
-  const rareAppearCls = phase === "reveal" && isRare ? "rare-appear" : "";
-  const surpriseCls = phase === "reveal" && isSurprise11 ? "surprise-appear" : "";
+    setOpeningLock(true);
+    clearQueuedTimeouts();
 
-  // ✅ crédits + new pour la carte courante
-  const currentId = current?.id ?? current?.cardId ?? current?.key ?? index;
-  const isCurrentNew = newCardIds.has(currentId);
+    try {
+      const res = await openDisplay(season);
 
-  const currentCredits =
-    perCardCredits.get(currentId) ??
-    current?.earnedCredits ??
-    current?.creditsEarned ??
-    (current ? fallbackCardCredits(current, isCurrentNew) : null);
+      await refreshWallet();
+      try {
+        const snap = await getEconomyMe();
+        setEco(snap);
+      } catch {
+        //
+      }
 
-  // ✅ total (si backend renvoie 0 / null / etc, on calcule un fallback PROPRE)
-  const computedTotalCredits = useMemo(() => {
-    if (typeof creditsTotal === "number" && Number.isFinite(creditsTotal)) return creditsTotal;
-
-    // somme de toutes les cartes via perCardCredits sinon fallback
-    let sum = 0;
-    for (let i = 0; i < cards.length; i++) {
-      const c = cards[i];
-      const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
-      const isNew = newCardIds.has(cid);
-
-      const cc =
-        perCardCredits.get(cid) ??
-        c?.earnedCredits ??
-        c?.creditsEarned ??
-        fallbackCardCredits(c, isNew);
-
-      sum += typeof cc === "number" && Number.isFinite(cc) ? cc : 0;
+      navigate("/opening", {
+        replace: true,
+        state: { kind: "display", season, result: res },
+      });
+    } finally {
+      setOpeningLock(false);
     }
-    return sum;
-  }, [creditsTotal, cards, perCardCredits, newCardIds]);
+  }
+
+  function openNextDisplayBooster() {
+    if (!isDisplayMode || openingLock) return;
+
+    if (skipAnimations) {
+      setPhase("display-final-summary");
+      return;
+    }
+
+    const nextIndex = displayBoosterIndex + 1;
+    if (nextIndex >= displayBoosterCount) {
+      setPhase("display-final-summary");
+      return;
+    }
+
+    setDisplayBoosterIndex(nextIndex);
+    setOpeningLock(true);
+    clearQueuedTimeouts();
+
+    const boosterCards = Array.isArray(displayBoosters[nextIndex]) ? displayBoosters[nextIndex] : [];
+    beginRevealSequence(boosterCards);
+  }
+
+  const showDisplayRemaining =
+    isDisplayMode &&
+    displayStarted &&
+    phase !== "display-final-summary";
+
+  const idleVisualImg =
+    isDisplayMode && !displayStarted ? displayImg : boosterImg;
 
   return (
     <>
@@ -628,50 +830,70 @@ export default function Opening() {
       <div className="container openingPage">
         <div className="openingHeader panel">
           <div className="openingHeader__left">
-            <h1 className="openingTitle">Ouverture</h1>
+            <h1 className="openingTitle">
+              {isDisplayMode ? "Ouverture Display" : "Ouverture"}
+            </h1>
 
             <div className="muted">
-              Carte <b>{Math.min(index + 1, total || 0)}</b> / <b>{total || 0}</b>
-              {current?.rarity ? (
+              {isDisplayMode ? (
                 <>
-                  {" "}
-                  • <span className="muted">{current.rarity}</span>
+                  Booster <b>{Math.min(displayBoosterIndex + 1, displayBoosterCount || 0)}</b> / <b>{displayBoosterCount || 0}</b>
+                  {(phase === "reveal" || phase === "summary") && total > 0 ? (
+                    <>
+                      {" "}• Carte <b>{Math.min(index + 1, total)}</b> / <b>{total}</b>
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  Carte <b>{Math.min(index + 1, total || 0)}</b> / <b>{total || 0}</b>
+                </>
+              )}
+
+              {current?.rarity && (phase === "reveal" || phase === "summary") ? (
+                <>
+                  {" "}• <span className="muted">{current.rarity}</span>
                 </>
               ) : null}
 
-              {/* ✅ crédits carte (OK pendant reveal) */}
               {phase === "reveal" && typeof currentCredits === "number" ? (
                 <>
-                  {" "}
-                  • <span className="creditInline">+{currentCredits} crédits</span>
-                </>
-              ) : null}
-
-              {fxTestEnabled ? (
-                <>
-                  {" "}
-                  • <b>TEST FX</b>
+                  {" "}• <span className="creditInline">+{currentCredits} crédits</span>
                 </>
               ) : null}
             </div>
           </div>
 
           <div className="openingHeader__right">
-            <div className="openingPrice muted">
-              {loadingEco ? "…" : `Prix booster : ${eco?.costs?.booster ?? "?"} crédits`}
-            </div>
-
-            {/* ✅ bouton test (dev only) */}
-            {IS_DEV && (
-              <button
-                className="btn btn--ghost"
-                style={{ marginTop: 8 }}
-                onClick={() => setFxTestEnabled((v) => !v)}
-                title="Active un booster fake avec toutes les raretés (après ouverture)"
-              >
-                {fxTestEnabled ? "✅ Test FX: ON" : "🎛️ Test FX: OFF"}
-              </button>
+            {showDisplayRemaining ? (
+              <div className="displayRemainingPill">
+                <img
+                  src={boosterImg}
+                  alt={`Booster ${season}`}
+                  className="displayRemainingPill__img"
+                />
+                <div className="displayRemainingPill__text">
+                  <span className="displayRemainingPill__label">Restants</span>
+                  <b>{remainingBoosters}</b>
+                </div>
+              </div>
+            ) : (
+              <div className="openingPrice muted">
+                {loadingEco ? "…" : `Prix booster : ${eco?.costs?.booster ?? "?"} crédits`}
+              </div>
             )}
+
+            <button
+              type="button"
+              className={`skipToggleBtn ${skipAnimations ? "is-on" : "is-off"}`}
+              onClick={() => setSkipAnimations((v) => !v)}
+              aria-pressed={skipAnimations}
+            >
+              <span className="skipToggleBtn__track">
+                <span className="skipToggleBtn__thumb" />
+              </span>
+              <span className="skipToggleBtn__label">Skip animations</span>
+            </button>
           </div>
         </div>
 
@@ -679,31 +901,53 @@ export default function Opening() {
           {(phase === "idle" || phase === "opening") && (
             <div className="packZone">
               <div
-                className={["pack", phase === "idle" ? "is-shaking" : "", phase === "opening" ? "is-opening" : ""].join(
-                  " ",
-                )}
-                style={{ ["--pack-img" as any]: `url(${boosterImg})` }}
-                onClick={startOpening}
+                className={[
+                  "pack",
+                  phase === "idle" ? "is-shaking" : "",
+                  phase === "opening" ? "is-opening" : "",
+                  isDisplayMode && !displayStarted ? "pack--display" : "",
+                ].join(" ")}
+                style={{ ["--pack-img" as any]: `url(${idleVisualImg})` }}
+                onClick={phase === "idle" ? startOpening : undefined}
                 role="button"
-                aria-label="Ouvrir le booster"
+                aria-label={isDisplayMode && !displayStarted ? "Ouvrir la display" : "Ouvrir le booster"}
               >
-                <div className="pack__hint">{phase === "idle" ? "Clique pour ouvrir" : "Ouverture..."}</div>
+          
 
-                <img
-                  className={["emergingCard", phase === "opening" ? "is-emerging" : ""].join(" ")}
-                  src={CARD_BACK}
-                  alt="Carte (dos)"
-                  draggable={false}
-                />
-              </div><br/>
+                {!isDisplayMode || displayStarted ? (
+                  <img
+                    className={["emergingCard", phase === "opening" ? "is-emerging" : ""].join(" ")}
+                    src={CARD_BACK}
+                    alt="Carte (dos)"
+                    draggable={false}
+                  />
+                ) : null}
+              </div>
 
               <button
                 className="btn btn--primary openingBtn"
                 onClick={startOpening}
-                disabled={phase !== "idle" || openingLock || (!total && !fxTestEnabled)}
+                disabled={phase !== "idle" || openingLock || (!isDisplayMode && !total)}
               >
-                Ouvrir
+                {isDisplayMode && !displayStarted ? "Ouvrir la display" : "Ouvrir"}
               </button>
+            </div>
+          )}
+
+          {phase === "display-intro" && (
+            <div className="displayIntro">
+              <div className="displayIntro__scene">
+                <img className="displayIntro__display" src={displayImg} alt={`Display ${season}`} />
+                <img className="displayIntro__booster displayIntro__booster--1" src={boosterImg} alt="" />
+                <img className="displayIntro__booster displayIntro__booster--2" src={boosterImg} alt="" />
+                <img className="displayIntro__booster displayIntro__booster--3" src={boosterImg} alt="" />
+                <img className="displayIntro__booster displayIntro__booster--4" src={boosterImg} alt="" />
+                <img className="displayIntro__booster displayIntro__booster--5" src={boosterImg} alt="" />
+              </div>
+
+              <div className="displayIntro__text">
+                Les boosters sortent de la display…
+              </div>
             </div>
           )}
 
@@ -712,10 +956,15 @@ export default function Opening() {
               <div className="revealTop">
                 <div className="muted">
                   Saison : <b>{season}</b>
+                  {isDisplayMode ? (
+                    <>
+                      {" "}• Booster <b>{displayBoosterIndex + 1}</b> / <b>{displayBoosterCount}</b>
+                    </>
+                  ) : null}
                 </div>
 
                 <div className="revealControls">
-                  <button className="btn btn--primary" onClick={goNextWithInertia} disabled={animatingNext}>
+                  <button className="btn btn--primary" onClick={handleNextClick} disabled={animatingNext}>
                     {index === total - 1 ? "Terminer" : "Suivant"}
                   </button>
                 </div>
@@ -727,7 +976,7 @@ export default function Opening() {
                 <img className="stackBack stackBack--3" src={CARD_BACK} alt="" draggable={false} />
 
                 <div
-                  key={current?.id ?? `${index}`}
+                  key={`${displayBoosterIndex}-${index}-${current?.id ?? "card"}`}
                   ref={(node) => {
                     cardWrapRef.current = node;
                   }}
@@ -754,17 +1003,11 @@ export default function Opening() {
                     ["--throw-rot" as any]: `${throwRot}deg`,
                     ["--throw-ms" as any]: `${throwMs}ms`,
                   }}
-                  role="button"
-                  aria-label="Carte (swipe pour suivant)"
                 >
                   {isRare ? <span className="edgeGlow" aria-hidden="true" /> : null}
-
-                  {/* ✅ 11ème FX */}
                   {isSurprise11 ? <span className="surpriseRing" aria-hidden="true" /> : null}
                   {isSurprise11 ? <span className="surpriseSparkles" aria-hidden="true" /> : null}
                   {isSurprise11 ? <span className="surpriseShine" aria-hidden="true" /> : null}
-
-                  {/* ✅ NEW overlay (ne casse plus la taille) */}
                   {isCurrentNew ? <span className="newRibbon" aria-hidden="true">NEW</span> : null}
 
                   {current ? (
@@ -785,18 +1028,19 @@ export default function Opening() {
           {phase === "summary" && (
             <div className="summaryZone">
               <div className="summaryTitle">
-                <span>Résumé</span>
-
-                {/* ✅ gain total UNIQUEMENT ici */}
-                <span className="summaryCreditsPill">Gain total : +{computedTotalCredits} crédits</span>
+                <span>
+                  Résumé {isDisplayMode ? `du booster ${displayBoosterIndex + 1}` : ""}
+                </span>
+                <span className="summaryCreditsPill">
+                  Gain total : +{currentBoosterCreditsTotal} crédits
+                </span>
               </div>
 
               <div className="summaryGrid">
-                {cards.map((c, i) => {
+                {sortedBoosterSummaryCards.map((c, i) => {
                   const rk = normalizeRarity(c?.rarity ?? "");
                   const rare = isRareForFx(rk);
                   const cls = rk ? `rarity-${rk}` : "";
-
                   const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
                   const isNew = newCardIds.has(cid);
 
@@ -808,13 +1052,16 @@ export default function Opening() {
 
                   return (
                     <div
-                      key={c?.id ?? `${c?.key ?? "c"}-${i}`}
-                      className={["summaryCardWrap", cls, rare ? "is-rare" : "", isNew ? "is-new" : ""].join(" ")}
+                      key={`${displayBoosterIndex}-${c?.id ?? i}`}
+                      className={[
+                        "summaryCardWrap",
+                        cls,
+                        rare ? "is-rare" : "",
+                        isNew ? "is-new" : "",
+                      ].join(" ")}
                     >
                       {rare ? <span className="edgeGlow edgeGlow--summary" aria-hidden="true" /> : null}
                       {isNew ? <span className="summaryNewTag">NOUVELLE</span> : null}
-
-                      {/* ✅ crédits carte en overlay (sinon ça “réduit” l’image) */}
                       <span className="summaryCreditTag">+{cc}</span>
 
                       <img
@@ -829,8 +1076,79 @@ export default function Opening() {
               </div>
 
               <div className="summaryActions">
-                <button className="btn btn--primary" onClick={openAnother} disabled={openingLock}>
-                  {fxTestEnabled ? "Rejouer (TEST FX)" : openAnotherLabel}
+                {isDisplayMode ? (
+                  <button className="btn btn--primary" onClick={openNextDisplayBooster} disabled={openingLock}>
+                    {remainingBoosters > 0 ? "Booster suivant" : "Résumé de la display"}
+                  </button>
+                ) : (
+                  <button className="btn btn--primary" onClick={openAnother} disabled={openingLock}>
+                    {openAnotherLabel}
+                  </button>
+                )}
+
+                <Link className="btn btn--ghost" to="/booster">
+                  Retour boosters
+                </Link>
+                <Link className="btn btn--ghost" to="/collection">
+                  Aller collection
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {phase === "display-final-summary" && (
+            <div className="summaryZone">
+              <div className="summaryTitle">
+                <span>Résumé de la display</span>
+                <span className="summaryCreditsPill">Gain total : +{computedTotalCredits} crédits</span>
+              </div>
+
+              <div className="muted">
+                Affichage d’abord des cartes rares ou mieux déjà possédées, puis des nouvelles cartes, avec tri par rareté.
+              </div>
+
+              <div className="summaryGrid summaryGrid--displayFinal">
+                {displaySummaryCards.map((c, i) => {
+                  const rk = normalizeRarity(c?.rarity ?? "");
+                  const rare = isRareForFx(rk);
+                  const cls = rk ? `rarity-${rk}` : "";
+                  const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
+                  const isNew = newCardIds.has(cid);
+
+                  const cc =
+                    perCardCredits.get(cid) ??
+                    c?.earnedCredits ??
+                    c?.creditsEarned ??
+                    fallbackCardCredits(c, isNew);
+
+                  return (
+                    <div
+                      key={`display-summary-${c?.id ?? i}`}
+                      className={[
+                        "summaryCardWrap",
+                        cls,
+                        rare ? "is-rare" : "",
+                        isNew ? "is-new" : "",
+                      ].join(" ")}
+                    >
+                      {rare ? <span className="edgeGlow edgeGlow--summary" aria-hidden="true" /> : null}
+                      {isNew ? <span className="summaryNewTag">NOUVELLE</span> : null}
+                      <span className="summaryCreditTag">+{cc}</span>
+
+                      <img
+                        className="summaryCard"
+                        src={resolveImg(c.imageUrl ?? c.image ?? c.img ?? "")}
+                        alt={c?.name ?? `Carte ${i + 1}`}
+                        draggable={false}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="summaryActions">
+                <button className="btn btn--primary" onClick={openAnotherDisplay} disabled={openingLock}>
+                  {openAnotherDisplayLabel}
                 </button>
                 <Link className="btn btn--ghost" to="/booster">
                   Retour boosters

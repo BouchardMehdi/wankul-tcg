@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import "../styles.css";
-import "../styles/Menu.css";      // ✅ pour la topbar identique aux autres pages
+import "../styles/Menu.css";
 import "../styles/Booster.css";
 
 import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
@@ -11,29 +11,27 @@ import { useAuth } from "../auth/AuthContext";
 import { getEconomyMe, formatCooldown, type EconomySnapshot } from "../api/economy";
 import { openBooster, openDisplay, type SeasonName } from "../api/booster";
 
-// ✅ Booster images (assets)
 const originsBooster = new URL("../assets/boosters/booster_origin.png", import.meta.url).href;
-const campusBooster  = new URL("../assets/boosters/booster_campus.png", import.meta.url).href;
-const battleBooster  = new URL("../assets/boosters/booster_battle.png", import.meta.url).href;
+const campusBooster = new URL("../assets/boosters/booster_campus.png", import.meta.url).href;
+const battleBooster = new URL("../assets/boosters/booster_battle.png", import.meta.url).href;
 const stellarBooster = new URL("../assets/boosters/booster_stellar.png", import.meta.url).href;
 
-// ✅ Displays pas encore => null
-const originsDisplay: string | null = null;
-const campusDisplay: string | null = null;
-const battleDisplay: string | null = null;
-const stellarDisplay: string | null = null;
+const originsDisplay = new URL("../assets/boosters/display_origin.webp", import.meta.url).href;
+const campusDisplay = new URL("../assets/boosters/display_campus.webp", import.meta.url).href;
+const battleDisplay = new URL("../assets/boosters/display_battle.webp", import.meta.url).href;
+const stellarDisplay = new URL("../assets/boosters/display_stellar.webp", import.meta.url).href;
 
 type SeasonCard = {
   id: SeasonName;
   label: string;
   boosterImg: string;
-  displayImg: string | null;
+  displayImg: string;
 };
 
 const SEASONS: SeasonCard[] = [
   { id: "Origins", label: "Origins", boosterImg: originsBooster, displayImg: originsDisplay },
-  { id: "Campus",  label: "Campus",  boosterImg: campusBooster,  displayImg: campusDisplay },
-  { id: "Battle",  label: "Battle",  boosterImg: battleBooster,  displayImg: battleDisplay },
+  { id: "Campus", label: "Campus", boosterImg: campusBooster, displayImg: campusDisplay },
+  { id: "Battle", label: "Battle", boosterImg: battleBooster, displayImg: battleDisplay },
   { id: "Stellar", label: "Stellar", boosterImg: stellarBooster, displayImg: stellarDisplay },
 ];
 
@@ -66,7 +64,6 @@ export default function Booster() {
 
   useEffect(() => {
     void loadEconomy();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const boosterCooldown = useMemo(
@@ -80,8 +77,7 @@ export default function Booster() {
   );
 
   async function onOpenBooster(season: SeasonName) {
-    if (!eco) return;
-    if (busyKey) return;
+    if (!eco || busyKey) return;
 
     const key = `booster:${season}`;
     setBusyKey(key);
@@ -89,13 +85,12 @@ export default function Booster() {
 
     try {
       const res = await openBooster(season);
-
-      // ✅ MAJ solde + MAJ economy
       await refreshWallet();
       await loadEconomy();
 
-      // ✅ plus tard: page opening animée
-      navigate("/opening", { state: { kind: "booster", season, result: res } });
+      navigate("/opening", {
+        state: { kind: "booster", season, result: res },
+      });
     } catch (e: any) {
       setError(e?.message || "Ouverture impossible.");
     } finally {
@@ -104,8 +99,7 @@ export default function Booster() {
   }
 
   async function onOpenDisplay(season: SeasonName) {
-    if (!eco) return;
-    if (busyKey) return;
+    if (!eco || busyKey) return;
 
     const key = `display:${season}`;
     setBusyKey(key);
@@ -113,11 +107,12 @@ export default function Booster() {
 
     try {
       const res = await openDisplay(season);
-
       await refreshWallet();
       await loadEconomy();
 
-      navigate("/opening", { state: { kind: "display", season, result: res } });
+      navigate("/opening", {
+        state: { kind: "display", season, result: res },
+      });
     } catch (e: any) {
       setError(e?.message || "Ouverture impossible.");
     } finally {
@@ -132,8 +127,7 @@ export default function Booster() {
     return `Ouvrir Booster • ${eco.costs.booster} crédits`;
   }
 
-  function displayBtnLabel(hasDisplayImage: boolean) {
-    if (!hasDisplayImage) return "Bientôt";
+  function displayBtnLabel() {
     if (!eco) return "Ouvrir Display";
     if (eco.freeDisplayCharges > 0) return "Ouvrir Display";
     if (displayCooldown) return `Cooldown (${displayCooldown})`;
@@ -143,10 +137,8 @@ export default function Booster() {
   const boosterDisabled =
     !eco || (eco.freeBoosterCharges <= 0 && !!boosterCooldown) || !!busyKey;
 
-  function isDisplayDisabled(hasDisplayImage: boolean) {
-    if (!hasDisplayImage) return true;
-    return !eco || (eco.freeDisplayCharges <= 0 && !!displayCooldown) || !!busyKey;
-  }
+  const displayDisabled =
+    !eco || (eco.freeDisplayCharges <= 0 && !!displayCooldown) || !!busyKey;
 
   if (loading) {
     return (
@@ -160,7 +152,6 @@ export default function Booster() {
 
   return (
     <>
-      {/* ✅ TOPBAR IDENTIQUE À MENU / COLLECTION */}
       <header className="topbar">
         <div className="container topbar__inner">
           <div className="topbar__brand">
@@ -182,12 +173,11 @@ export default function Booster() {
       </header>
 
       <div className="container boosterPage">
-        {/* ✅ Bloc info solde (sous la nav, donc nav identique) */}
         <section className="boosterHero">
           <div className="boosterHero__left">
             <h1 className="boosterHero__title">Boosters</h1>
             <p className="boosterHero__subtitle">
-              Choisis une saison. Booster ou Display.
+              Choisis une saison et ouvre soit un booster, soit une display.
             </p>
           </div>
 
@@ -207,46 +197,51 @@ export default function Booster() {
         {error ? <div className="error" style={{ marginTop: 14 }}>{error}</div> : null}
 
         <div className="boosterGrid">
-          {SEASONS.map((s) => {
-            const hasDisplayImage = !!s.displayImg;
+          {SEASONS.map((s) => (
+            <div key={s.id} className="panel boosterSeasonCard">
+              <div className="boosterSeasonCard__top">
+                <div className="boosterSeasonCard__name">{s.label}</div>
+              </div>
 
-            return (
-              <div key={s.id} className="panel boosterSeasonCard">
-                <div className="boosterSeasonCard__top">
-                  <div className="boosterSeasonCard__name">{s.label}</div>
+              <div className="boosterSeasonCard__packs">
+                <div className="boosterPack">
+                  <div className="boosterPack__visual">
+                    <img
+                      className="boosterPack__img"
+                      src={s.boosterImg}
+                      alt={`Booster ${s.label}`}
+                    />
+                  </div>
+
+                  <button
+                    className="btn btn--primary w-full"
+                    disabled={boosterDisabled}
+                    onClick={() => onOpenBooster(s.id)}
+                  >
+                    {busyKey === `booster:${s.id}` ? "Ouverture..." : boosterBtnLabel()}
+                  </button>
                 </div>
 
-                <div className="boosterSeasonCard__packs">
-                  {/* Booster */}
-                  <div className="boosterPack">
-                  <img className="boosterPack__img" src={s.boosterImg} alt={`Booster ${s.label}`} /><br/>
-
-                    <button
-                      className="btn btn--primary w-full"
-                      disabled={boosterDisabled}
-                      onClick={() => onOpenBooster(s.id)}
-                    >
-                      {busyKey === `booster:${s.id}` ? "Ouverture..." : boosterBtnLabel()}
-                    </button>
+                <div className="boosterPack">
+                  <div className="boosterPack__visual boosterPack__visual--display">
+                    <img
+                      className="boosterPack__img boosterPack__img--display"
+                      src={s.displayImg}
+                      alt={`Display ${s.label}`}
+                    />
                   </div>
 
-                  {/* Display (temporaire) */}
-                  <div className="boosterPack">
-                  <img className="boosterPack__img" src={s.boosterImg} alt={`Booster ${s.label}`} /><br/>
-
-                    <button
-                      className="btn btn--ghost w-full"
-                      disabled={isDisplayDisabled(hasDisplayImage)}
-                      onClick={() => onOpenDisplay(s.id)}
-                      title={!hasDisplayImage ? "Images des displays pas encore ajoutées" : undefined}
-                    >
-                      {busyKey === `display:${s.id}` ? "Ouverture..." : displayBtnLabel(hasDisplayImage)}
-                    </button>
-                  </div>
+                  <button
+                    className="btn btn--ghost w-full"
+                    disabled={displayDisabled}
+                    onClick={() => onOpenDisplay(s.id)}
+                  >
+                    {busyKey === `display:${s.id}` ? "Ouverture..." : displayBtnLabel()}
+                  </button>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
     </>

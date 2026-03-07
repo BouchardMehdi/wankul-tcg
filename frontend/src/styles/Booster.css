@@ -2,7 +2,6 @@
   padding: 18px 0 42px;
 }
 
-/* bloc info (sous topbar) */
 .boosterHero {
   margin-top: 18px;
   border-radius: var(--r-lg);
@@ -10,7 +9,6 @@
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
   padding: 18px 20px;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -37,7 +35,6 @@
   font-weight: 800;
 }
 
-/* solde */
 .boosterWallet {
   text-align: right;
   border-radius: 18px;
@@ -65,7 +62,6 @@
   font-weight: 800;
 }
 
-/* grid saisons */
 .boosterGrid {
   margin-top: 16px;
   display: grid;
@@ -95,13 +91,6 @@
   font-size: 18px;
 }
 
-.boosterSeasonCard__hint {
-  font-size: 12px;
-  font-weight: 800;
-  text-align: right;
-  max-width: 360px;
-}
-
 .boosterSeasonCard__packs {
   margin-top: 14px;
   display: grid;
@@ -115,7 +104,6 @@
   }
 }
 
-/* ✅ cadre fixe + image centrée => toutes les images “même taille” visuelle */
 .boosterPack {
   width: 100%;
   display: flex;
@@ -124,23 +112,33 @@
   gap: 10px;
 }
 
+.boosterPack__visual {
+  width: 100%;
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+}
+
+.boosterPack__visual--display {
+  min-height: 320px;
+}
+
 .boosterPack__img {
   width: 210px;
   height: 300px;
   object-fit: contain;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.boosterPack__img--display {
+  width: 300px;
+  height: 300px;
 }
 
 .boosterPack__img:hover {
   transform: translateY(-3px) scale(1.02);
   filter: brightness(1.05);
-}
-
-.boosterPack__frame:hover .boosterPack__img {
-  transform: scale(1.02);
-}
-
-.boosterSeasonCard__foot {
-  margin-top: 10px;
-  font-size: 12px;
-  font-weight: 800;
 }
