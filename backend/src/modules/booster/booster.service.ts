@@ -9,14 +9,6 @@ import { DisplayOpening } from './display-opening.entity';
 
 type Season = 'Origins' | 'Campus' | 'Battle' | 'Stellar';
 
-type BoosterBuild = {
-  cards: Card[];
-  isGold: boolean;
-  hasGTO: boolean;
-  hasTicketOr: boolean;
-  creditsBreakdown: ReturnType<EconomyService['computeBoosterCredits']>;
-};
-
 type NewCardsMeta = {
   newCardIds: number[];
   newCardKeys: string[];
@@ -39,7 +31,6 @@ export class BoosterService {
     private readonly dataSource: DataSource,
   ) {}
 
-  // --- Règles / taux officiels (ton modèle A) ---
   private readonly MAIN_WEIGHTS: Array<{ rarity: string; weight: number }> = [
     { rarity: 'Commune', weight: 45 },
     { rarity: 'Peu commune', weight: 30 },
@@ -52,13 +43,12 @@ export class BoosterService {
   ];
   private readonly MAIN_TOTAL = 90;
 
-  private readonly CHANCE_TICKET_SLOT = 0.0417; // 4.17% d'ajouter une 11e carte
-  private readonly CHANCE_TICKET_OR_GIVEN_TICKET_SLOT = 0.001; // 0.1% => Ticket d'or sinon GTO
+  private readonly CHANCE_TICKET_SLOT = 0.0417;
+  private readonly CHANCE_TICKET_OR_AS_11TH = 0.001;
 
   private readonly DISPLAY_BOOSTERS = 24;
-  private readonly CHANCE_DISPLAY_HAS_GOLD = 1 / 6; // 1/6 qu'une display ait un booster gold
+  private readonly CHANCE_DISPLAY_HAS_GOLD = 1 / 6;
 
-  // --- Helpers ---
   private randInt(maxExclusive: number) {
     return Math.floor(Math.random() * maxExclusive);
   }
@@ -81,7 +71,6 @@ export class BoosterService {
   private pickUnique(pool: Card[], already: Set<number>, label: string): Card {
     if (!pool.length) throw new BadRequestException(`Aucune carte trouvée pour: ${label}`);
 
-    // si pool trop petit, accepte doublons
     if (pool.length <= already.size) return this.pickOne(pool, label);
 
     for (let i = 0; i < 40; i++) {
@@ -91,16 +80,64 @@ export class BoosterService {
     return this.pickOne(pool, label);
   }
 
-  private isGoldBooster(cards: Card[]) {
-    return cards.length === 4 && cards.some((c) => c.rarity === 'Booster Gold');
+  private normalizeText(value?: string | null) {
+    return (value ?? '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[’]/g, "'")
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
-  private isLegendaryRarity(r: string) {
-    return r === 'Légendaire bronze' || r === 'Légendaire argent' || r === 'Légendaire dorée';
+  private cardTokens(card: Card): string[] {
+    const fields = [
+      (card as any).key,
+      (card as any).slug,
+      (card as any).identifier,
+      (card as any).code,
+      (card as any).rarity,
+      (card as any).name,
+      (card as any).type,
+      (card as any).subtype,
+      (card as any).family,
+      (card as any).extension,
+      (card as any).season,
+      (card as any).description,
+    ];
+
+    return fields
+      .map((v) => this.normalizeText(v))
+      .filter((v) => v.length > 0);
+  }
+
+  private cardMatches(card: Card, ...needles: string[]) {
+    const hay = this.cardTokens(card).join(' | ');
+    return needles.every((n) => hay.includes(this.normalizeText(n)));
+  }
+
+  private isTicketOrCard(card: Card) {
+    return this.cardMatches(card, 'ticket', 'or') && !this.cardMatches(card, 'gagnant');
+  }
+
+  private isGtoCard(card: Card) {
+    return this.cardMatches(card, 'gagnant', 'ticket', 'or');
+  }
+
+  private isGoldBoosterCard(card: Card) {
+    return this.cardMatches(card, 'booster', 'gold');
+  }
+
+  private isSeasonMatch(card: Card, season: Season) {
+    const wanted = this.normalizeText(season);
+    const seasonValue = this.normalizeText((card as any).season);
+    const extensionValue = this.normalizeText((card as any).extension);
+    return seasonValue === wanted || extensionValue === wanted;
   }
 
   private legendaryPickRarityProportional(): string {
-    // normalisation des taux legendaires (0.80 / 0.28 / 0.08)
     const items = [
       { rarity: 'Légendaire bronze', weight: 0.8 },
       { rarity: 'Légendaire argent', weight: 0.28 },
@@ -110,7 +147,6 @@ export class BoosterService {
   }
 
   private sortByRarityForDisplay(cards: Card[]) {
-    // tri "du moins rare au plus rare" (hors 11e qui reste à part côté front si tu veux)
     const order = new Map<string, number>([
       ['Terrain', 0],
       ['Commune', 1],
@@ -125,23 +161,15 @@ export class BoosterService {
       ["Gagnant ticket d'or", 10],
       ["Ticket d'or", 11],
     ]);
+
     return [...cards].sort((a, b) => (order.get(a.rarity) ?? 999) - (order.get(b.rarity) ?? 999));
   }
 
   private async loadPools(season: Season) {
-    // IMPORTANT :
-    // - Terrain: season-specific
-    // - Main: season-specific
-    // - GTO: extension-specific (extension === season)
-    // - Ticket d'or: global (pas lié à season)
-    // - Booster Gold: global (pas lié à season)
-    const [seasonCards, ticketOrCards, goldCards] = await Promise.all([
-      this.cardRepo.find({ where: { season } as any }),
-      this.cardRepo.find({ where: { rarity: "Ticket d'or" } as any }),
-      this.cardRepo.find({ where: { rarity: 'Booster Gold' } as any }),
-    ]);
+    const allCards = await this.cardRepo.find();
 
-    const terrain = seasonCards.filter((c) => c.rarity === 'Terrain');
+    const seasonCards = allCards.filter((c) => this.isSeasonMatch(c, season));
+    const terrain = seasonCards.filter((c) => this.normalizeText(c.rarity) === 'terrain');
 
     const byRarity = new Map<string, Card[]>();
     for (const c of seasonCards) {
@@ -150,22 +178,22 @@ export class BoosterService {
       byRarity.set(c.rarity, arr);
     }
 
-    // GTO pour cette extension (si la saison en a)
-    const gto = await this.cardRepo.find({
-      where: { rarity: "Gagnant ticket d'or", extension: season } as any,
-    });
+    const ticketOrCards = allCards.filter((c) => this.isTicketOrCard(c));
+    const goldCards = allCards.filter((c) => this.isGoldBoosterCard(c));
+
+    const gtoSeason = allCards.filter((c) => this.isGtoCard(c) && this.isSeasonMatch(c, season));
+    const gtoGlobal = allCards.filter((c) => this.isGtoCard(c));
 
     return {
       terrain,
       byRarity,
       ticketOrCards,
       goldCards,
-      gtoCards: gto,
+      gtoCards: gtoSeason.length ? gtoSeason : gtoGlobal,
     };
   }
 
   private pickMainRarity(): string {
-    // On choisit une rareté selon les poids (total = 90)
     const r = Math.random() * this.MAIN_TOTAL;
     let acc = 0;
     for (const it of this.MAIN_WEIGHTS) {
@@ -175,9 +203,6 @@ export class BoosterService {
     return this.MAIN_WEIGHTS[this.MAIN_WEIGHTS.length - 1].rarity;
   }
 
-  // ----------------------------
-  // Construction booster NORMAL
-  // ----------------------------
   private buildNormalBooster(args: {
     season: Season;
     pools: Awaited<ReturnType<BoosterService['loadPools']>>;
@@ -187,28 +212,22 @@ export class BoosterService {
     const picked = new Set<number>();
     const out: Card[] = [];
 
-    // Slot 1 : Terrain (100%)
-    const terrainPool = pools.terrain;
-    const terrain = this.pickUnique(terrainPool, picked, `Terrain:${season}`);
+    const terrain = this.pickUnique(pools.terrain, picked, `Terrain:${season}`);
     out.push(terrain);
     picked.add(terrain.id);
 
-    // Slots 2..10 : 9 cartes pondérées, sans Terrain
-    // + possibilité de forcer une légendaire dans un des slots main
     const forceLegendary = Boolean(args.forceOneLegendaryInMain);
-    const forcedIndex = forceLegendary ? 1 + this.randInt(9) : -1; // index dans out (slot2..10 => positions 1..9)
+    const forcedIndex = forceLegendary ? 1 + this.randInt(9) : -1;
 
     for (let i = 0; i < 9; i++) {
       const outIndex = 1 + i;
 
       let rarity = this.pickMainRarity();
 
-      // si on doit forcer une légendaire sur ce slot
       if (outIndex === forcedIndex) {
         rarity = this.legendaryPickRarityProportional();
       }
 
-      // pas de Terrain dans main
       if (rarity === 'Terrain') rarity = 'Commune';
 
       const pool = pools.byRarity.get(rarity) ?? [];
@@ -217,42 +236,40 @@ export class BoosterService {
       picked.add(card.id);
     }
 
-    // 11e carte : 4.17% chance
+    // Origins: jamais de 11e carte
+    if (season === 'Origins') {
+      return out;
+    }
+
+    // Autres saisons: éventuellement une 11e carte
     if (Math.random() < this.CHANCE_TICKET_SLOT) {
-      // Origins : pas de GTO => 11e = Ticket d'or
-      if (season === 'Origins') {
+      const isTicketOr = Math.random() < this.CHANCE_TICKET_OR_AS_11TH;
+
+      if (isTicketOr) {
+        if (!pools.ticketOrCards.length) {
+          throw new BadRequestException(`Aucune carte "Ticket d'or" trouvée en base.`);
+        }
         const t = this.pickOne(pools.ticketOrCards, "Ticket d'or");
         out.push(t);
       } else {
-        // 0.1% Ticket d'or sinon GTO
-        const isTicketOr = Math.random() < this.CHANCE_TICKET_OR_GIVEN_TICKET_SLOT;
-
-        if (isTicketOr) {
-          const t = this.pickOne(pools.ticketOrCards, "Ticket d'or");
-          out.push(t);
-        } else {
-          const gtoPool = pools.gtoCards;
-          // si pas de GTO en DB (cas edge), fallback ticket d'or
-          if (!gtoPool.length) {
-            const t = this.pickOne(pools.ticketOrCards, "Ticket d'or");
-            out.push(t);
-          } else {
-            const g = this.pickOne(gtoPool, `GTO:${season}`);
-            out.push(g);
-          }
+        if (!pools.gtoCards.length) {
+          throw new BadRequestException(
+            `Aucune carte "Gagnant ticket d'or" trouvée pour ${season}. Vérifie rarity/key/name/extension.`,
+          );
         }
+        const g = this.pickOne(pools.gtoCards, `GTO:${season}`);
+        out.push(g);
       }
     }
 
-    // Tri d’affichage (optionnel côté back)
-    // NB: si tu veux garder la 11e “à part”, tu peux trier seulement les 10 premières côté front.
     return out;
   }
 
-  // ----------------------------
-  // Construction booster GOLD (4 cartes)
-  // ----------------------------
   private buildGoldBooster(pools: Awaited<ReturnType<BoosterService['loadPools']>>) {
+    if (!pools.goldCards.length) {
+      throw new BadRequestException('Aucune carte Booster Gold trouvée en base.');
+    }
+
     const picked = new Set<number>();
     const out: Card[] = [];
     for (let i = 0; i < 4; i++) {
@@ -263,18 +280,15 @@ export class BoosterService {
     return out;
   }
 
-  // ----------------------------
-  // Crédits : détection nouvelles cartes + multipliers
-  // ----------------------------
   private computeBoosterCreditsFromCards(args: {
     cards: Card[];
     ownedBefore: Map<number, number>;
   }) {
     const rarities = args.cards.map((c) => c.rarity);
 
-    // nouvelles cartes (1ère obtention) — une fois par cardId
     const newCardRarities: string[] = [];
     const seen = new Set<number>();
+
     for (const c of args.cards) {
       if (seen.has(c.id)) continue;
       seen.add(c.id);
@@ -283,23 +297,27 @@ export class BoosterService {
       if (qty === 0) newCardRarities.push(c.rarity);
     }
 
-    const hasGTO = rarities.includes("Gagnant ticket d'or");
-    const hasTicketOr = rarities.includes("Ticket d'or");
+    const ticketOrCard = args.cards.find((c) => this.isTicketOrCard(c));
+    const gtoPresent = args.cards.some((c) => this.isGtoCard(c));
+    const ticketOrPresent = Boolean(ticketOrCard);
+    const ticketOrIsNew = ticketOrCard ? (args.ownedBefore.get(ticketOrCard.id) ?? 0) === 0 : false;
 
     const breakdown = this.economy.computeBoosterCredits({
       rarities,
       newCardRarities,
-      gtoPresent: hasGTO,
-      ticketOrPresent: hasTicketOr,
+      gtoPresent,
+      ticketOrPresent,
+      ticketOrIsNew,
     });
 
-    return { breakdown, hasGTO, hasTicketOr };
+    return {
+      breakdown,
+      hasGTO: gtoPresent,
+      hasTicketOr: ticketOrPresent,
+      ticketOrIsNew,
+    };
   }
 
-  /**
-   * Détermine les nouvelles cartes (première obtention), à partir de ownedBefore.
-   * - déduplique par cardId (si doublon dans le booster => une seule fois)
-   */
   private computeNewCardsMeta(args: { cards: Card[]; ownedBefore: Map<number, number> }): NewCardsMeta {
     const newCardIds: number[] = [];
     const newCardKeys: string[] = [];
@@ -312,54 +330,43 @@ export class BoosterService {
       const qty = args.ownedBefore.get(c.id) ?? 0;
       if (qty === 0) {
         newCardIds.push(c.id);
-        if (c.key) newCardKeys.push(c.key);
+        if ((c as any).key) newCardKeys.push((c as any).key);
       }
     }
 
     return { newCardIds, newCardKeys };
   }
 
-  // =========================================================
-  // API : OPEN BOOSTER (unité) — saison requise
-  // =========================================================
   async openBooster(userId: number, season: Season) {
-    // Consomme charge gratuite ou crédits
     const payment = await this.economy.consumeOpen(userId, 'booster');
 
     const pools = await this.loadPools(season);
     const cards = this.buildNormalBooster({ season, pools });
 
-    // Transaction pour : calcul new cards + update collection + crédits
     return this.dataSource.transaction(async (manager) => {
       const cardIds = cards.map((c) => c.id);
-
       const ownedBefore = await this.users.getOwnedMap(userId, cardIds);
 
-      // ✅ nouvelles cartes (avant upsert)
       const newMeta = this.computeNewCardsMeta({ cards, ownedBefore });
 
-      // update collection (bulk)
       await this.users.addCardsToUserBulk(userId, cardIds, manager);
 
-      // crédits
-      const { breakdown, hasGTO, hasTicketOr } = this.computeBoosterCreditsFromCards({
+      const { breakdown, hasGTO, hasTicketOr, ticketOrIsNew } = this.computeBoosterCreditsFromCards({
         cards,
         ownedBefore,
       });
+
       await this.economy.addCredits(userId, breakdown.total);
 
-      // save opening (si tu le gardes)
       await this.boosterOpeningRepoSaveSafe({
         userId,
         cards,
         boosterCount: 1,
       });
 
-      // Réponse
       return {
         payment,
         season,
-        // ✅ on ajoute isNew pour l'UX front
         cards: this.sortByRarityForDisplay(cards).map((c) => ({
           ...c,
           isNew: newMeta.newCardIds.includes(c.id),
@@ -367,24 +374,23 @@ export class BoosterService {
         credits: breakdown,
         creditsEarnedTotal: breakdown.total,
         ...newMeta,
-        flags: { hasGTO, hasTicketOr },
+        flags: {
+          hasGTO,
+          hasTicketOr,
+          ticketOrIsNew,
+        },
       };
     });
   }
 
-  // =========================================================
-  // API : OPEN DISPLAY — 24 boosters + légendaire garantie
-  // =========================================================
   async openDisplay(userId: number, season: Season) {
     const payment = await this.economy.consumeOpen(userId, 'display');
 
     const pools = await this.loadPools(season);
 
-    // 1) décider si cette display a un booster gold
     const hasGoldBooster = Math.random() < this.CHANCE_DISPLAY_HAS_GOLD;
     const goldIndex = hasGoldBooster ? this.randInt(this.DISPLAY_BOOSTERS) : -1;
 
-    // 2) choisir dans quel booster on force une légendaire (si goldIndex, on force sur un booster normal)
     let forcedLegendaryIndex = this.randInt(this.DISPLAY_BOOSTERS);
     if (hasGoldBooster && forcedLegendaryIndex === goldIndex) {
       forcedLegendaryIndex = (forcedLegendaryIndex + 1) % this.DISPLAY_BOOSTERS;
@@ -395,32 +401,26 @@ export class BoosterService {
     for (let i = 0; i < this.DISPLAY_BOOSTERS; i++) {
       if (i === goldIndex) {
         boosters.push(this.buildGoldBooster(pools));
-        continue;
+      } else {
+        const forceLegendary = i === forcedLegendaryIndex;
+        boosters.push(this.buildNormalBooster({ season, pools, forceOneLegendaryInMain: forceLegendary }));
       }
-
-      const forceLegendary = i === forcedLegendaryIndex;
-      boosters.push(this.buildNormalBooster({ season, pools, forceOneLegendaryInMain: forceLegendary }));
     }
 
-    // Transaction : update collection + crédits display (avec multipliers)
     return this.dataSource.transaction(async (manager) => {
       const allCards = boosters.flat();
       const allCardIds = allCards.map((c) => c.id);
 
       const ownedBefore = await this.users.getOwnedMap(userId, allCardIds);
-
-      // ✅ nouvelles cartes (avant upsert)
       const newMeta = this.computeNewCardsMeta({ cards: allCards, ownedBefore });
 
       await this.users.addCardsToUserBulk(userId, allCardIds, manager);
 
-      // crédits par booster
       const boosterBreakdowns = boosters.map((cards) => {
         const { breakdown } = this.computeBoosterCreditsFromCards({ cards, ownedBefore });
         return breakdown;
       });
 
-      // multiplier display si gold booster présent (x1.25 sur tout sauf jackpot)
       const displayBreakdown = this.economy.computeDisplayCredits({
         boosterBreakdowns,
         goldMultiplier: hasGoldBooster,
@@ -428,7 +428,6 @@ export class BoosterService {
 
       await this.economy.addCredits(userId, displayBreakdown.total);
 
-      // save display opening (si tu le gardes)
       await this.displayOpeningRepoSaveSafe({
         userId,
         season,
@@ -447,7 +446,6 @@ export class BoosterService {
           goldIndex: hasGoldBooster ? goldIndex : null,
           forcedLegendaryIndex,
         },
-        // ✅ isNew sur chaque carte pour l'opening display aussi
         boosters: boosters.map((b) =>
           this.sortByRarityForDisplay(b).map((c) => ({
             ...c,
@@ -464,9 +462,6 @@ export class BoosterService {
     });
   }
 
-  // =========================================================
-  // Persist helpers (safe) — si tu as une purge derrière
-  // =========================================================
   private async boosterOpeningRepoSaveSafe(args: { userId: number; cards: Card[]; boosterCount: number }) {
     try {
       await this.boosterOpeningRepo.save({
@@ -474,16 +469,16 @@ export class BoosterService {
         openedAt: new Date() as any,
         boosterCount: args.boosterCount as any,
         cardIds: args.cards.map((c) => c.id) as any,
-        // si tu as encore resultJson :
         resultJson: args.cards.map((c) => ({
           id: c.id,
-          key: c.key,
+          key: (c as any).key,
           name: c.name,
           rarity: c.rarity,
-          imageUrl: c.imageUrl,
+          imageUrl: (c as any).imageUrl,
         })) as any,
       } as any);
     } catch {
+      //
     }
   }
 
@@ -508,7 +503,7 @@ export class BoosterService {
         },
       } as any);
     } catch {
-      // ignore
+      //
     }
   }
 }

@@ -7,16 +7,11 @@ import { User } from '../users/user.entity';
 export type OpenKind = 'booster' | 'display';
 
 export type CreditBreakdown = {
-  // ✅ valeur des cartes déjà possédées (base)
   base: number;
-
-  // ✅ valeur des cartes nouvellement débloquées (REMPLACE la base)
   newCardBonus: number;
-
   boosterMultiplierApplied?: number;
   displayMultiplierApplied?: number;
   ticketGoldJackpot?: number;
-
   total: number;
 };
 
@@ -27,7 +22,7 @@ const ECON = {
 
   charges: {
     booster: { cap: 4, rechargeMinutes: 90 },
-    display: { cap: 1, rechargeMinutes: 60 * 60 }, // 3600 min = 60h (comme ton fichier)
+    display: { cap: 1, rechargeMinutes: 60 * 60 },
   },
 
   baseByRarity: {
@@ -45,7 +40,6 @@ const ECON = {
     "Ticket d'or": 0,
   } as Record<string, number>,
 
-  // ✅ new = valeur de remplacement (pas un bonus qui s’additionne)
   newBonusByRarity: {
     Terrain: 10,
     Commune: 12,
@@ -92,7 +86,6 @@ export class EconomyService {
   private applyRecharge(row: UserEconomy, now = new Date()) {
     this.ensureRechargeDates(row, now);
 
-    // Booster recharge
     if (row.freeBoosterCharges < ECON.charges.booster.cap) {
       const mins = this.minutesBetween(row.boosterRechargeAt!, now);
       const add = Math.floor(mins / ECON.charges.booster.rechargeMinutes);
@@ -107,7 +100,6 @@ export class EconomyService {
       row.boosterRechargeAt = now;
     }
 
-    // Display recharge
     if (row.freeDisplayCharges < ECON.charges.display.cap) {
       const mins = this.minutesBetween(row.displayRechargeAt!, now);
       const add = Math.floor(mins / ECON.charges.display.rechargeMinutes);
@@ -123,18 +115,12 @@ export class EconomyService {
     }
   }
 
-  /**
-   * ✅ Crée la ligne économie si absente.
-   * ✅ Retourne toujours un UserEconomy (jamais null, jamais array)
-   * ✅ Aligné à ton entity (userId + relation user)
-   */
   async ensure(userId: number): Promise<UserEconomy> {
     let row = await this.economyRepo.findOne({ where: { userId } });
 
     if (!row) {
       const now = new Date();
 
-      // On set userId (PK) + relation user (JoinColumn sur user_id)
       row = this.economyRepo.create({
         userId,
         user: { id: userId } as User,
@@ -147,9 +133,7 @@ export class EconomyService {
       });
     }
 
-    // sécurise si DB contient null
     this.ensureRechargeDates(row, new Date());
-
     return await this.economyRepo.save(row);
   }
 
@@ -193,24 +177,18 @@ export class EconomyService {
     return { kind, usedFree: false, cost };
   }
 
-  /**
-   * ✅ Nouvelle carte = valeur new (remplace base)
-   * newCardRarities = rarités des cartes dont la QUANTITÉ était 0 avant (carte ID jamais obtenue)
-   */
   computeBoosterCredits(args: {
     rarities: string[];
     newCardRarities: string[];
     gtoPresent: boolean;
     ticketOrPresent: boolean;
+    ticketOrIsNew: boolean;
   }): CreditBreakdown {
-    const { rarities, newCardRarities, gtoPresent, ticketOrPresent } = args;
+    const { rarities, newCardRarities, gtoPresent, ticketOrPresent, ticketOrIsNew } = args;
 
-    // baseAll = somme des bases de toutes les cartes
     let baseAll = 0;
     for (const r of rarities) baseAll += ECON.baseByRarity[r] ?? 0;
 
-    // baseNew = somme des bases des cartes nouvelles (à retirer)
-    // newValue = somme des valeurs new des cartes nouvelles (à mettre à la place)
     let baseNew = 0;
     let newValue = 0;
     for (const r of newCardRarities) {
@@ -218,17 +196,15 @@ export class EconomyService {
       newValue += ECON.newBonusByRarity[r] ?? 0;
     }
 
-    const base = baseAll - baseNew; // cartes déjà possédées
-    const newBonus = newValue;      // cartes nouvelles (valeur de remplacement)
+    const base = baseAll - baseNew;
+    const newBonus = newValue;
 
     let subtotal = base + newBonus;
 
-    // booster multiplier si GTO présent
     const boosterMult = gtoPresent ? ECON.multipliers.gtoBooster : 1;
     subtotal = Math.floor(subtotal * boosterMult);
 
-    // jackpot Ticket d’or (non multiplié)
-    const jackpot = ticketOrPresent ? ECON.jackpotTicketOr : 0;
+    const jackpot = ticketOrPresent && ticketOrIsNew ? ECON.jackpotTicketOr : 0;
 
     return {
       base,
@@ -252,7 +228,6 @@ export class EconomyService {
       subtotalNoJackpot += b.total - (b.ticketGoldJackpot ?? 0);
     }
 
-    // display multiplier si display gold
     const displayMult = args.goldMultiplier ? ECON.multipliers.goldDisplay : 1;
     const after = Math.floor(subtotalNoJackpot * displayMult);
 

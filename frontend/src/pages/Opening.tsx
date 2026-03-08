@@ -29,6 +29,8 @@ const DISPLAY_IMG: Record<SeasonName, string> = {
   Stellar: new URL("../assets/boosters/display_stellar.webp", import.meta.url).href,
 };
 
+const GOLD_BOOSTER_IMG = new URL("../assets/boosters/booster_gold.png", import.meta.url).href;
+
 type OpeningStatePayload = {
   kind: "booster" | "display";
   season: SeasonName;
@@ -333,8 +335,18 @@ export default function Opening() {
 
   const season: SeasonName = state?.season ?? "Origins";
   const isDisplayMode = state?.kind === "display";
-  const boosterImg = BOOSTER_IMG[season];
+
+  const displayMeta = state?.result?.meta ?? null;
+  const goldIndex: number | null =
+    typeof displayMeta?.goldIndex === "number" ? displayMeta.goldIndex : null;
+  const currentDisplayBoosterIsGold =
+    isDisplayMode && goldIndex !== null && displayBoosterIndex === goldIndex;
+
+  const defaultBoosterImg = BOOSTER_IMG[season];
   const displayImg = DISPLAY_IMG[season];
+
+  const currentPackImg = currentDisplayBoosterIsGold ? GOLD_BOOSTER_IMG : defaultBoosterImg;
+  const remainingPillImg = currentDisplayBoosterIsGold ? GOLD_BOOSTER_IMG : defaultBoosterImg;
 
   function queueTimeout(cb: () => void, ms: number) {
     const id = window.setTimeout(cb, ms);
@@ -803,7 +815,7 @@ export default function Opening() {
     phase !== "display-final-summary";
 
   const idleVisualImg =
-    isDisplayMode && !displayStarted ? displayImg : boosterImg;
+    isDisplayMode && !displayStarted ? displayImg : currentPackImg;
 
   return (
     <>
@@ -843,6 +855,11 @@ export default function Opening() {
                       {" "}• Carte <b>{Math.min(index + 1, total)}</b> / <b>{total}</b>
                     </>
                   ) : null}
+                  {currentDisplayBoosterIsGold ? (
+                    <>
+                      {" "}• <b>Booster Gold</b>
+                    </>
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -868,8 +885,8 @@ export default function Opening() {
             {showDisplayRemaining ? (
               <div className="displayRemainingPill">
                 <img
-                  src={boosterImg}
-                  alt={`Booster ${season}`}
+                  src={remainingPillImg}
+                  alt={currentDisplayBoosterIsGold ? "Booster Gold" : `Booster ${season}`}
                   className="displayRemainingPill__img"
                 />
                 <div className="displayRemainingPill__text">
@@ -906,14 +923,13 @@ export default function Opening() {
                   phase === "idle" ? "is-shaking" : "",
                   phase === "opening" ? "is-opening" : "",
                   isDisplayMode && !displayStarted ? "pack--display" : "",
+                  currentDisplayBoosterIsGold ? "pack--gold" : "",
                 ].join(" ")}
                 style={{ ["--pack-img" as any]: `url(${idleVisualImg})` }}
                 onClick={phase === "idle" ? startOpening : undefined}
                 role="button"
                 aria-label={isDisplayMode && !displayStarted ? "Ouvrir la display" : "Ouvrir le booster"}
               >
-          
-
                 {!isDisplayMode || displayStarted ? (
                   <img
                     className={["emergingCard", phase === "opening" ? "is-emerging" : ""].join(" ")}
@@ -938,11 +954,11 @@ export default function Opening() {
             <div className="displayIntro">
               <div className="displayIntro__scene">
                 <img className="displayIntro__display" src={displayImg} alt={`Display ${season}`} />
-                <img className="displayIntro__booster displayIntro__booster--1" src={boosterImg} alt="" />
-                <img className="displayIntro__booster displayIntro__booster--2" src={boosterImg} alt="" />
-                <img className="displayIntro__booster displayIntro__booster--3" src={boosterImg} alt="" />
-                <img className="displayIntro__booster displayIntro__booster--4" src={boosterImg} alt="" />
-                <img className="displayIntro__booster displayIntro__booster--5" src={boosterImg} alt="" />
+                <img className="displayIntro__booster displayIntro__booster--1" src={defaultBoosterImg} alt="" />
+                <img className="displayIntro__booster displayIntro__booster--2" src={defaultBoosterImg} alt="" />
+                <img className="displayIntro__booster displayIntro__booster--3" src={defaultBoosterImg} alt="" />
+                <img className="displayIntro__booster displayIntro__booster--4" src={defaultBoosterImg} alt="" />
+                <img className="displayIntro__booster displayIntro__booster--5" src={defaultBoosterImg} alt="" />
               </div>
 
               <div className="displayIntro__text">
@@ -959,6 +975,11 @@ export default function Opening() {
                   {isDisplayMode ? (
                     <>
                       {" "}• Booster <b>{displayBoosterIndex + 1}</b> / <b>{displayBoosterCount}</b>
+                      {currentDisplayBoosterIsGold ? (
+                        <>
+                          {" "}• <b>Booster Gold</b>
+                        </>
+                      ) : null}
                     </>
                   ) : null}
                 </div>
