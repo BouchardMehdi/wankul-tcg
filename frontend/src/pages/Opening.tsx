@@ -264,16 +264,6 @@ function extractNewCardIds(result: any): Set<number | string> {
     }
   }
 
-  const boosters = result?.boosters;
-  if (Array.isArray(boosters)) {
-    for (const booster of boosters) {
-      if (!Array.isArray(booster)) continue;
-      for (const c of booster) {
-        if (c?.isNew && (typeof c?.id === "number" || typeof c?.id === "string")) s.add(c.id);
-      }
-    }
-  }
-
   return s;
 }
 
@@ -377,6 +367,10 @@ export default function Opening() {
     clearMotionState();
   }
 
+  function isCardMarkedNew(card: any) {
+    return Boolean(card?.isNew);
+  }
+
   useEffect(() => {
     const saved = localStorage.getItem(SKIP_STORAGE_KEY);
     setSkipAnimations(saved === "1");
@@ -398,11 +392,16 @@ export default function Opening() {
 
     clearQueuedTimeouts();
 
-    const boosters = Array.isArray(state.result?.boosters) ? state.result.boosters : [];
-    const firstBoosterCards = Array.isArray(boosters[0]) ? boosters[0] : [];
+    const rawBoosters = Array.isArray(state.result?.boosters) ? state.result.boosters : [];
+    const normalizedBoosters =
+      rawBoosters.length > 0 && rawBoosters[0] && !Array.isArray(rawBoosters[0]) && Array.isArray(rawBoosters[0]?.cards)
+        ? rawBoosters.map((b: any) => b.cards)
+        : rawBoosters;
+
+    const firstBoosterCards = Array.isArray(normalizedBoosters[0]) ? normalizedBoosters[0] : [];
     const boosterCards = Array.isArray(state.result?.cards) ? state.result.cards : [];
 
-    setDisplayBoosters(boosters);
+    setDisplayBoosters(normalizedBoosters);
     setDisplayBoosterIndex(0);
     setDisplayStarted(false);
 
@@ -413,7 +412,7 @@ export default function Opening() {
     setNewCardIds(extractNewCardIds(state.result));
 
     const flatCards = state.kind === "display"
-      ? boosters.flatMap((b: any) => (Array.isArray(b) ? b : []))
+      ? normalizedBoosters.flatMap((b: any) => (Array.isArray(b) ? b : []))
       : boosterCards;
     setPerCardCredits(extractPerCardCredits(state.result, flatCards));
 
@@ -483,7 +482,7 @@ export default function Opening() {
   const isSurprise11 = useMemo(() => index === 10, [index]);
 
   const currentId = current?.id ?? current?.cardId ?? current?.key ?? index;
-  const isCurrentNew = newCardIds.has(currentId);
+  const isCurrentNew = isCardMarkedNew(current);
 
   const currentCredits =
     perCardCredits.get(currentId) ??
@@ -499,7 +498,7 @@ export default function Opening() {
     for (let i = 0; i < cards.length; i++) {
       const c = cards[i];
       const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
-      const isNew = newCardIds.has(cid);
+      const isNew = isCardMarkedNew(c);
       const cc =
         perCardCredits.get(cid) ??
         c?.earnedCredits ??
@@ -509,7 +508,7 @@ export default function Opening() {
       sum += typeof cc === "number" && Number.isFinite(cc) ? cc : 0;
     }
     return sum;
-  }, [cards, perCardCredits, newCardIds]);
+  }, [cards, perCardCredits]);
 
   const sortedBoosterSummaryCards = useMemo(() => {
     return [...cards].sort((a, b) => {
@@ -533,7 +532,7 @@ export default function Opening() {
     for (let i = 0; i < sourceCards.length; i++) {
       const c = sourceCards[i];
       const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
-      const isNew = newCardIds.has(cid);
+      const isNew = isCardMarkedNew(c);
       const cc =
         perCardCredits.get(cid) ??
         c?.earnedCredits ??
@@ -543,25 +542,19 @@ export default function Opening() {
       sum += typeof cc === "number" && Number.isFinite(cc) ? cc : 0;
     }
     return sum;
-  }, [creditsTotal, isDisplayMode, displayBoosters, cards, perCardCredits, newCardIds]);
+  }, [creditsTotal, isDisplayMode, displayBoosters, cards, perCardCredits]);
 
   const displaySummaryCards = useMemo(() => {
     if (!isDisplayMode) return [];
 
     const flat = displayBoosters.flatMap((b) => (Array.isArray(b) ? b : []));
     const selected = dedupeCards(
-      flat.filter((c, i) => {
-        const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
-        return newCardIds.has(cid) || isRareOrBetter(c);
-      })
+      flat.filter((c) => isCardMarkedNew(c) || isRareOrBetter(c))
     );
 
     return selected.sort((a, b) => {
-      const aId = a?.id ?? a?.cardId ?? a?.key;
-      const bId = b?.id ?? b?.cardId ?? b?.key;
-
-      const aNew = newCardIds.has(aId);
-      const bNew = newCardIds.has(bId);
+      const aNew = isCardMarkedNew(a);
+      const bNew = isCardMarkedNew(b);
 
       const aGroup = aNew ? 1 : 0;
       const bGroup = bNew ? 1 : 0;
@@ -575,7 +568,7 @@ export default function Opening() {
       const bName = String(b?.name ?? "");
       return aName.localeCompare(bName, "fr", { sensitivity: "base" });
     });
-  }, [isDisplayMode, displayBoosters, newCardIds]);
+  }, [isDisplayMode, displayBoosters]);
 
   const openAnotherLabel = useMemo(() => {
     const free = (eco?.freeBoosterCharges ?? 0) > 0;
@@ -1063,7 +1056,7 @@ export default function Opening() {
                   const rare = isRareForFx(rk);
                   const cls = rk ? `rarity-${rk}` : "";
                   const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
-                  const isNew = newCardIds.has(cid);
+                  const isNew = isCardMarkedNew(c);
 
                   const cc =
                     perCardCredits.get(cid) ??
@@ -1134,7 +1127,7 @@ export default function Opening() {
                   const rare = isRareForFx(rk);
                   const cls = rk ? `rarity-${rk}` : "";
                   const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
-                  const isNew = newCardIds.has(cid);
+                  const isNew = isCardMarkedNew(c);
 
                   const cc =
                     perCardCredits.get(cid) ??

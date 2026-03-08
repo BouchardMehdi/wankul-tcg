@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Card } from '../cards/card.entity';
 import { UsersService } from '../users/users.service';
-import { EconomyService } from '../economy/economy.service';
+import { EconomyService, type CreditBreakdown } from '../economy/economy.service';
 import { BoosterOpening } from './booster-opening.entity';
 import { DisplayOpening } from './display-opening.entity';
 
@@ -236,12 +236,10 @@ export class BoosterService {
       picked.add(card.id);
     }
 
-    // Origins: jamais de 11e carte
     if (season === 'Origins') {
       return out;
     }
 
-    // Autres saisons: éventuellement une 11e carte
     if (Math.random() < this.CHANCE_TICKET_SLOT) {
       const isTicketOr = Math.random() < this.CHANCE_TICKET_OR_AS_11TH;
 
@@ -278,6 +276,16 @@ export class BoosterService {
       picked.add(c.id);
     }
     return out;
+  }
+
+  private cloneOwnedMap(source: Map<number, number>) {
+    return new Map<number, number>(source);
+  }
+
+  private applyCardsToOwnedMap(owned: Map<number, number>, cards: Card[]) {
+    for (const c of cards) {
+      owned.set(c.id, (owned.get(c.id) ?? 0) + 1);
+    }
   }
 
   private computeBoosterCreditsFromCards(args: {
@@ -364,13 +372,21 @@ export class BoosterService {
         boosterCount: 1,
       });
 
+      const newIdsSet = new Set(newMeta.newCardIds);
+      const firstOccurrenceMarked = new Set<number>();
+
       return {
         payment,
         season,
-        cards: this.sortByRarityForDisplay(cards).map((c) => ({
-          ...c,
-          isNew: newMeta.newCardIds.includes(c.id),
-        })),
+        cards: this.sortByRarityForDisplay(cards).map((c) => {
+          const isFirstNew = newIdsSet.has(c.id) && !firstOccurrenceMarked.has(c.id);
+          if (isFirstNew) firstOccurrenceMarked.add(c.id);
+
+          return {
+            ...c,
+            isNew: isFirstNew,
+          };
+        }),
         credits: breakdown,
         creditsEarnedTotal: breakdown.total,
         ...newMeta,
@@ -411,15 +427,57 @@ export class BoosterService {
       const allCards = boosters.flat();
       const allCardIds = allCards.map((c) => c.id);
 
-      const ownedBefore = await this.users.getOwnedMap(userId, allCardIds);
-      const newMeta = this.computeNewCardsMeta({ cards: allCards, ownedBefore });
+      const ownedBeforeGlobal = await this.users.getOwnedMap(userId, allCardIds);
+
+      const simulatedOwned = this.cloneOwnedMap(ownedBeforeGlobal);
+      const boosterBreakdowns: CreditBreakdown[] = [];
+
+      const displayNewCardIds: number[] = [];
+      const displayNewCardKeys: string[] = [];
+      const markedNewOnce = new Set<number>();
+
+      const boostersWithFlags = boosters.map((boosterCards) => {
+        const ownedBeforeThisBooster = this.cloneOwnedMap(simulatedOwned);
+
+        const { breakdown } = this.computeBoosterCreditsFromCards({
+          cards: boosterCards,
+          ownedBefore: ownedBeforeThisBooster,
+        });
+        boosterBreakdowns.push(breakdown);
+
+        const seenInsideBooster = new Set<number>();
+
+        const boosterWithFlags = this.sortByRarityForDisplay(boosterCards).map((c) => {
+          const qtyBeforeThisBooster = ownedBeforeThisBooster.get(c.id) ?? 0;
+          const firstTimeInThisBooster = !seenInsideBooster.has(c.id);
+
+          if (firstTimeInThisBooster) {
+            seenInsideBooster.add(c.id);
+          }
+
+          const isActuallyNewForDisplay =
+            firstTimeInThisBooster &&
+            qtyBeforeThisBooster === 0 &&
+            !markedNewOnce.has(c.id);
+
+          if (isActuallyNewForDisplay) {
+            markedNewOnce.add(c.id);
+            displayNewCardIds.push(c.id);
+            if ((c as any).key) displayNewCardKeys.push((c as any).key);
+          }
+
+          return {
+            ...c,
+            isNew: isActuallyNewForDisplay,
+          };
+        });
+
+        this.applyCardsToOwnedMap(simulatedOwned, boosterCards);
+
+        return boosterWithFlags;
+      });
 
       await this.users.addCardsToUserBulk(userId, allCardIds, manager);
-
-      const boosterBreakdowns = boosters.map((cards) => {
-        const { breakdown } = this.computeBoosterCreditsFromCards({ cards, ownedBefore });
-        return breakdown;
-      });
 
       const displayBreakdown = this.economy.computeDisplayCredits({
         boosterBreakdowns,
@@ -446,18 +504,14 @@ export class BoosterService {
           goldIndex: hasGoldBooster ? goldIndex : null,
           forcedLegendaryIndex,
         },
-        boosters: boosters.map((b) =>
-          this.sortByRarityForDisplay(b).map((c) => ({
-            ...c,
-            isNew: newMeta.newCardIds.includes(c.id),
-          })),
-        ),
+        boosters: boostersWithFlags,
         credits: {
           display: displayBreakdown,
           boosters: boosterBreakdowns,
         },
         creditsEarnedTotal: displayBreakdown.total,
-        ...newMeta,
+        newCardIds: displayNewCardIds,
+        newCardKeys: displayNewCardKeys,
       };
     });
   }
