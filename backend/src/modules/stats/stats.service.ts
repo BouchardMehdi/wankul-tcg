@@ -6,18 +6,38 @@ import { BoosterOpening } from '../booster/booster-opening.entity';
 import { DisplayOpening } from '../booster/display-opening.entity';
 import { UserCard } from '../users/user-card.entity';
 
-type Season = 'Origins' | 'Campus' | 'Battle' | 'Stellar';
+type CoreSeason = 'Origins' | 'Campus' | 'Battle' | 'Stellar';
+type MenuSeason = CoreSeason | 'Hors série';
 type Mode = 'unit' | 'display' | 'global';
 
 type GetDropRatesInput = {
   mode: Mode;
   days: number;
-  season?: Season;
+  season?: CoreSeason;
   includeGold: boolean;
 };
 
 type Bucket = { count: number; rate: number };
 type RarityMap = Record<string, Bucket>;
+
+type UserCardStatRow = {
+  card_id: number;
+  quantity: number;
+  name: string | null;
+  rarity: string | null;
+  key: string | null;
+  type: string | null;
+  seasonKey: string | null;
+};
+
+type CardMetaRow = {
+  id: number;
+  name: string | null;
+  rarity: string | null;
+  key: string | null;
+  type: string | null;
+  seasonKey: string | null;
+};
 
 function inc(map: Record<string, number>, key: string, v = 1) {
   map[key] = (map[key] ?? 0) + v;
@@ -33,6 +53,82 @@ function toRates(counts: Record<string, number>, total: number): RarityMap {
   return out;
 }
 
+function normalizeText(value?: string | null) {
+  return (value ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/['’`-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeSeasonKey(value?: string | null): CoreSeason | null {
+  const s = normalizeText(value);
+  if (s.includes('origins')) return 'Origins';
+  if (s.includes('campus')) return 'Campus';
+  if (s.includes('battle')) return 'Battle';
+  if (s.includes('stellar')) return 'Stellar';
+  return null;
+}
+
+function isSpecialCardLike(card: {
+  name?: string | null;
+  rarity?: string | null;
+  key?: string | null;
+  type?: string | null;
+  seasonKey?: string | null;
+}) {
+  const seasonKey = normalizeSeasonKey(card.seasonKey);
+  const name = normalizeText(card.name);
+  const rarity = normalizeText(card.rarity);
+  const key = normalizeText(card.key);
+  const type = normalizeText(card.type);
+
+  const haystack = `${name} ${rarity} ${key} ${type}`;
+
+  if (rarity.includes('booster gold')) return true;
+  if (haystack.includes('starter')) return true;
+  if (haystack.includes('ticket d or')) return true;
+  if (haystack.includes('gagnant ticket d or')) return true;
+
+  return !seasonKey;
+}
+
+function normalizeRarityBucket(card: {
+  name?: string | null;
+  rarity?: string | null;
+  key?: string | null;
+  type?: string | null;
+}) {
+  const rarity = normalizeText(card.rarity);
+  const name = normalizeText(card.name);
+  const key = normalizeText(card.key);
+  const type = normalizeText(card.type);
+  const haystack = `${name} ${rarity} ${key} ${type}`;
+
+  if (haystack.includes('gagnant ticket d or')) return "Gagnant ticket d'or";
+  if (haystack.includes('ticket d or')) return "Ticket d'or";
+  if (haystack.includes('starter')) return 'Starter Pack';
+  if (rarity.includes('booster gold')) return 'Booster Gold';
+  if (rarity.includes('terrain') || type.includes('terrain')) return 'Terrain';
+  if (rarity.includes('u1') || rarity.includes('ultra rare holo 1') || rarity.includes('ultra rare u1')) return 'U1';
+  if (rarity.includes('u2') || rarity.includes('ultra rare holo 2') || rarity.includes('ultra rare u2')) return 'U2';
+  if (rarity.includes('peu commune') || rarity.includes('peu-commune')) return 'Peu commune';
+  if (rarity === 'commune' || rarity.endsWith(' commune') || rarity.startsWith('commune ')) return 'Commune';
+  if (rarity === 'rare' || rarity.startsWith('rare ')) return 'Rare';
+
+  if (rarity.includes('legendaire') || rarity.includes('legendary')) {
+    if (rarity.includes('bronze')) return 'Légendaire bronze';
+    if (rarity.includes('argent') || rarity.includes('silver')) return 'Légendaire argent';
+    if (rarity.includes('or') || rarity.includes('gold') || rarity.includes('doree') || rarity.includes('dorée')) {
+      return 'Légendaire or';
+    }
+  }
+
+  return card.rarity ?? 'Autre';
+}
+
 @Injectable()
 export class StatsService {
   constructor(
@@ -43,34 +139,33 @@ export class StatsService {
     private readonly dataSource: DataSource,
   ) {}
 
-  /**
-   * ✅ GET /stats/me
-   * - cardsTotal = cartes obtenues (avec doublons) = SUM(quantity)
-   * - uniqueCardsTotal = cartes uniques débloquées = COUNT(*) sur user_cards
-   * - seasonProgress = progression par saison en uniques (COALESCE(season, extension))
-   */
   async getMyStats(userId: number) {
-    const boostersOpened = await this.safeCountByUser(this.boosterOpenRepo, 'booster_openings', userId);
-    const displaysOpened = await this.safeCountByUser(this.displayOpenRepo, 'display_openings', userId);
+    const [boostersOpened, displaysOpened, userCards, allCards] = await Promise.all([
+      this.safeCountByUser(this.boosterOpenRepo, 'booster_openings', userId),
+      this.safeCountByUser(this.displayOpenRepo, 'display_openings', userId),
+      this.getUserCardStatsRows(userId),
+      this.getAllCardMetaRows(),
+    ]);
 
-    const { totalCards, uniqueCardsTotal } = await this.safeUserCardsAggV2(userId);
-    const seasonProgress = await this.getSeasonProgress(userId);
+    const totalCards = userCards.reduce((sum, row) => sum + Number(row.quantity ?? 0), 0);
+    const uniqueCardsTotal = userCards.length;
+
+    const rarities: Record<string, number> = {};
+    for (const row of userCards) {
+      const bucket = normalizeRarityBucket(row);
+      inc(rarities, bucket, Number(row.quantity ?? 0));
+    }
+
+    const seasonProgress = this.buildSeasonProgress(userCards, allCards);
 
     return {
       boostersOpened,
       displaysOpened,
-
-      // ✅ total obtenu (avec doublons)
       cardsTotal: totalCards,
-
-      // ✅ total unique (débloqué)
       uniqueCardsTotal,
-
-      // compat éventuelle si ton front utilise encore uniqueCards
       uniqueCards: uniqueCardsTotal,
-
-      // ✅ pour le graphe
       seasonProgress,
+      rarities,
     };
   }
 
@@ -98,70 +193,101 @@ export class StatsService {
     return Number(rows?.[0]?.c ?? 0);
   }
 
-  /**
-   * ✅ totals fiables car ton UserCard force user_id / card_id + quantity
-   */
-  private async safeUserCardsAggV2(userId: number): Promise<{ totalCards: number; uniqueCardsTotal: number }> {
+  private async getUserCardStatsRows(userId: number): Promise<UserCardStatRow[]> {
     const rows = await this.dataSource.query(
       `
       SELECT
-        COALESCE(SUM(uc.quantity), 0) AS totalCards,
-        COUNT(*) AS uniqueCardsTotal
+        uc.card_id AS card_id,
+        uc.quantity AS quantity,
+        c.name AS name,
+        c.rarity AS rarity,
+        c.key AS \`key\`,
+        c.type AS type,
+        COALESCE(c.season, c.extension) AS seasonKey
       FROM user_cards uc
+      INNER JOIN cards c ON c.id = uc.card_id
       WHERE uc.user_id = ?
       `,
       [userId],
     );
 
-    return {
-      totalCards: Number(rows?.[0]?.totalCards ?? 0),
-      uniqueCardsTotal: Number(rows?.[0]?.uniqueCardsTotal ?? 0),
+    return (rows ?? []).map((row: any) => ({
+      card_id: Number(row.card_id),
+      quantity: Number(row.quantity ?? 0),
+      name: row.name ?? null,
+      rarity: row.rarity ?? null,
+      key: row.key ?? null,
+      type: row.type ?? null,
+      seasonKey: row.seasonKey ?? null,
+    }));
+  }
+
+  private async getAllCardMetaRows(): Promise<CardMetaRow[]> {
+    const rows = await this.dataSource.query(
+      `
+      SELECT
+        c.id AS id,
+        c.name AS name,
+        c.rarity AS rarity,
+        c.key AS \`key\`,
+        c.type AS type,
+        COALESCE(c.season, c.extension) AS seasonKey
+      FROM cards c
+      `,
+    );
+
+    return (rows ?? []).map((row: any) => ({
+      id: Number(row.id),
+      name: row.name ?? null,
+      rarity: row.rarity ?? null,
+      key: row.key ?? null,
+      type: row.type ?? null,
+      seasonKey: row.seasonKey ?? null,
+    }));
+  }
+
+  private buildSeasonProgress(
+    ownedCards: UserCardStatRow[],
+    allCards: CardMetaRow[],
+  ): Array<{ season: MenuSeason; ownedUnique: number; total: number }> {
+    const OFFICIAL_TOTALS: Record<CoreSeason, number> = {
+      Origins: 180,
+      Campus: 155,
+      Battle: 180,
+      Stellar: 180,
     };
+
+    const coreSeasons: CoreSeason[] = ['Origins', 'Campus', 'Battle', 'Stellar'];
+
+    const ownedMap = new Map<CoreSeason, number>();
+    for (const season of coreSeasons) ownedMap.set(season, 0);
+
+    let ownedSpecial = 0;
+    for (const row of ownedCards) {
+      if (isSpecialCardLike(row)) {
+        ownedSpecial += 1;
+        continue;
+      }
+
+      const season = normalizeSeasonKey(row.seasonKey);
+      if (season) ownedMap.set(season, (ownedMap.get(season) ?? 0) + 1);
+    }
+
+    const specialTotal = allCards.filter((card) => isSpecialCardLike(card)).length;
+
+    return [
+      ...coreSeasons.map((season) => ({
+        season,
+        ownedUnique: ownedMap.get(season) ?? 0,
+        total: OFFICIAL_TOTALS[season],
+      })),
+      {
+        season: 'Hors série',
+        ownedUnique: ownedSpecial,
+        total: specialTotal,
+      },
+    ];
   }
-
-  /**
-   * ✅ Progression par saison (uniques)
-   * On utilise COALESCE(cards.season, cards.extension) pour gérer les cartes "season=null" mais extension=Battle/Stellar…
-   */
-private async getSeasonProgress(userId: number): Promise<
-  Array<{ season: Season; ownedUnique: number; total: number }>
-> {
-  const seasons: Season[] = ['Origins', 'Campus', 'Battle', 'Stellar'];
-
-  // ✅ TOTAL OFFICIEL issu de cards.json (booster-only)
-  const OFFICIAL_TOTALS: Record<Season, number> = {
-    Origins: 180,
-    Campus: 155,
-    Battle: 180,
-    Stellar: 180,
-  };
-
-  // Uniques possédées par saison
-  const ownedRows = await this.dataSource.query(
-    `
-    SELECT
-      COALESCE(c.season, c.extension) AS seasonKey,
-      COUNT(*) AS ownedUnique
-    FROM user_cards uc
-    JOIN cards c ON c.id = uc.card_id
-    WHERE uc.user_id = ?
-      AND COALESCE(c.season, c.extension) IN (?,?,?,?)
-    GROUP BY seasonKey
-    `,
-    [userId, ...seasons],
-  );
-
-  const ownedMap = new Map<string, number>();
-  for (const r of ownedRows) {
-    ownedMap.set(String(r.seasonKey), Number(r.ownedUnique ?? 0));
-  }
-
-  return seasons.map((s) => ({
-    season: s,
-    ownedUnique: ownedMap.get(s) ?? 0,
-    total: OFFICIAL_TOTALS[s], // ✅ plus calculé depuis DB
-  }));
-}
 
   // ----------------------------
   // DROP RATES (inchangé)
@@ -206,7 +332,7 @@ private async getSeasonProgress(userId: number): Promise<
     const cardById = new Map<number, Card>();
     for (const c of cards) cardById.set(c.id, c);
 
-    const seasons: Season[] = ['Origins', 'Campus', 'Battle', 'Stellar'];
+    const seasons: CoreSeason[] = ['Origins', 'Campus', 'Battle', 'Stellar'];
     const seasonFilter = input.season;
 
     const makeAcc = () => ({
@@ -230,7 +356,7 @@ private async getSeasonProgress(userId: number): Promise<
     });
 
     const accGlobal = makeAcc();
-    const accBySeason: Record<Season, ReturnType<typeof makeAcc>> = {
+    const accBySeason: Record<CoreSeason, ReturnType<typeof makeAcc>> = {
       Origins: makeAcc(),
       Campus: makeAcc(),
       Battle: makeAcc(),
@@ -246,15 +372,15 @@ private async getSeasonProgress(userId: number): Promise<
       return false;
     };
 
-    const detectSeasonFromIds = (ids: number[]): Season | null => {
+    const detectSeasonFromIds = (ids: number[]): CoreSeason | null => {
       if (!ids.length) return null;
       const first = cardById.get(ids[0]);
-      const season = first?.season as Season | undefined;
+      const season = first?.season as CoreSeason | undefined;
       if (season && seasons.includes(season)) return season;
 
       for (const id of ids) {
         const c = cardById.get(id);
-        const s = c?.season as Season | undefined;
+        const s = c?.season as CoreSeason | undefined;
         if (s && seasons.includes(s)) return s;
       }
       return null;
@@ -297,7 +423,7 @@ private async getSeasonProgress(userId: number): Promise<
       }
     };
 
-    const pushBooster = (season: Season, ids: number[], origin: 'unit' | 'display') => {
+    const pushBooster = (season: CoreSeason, ids: number[], origin: 'unit' | 'display') => {
       const accS = accBySeason[season];
 
       const doAcc = (acc: ReturnType<typeof makeAcc>) => {
@@ -317,7 +443,7 @@ private async getSeasonProgress(userId: number): Promise<
       doAcc(accGlobal);
     };
 
-    const pushDisplay = (season: Season, boosters: number[][]) => {
+    const pushDisplay = (season: CoreSeason, boosters: number[][]) => {
       const accS = accBySeason[season];
 
       accS.displaysCount += 1;
@@ -338,7 +464,7 @@ private async getSeasonProgress(userId: number): Promise<
     }
 
     for (const d of displayOpenings) {
-      const season = (d as any).season as Season;
+      const season = (d as any).season as CoreSeason;
       if (!season || !seasons.includes(season)) continue;
 
       if (seasonFilter && season !== seasonFilter) continue;
