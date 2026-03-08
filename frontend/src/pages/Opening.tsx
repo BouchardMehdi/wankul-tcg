@@ -455,16 +455,20 @@ export default function Opening() {
     el.style.setProperty("--hy", "50%");
   }, [index, phase]);
 
-  function handleHoloMove(e: React.MouseEvent) {
+  function updateRevealHoloPosition(clientX: number, clientY: number) {
     const el = cardWrapRef.current;
     if (!el) return;
 
     const rect = el.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
+    const x = clamp((clientX - rect.left) / rect.width, 0, 1);
+    const y = clamp((clientY - rect.top) / rect.height, 0, 1);
 
     el.style.setProperty("--hx", `${(x * 100).toFixed(1)}%`);
     el.style.setProperty("--hy", `${(y * 100).toFixed(1)}%`);
+  }
+
+  function handleHoloMove(e: React.MouseEvent) {
+    updateRevealHoloPosition(e.clientX, e.clientY);
   }
 
   function handleHoloLeave() {
@@ -680,6 +684,8 @@ export default function Opening() {
     pointerIdRef.current = e.pointerId;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 
+    updateRevealHoloPosition(e.clientX, e.clientY);
+
     startXRef.current = e.clientX;
     lastMoveXRef.current = e.clientX;
     lastMoveTRef.current = performance.now();
@@ -696,6 +702,7 @@ export default function Opening() {
     const now = performance.now();
     const dx = e.clientX - startXRef.current;
 
+    updateRevealHoloPosition(e.clientX, e.clientY);
     setDragX(clamp(dx, -190, 190));
 
     const dt = Math.max(1, now - lastMoveTRef.current);
@@ -725,6 +732,7 @@ export default function Opening() {
     } else {
       setDragX(0);
       velocityRef.current = 0;
+      handleHoloLeave();
     }
   }
 

@@ -427,22 +427,34 @@
 
 @keyframes foilSparkle {
   0%   { background-position: 0 0, 0 0; opacity: 0.00; }
-  50%  { background-position: 18px 26px, 12px 10px; opacity: 0.30; }
+  50%  { background-position: 18px 26px, 12px 10px; opacity: 0.26; }
   100% { background-position: 0 0, 0 0; opacity: 0.00; }
+}
+
+.openingCardWrap.is-rare {
+  --edgePow: 1;
+  --foil-opacity: 0.72;
+  --spark-opacity: 0.20;
 }
 
 .openingCardWrap.is-rare::before {
   content: "";
   position: absolute;
-  inset: -20%;
+  inset: -18%;
   z-index: 2;
   pointer-events: none;
   mix-blend-mode: color-dodge;
-  opacity: 0.70;
+  opacity: var(--foil-opacity);
   background-image:
-    radial-gradient(320px 220px at 50% 40%, rgba(255,255,255,0.60), rgba(255,255,255,0.18) 30%, transparent 65%),
+    radial-gradient(
+      320px 220px at 50% 40%,
+      rgba(255,255,255,0.58),
+      rgba(255,255,255,0.16) 30%,
+      transparent 66%
+    ),
     var(--holo-gradient);
   background-size: 140% 140%, 220% 220%;
+  background-repeat: no-repeat, repeat;
   animation: foilShift 7s ease-in-out infinite;
 }
 
@@ -453,8 +465,8 @@
   z-index: 2;
   pointer-events: none;
   mix-blend-mode: overlay;
-  opacity: 0.22;
-  background-image: radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1.9px);
+  opacity: var(--spark-opacity);
+  background-image: radial-gradient(rgba(255,255,255,0.34) 1px, transparent 1.9px);
   background-size: 16px 16px;
   animation: foilSparkle 5s ease-in-out infinite;
 }
@@ -464,59 +476,117 @@
   --holo-gradient:
     repeating-linear-gradient(
       120deg,
-      rgba(215, 103, 20, 0.55) 0%,
-      rgba(28, 78, 73, 0.55) 10%,
-      rgba(215, 197, 55, 0.55) 15%,
-      rgba(126, 201, 64, 0.55) 20%,
-      rgba(79, 176, 169, 0.55) 25%,
-      rgba(138, 161, 255, 0.55) 30%,
-      rgba(177, 107, 204, 0.55) 35%,
-      rgba(215, 103, 20, 0.55) 45%
+      rgba(215, 103, 20, 0.52) 0%,
+      rgba(28, 78, 73, 0.52) 10%,
+      rgba(215, 197, 55, 0.52) 15%,
+      rgba(126, 201, 64, 0.52) 20%,
+      rgba(79, 176, 169, 0.52) 25%,
+      rgba(138, 161, 255, 0.52) 30%,
+      rgba(177, 107, 204, 0.52) 35%,
+      rgba(215, 103, 20, 0.52) 45%
     );
+  --edge: rgba(168, 110, 255, 0.95);
+  --glow: rgba(150, 110, 255, 0.34);
+  --edgePow: 1.05;
 }
 
 .openingCardWrap.rarity-leg-bronze {
   --holo-gradient:
     repeating-linear-gradient(
       120deg,
-      rgba(205, 127, 50, 0.55) 0%,
-      rgba(255, 170, 110, 0.55) 20%,
-      rgba(150, 85, 40, 0.55) 40%,
-      rgba(205, 127, 50, 0.55) 60%
+      rgba(205, 127, 50, 0.58) 0%,
+      rgba(255, 170, 110, 0.52) 20%,
+      rgba(150, 85, 40, 0.56) 40%,
+      rgba(205, 127, 50, 0.58) 60%
     );
+  --edge: rgba(255, 170, 110, 0.92);
+  --glow: rgba(255, 170, 110, 0.38);
+  --edgePow: 1.10;
 }
 
 .openingCardWrap.rarity-leg-silver {
   --holo-gradient:
     repeating-linear-gradient(
       120deg,
-      rgba(220, 230, 240, 0.55) 0%,
-      rgba(180, 200, 220, 0.55) 20%,
-      rgba(240, 245, 255, 0.55) 40%,
-      rgba(200, 210, 220, 0.55) 60%
+      rgba(220, 230, 240, 0.58) 0%,
+      rgba(180, 200, 220, 0.56) 20%,
+      rgba(240, 245, 255, 0.62) 40%,
+      rgba(200, 210, 220, 0.56) 60%
     );
+  --edge: rgba(230, 245, 255, 0.95);
+  --glow: rgba(210, 230, 255, 0.42);
+  --edgePow: 1.18;
+  --spark-opacity: 0.24;
 }
 
 .openingCardWrap.rarity-leg-gold {
   --holo-gradient:
     repeating-linear-gradient(
       120deg,
-      rgba(255, 215, 0, 0.6) 0%,
-      rgba(255, 230, 120, 0.6) 20%,
-      rgba(200, 160, 0, 0.6) 40%,
-      rgba(255, 215, 0, 0.6) 60%
+      rgba(255, 215, 0, 0.62) 0%,
+      rgba(255, 230, 120, 0.60) 20%,
+      rgba(200, 160, 0, 0.60) 40%,
+      rgba(255, 215, 0, 0.62) 60%
     );
+  --edge: rgba(255, 230, 150, 0.98);
+  --glow: rgba(255, 220, 120, 0.48);
+  --edgePow: 1.28;
+  --spark-opacity: 0.24;
 }
 
-@keyframes edgeShimmer {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.openingCardWrap.rarity-gold-ticket-winner {
+  --holo-gradient:
+    repeating-linear-gradient(
+      112deg,
+      rgba(255, 232, 120, 0.76) 0%,
+      rgba(255, 255, 255, 0.42) 10%,
+      rgba(255, 196, 70, 0.74) 18%,
+      rgba(120, 230, 255, 0.42) 28%,
+      rgba(255, 228, 110, 0.74) 38%,
+      rgba(255, 255, 255, 0.34) 48%,
+      rgba(255, 200, 75, 0.74) 58%
+    );
+  --edge: rgba(255, 208, 90, 0.98);
+  --glow: rgba(255, 208, 90, 0.56);
+  --edgePow: 1.34;
+  --spark-opacity: 0.22;
+}
+
+.openingCardWrap.rarity-gold-ticket {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(255, 236, 165, 0.46) 0%,
+      rgba(255, 249, 220, 0.38) 20%,
+      rgba(228, 210, 110, 0.40) 40%,
+      rgba(255, 236, 165, 0.46) 60%
+    );
+  --edge: rgba(255, 238, 170, 0.94);
+  --glow: rgba(255, 235, 160, 0.30);
+  --edgePow: 1.08;
+  --foil-opacity: 0.58;
+  --spark-opacity: 0.14;
+}
+
+.openingCardWrap.rarity-starter {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(215, 103, 20, 0.46) 0%,
+      rgba(79, 176, 169, 0.50) 12%,
+      rgba(138, 161, 255, 0.50) 24%,
+      rgba(177, 107, 204, 0.48) 36%,
+      rgba(215, 197, 55, 0.46) 48%
+    );
+  --edge: rgba(125, 214, 255, 0.94);
+  --glow: rgba(125, 214, 255, 0.30);
+  --edgePow: 1.02;
 }
 
 .edgeGlow {
   position: absolute;
-  inset: -8px;
-  border-radius: 24px;
+  inset: -6px;
+  border-radius: 18px;
   pointer-events: none;
   z-index: 4;
   background: conic-gradient(
@@ -528,37 +598,12 @@
     rgba(255,255,255,0.0)
   );
   opacity: 0.16;
-  filter: blur(0.2px) drop-shadow(0 0 calc(12px * var(--edgePow)) var(--edge));
-}
-
-.openingCardWrap.is-rare { --edgePow: 1.0; }
-.openingCardWrap.rarity-u1.is-rare { --edge: rgba(168, 110, 255, 0.95); --edgePow: 1.05; }
-.openingCardWrap.rarity-u2.is-rare { --edge: rgba(255, 92, 120, 0.95); --edgePow: 1.12; }
-.openingCardWrap.rarity-leg-bronze.is-rare { --edge: rgba(255, 170, 110, 0.92); --edgePow: 1.10; }
-.openingCardWrap.rarity-leg-silver.is-rare { --edge: rgba(230, 245, 255, 0.95); --edgePow: 1.18; }
-.openingCardWrap.rarity-leg-gold.is-rare { --edge: rgba(255, 230, 150, 0.98); --edgePow: 1.30; }
-.openingCardWrap.rarity-gold-ticket-winner.is-rare { --edge: rgba(255, 208, 90, 0.96); --edgePow: 1.18; }
-.openingCardWrap.rarity-gold-ticket.is-rare { --edge: rgba(255, 238, 170, 0.94); --edgePow: 1.1; }
-
-.openingCardWrap.is-rare .edgeGlow {
-  animation: edgeShimmer 3.2s linear infinite;
+  filter: blur(0.2px) drop-shadow(0 0 calc(8px * var(--edgePow)) var(--edge));
 }
 
 .openingCardWrap.is-rare {
-  transition: box-shadow 400ms ease;
-  box-shadow:
-    0 16px 55px rgba(0,0,0,0.55),
-    0 0 28px var(--glow),
-    0 0 72px var(--glow);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35), 0 0 26px var(--glow);
 }
-
-.openingCardWrap.rarity-u1.is-rare { --glow: rgba(150, 110, 255, 0.55); }
-.openingCardWrap.rarity-u2.is-rare { --glow: rgba(255, 80, 120, 0.55); }
-.openingCardWrap.rarity-leg-bronze.is-rare { --glow: rgba(255, 170, 110, 0.6); }
-.openingCardWrap.rarity-leg-silver.is-rare { --glow: rgba(210, 230, 255, 0.65); }
-.openingCardWrap.rarity-leg-gold.is-rare { --glow: rgba(255, 220, 120, 0.75); }
-.openingCardWrap.rarity-gold-ticket-winner.is-rare { --glow: rgba(255, 208, 90, 0.68); }
-.openingCardWrap.rarity-gold-ticket.is-rare { --glow: rgba(255, 235, 160, 0.55); }
 
 @keyframes rareEdgeBurst {
   0%   { opacity: 0.05; filter: blur(0.2px) drop-shadow(0 0 0px var(--edge)); }
@@ -740,41 +785,142 @@
   font-size: 12px;
 }
 
-.summaryCardWrap.is-rare { --glow: rgba(155, 92, 255, 0.16); }
-.summaryCardWrap.rarity-u1.is-rare { --glow: rgba(140, 90, 255, 0.22); --edge: rgba(168, 110, 255, 0.95); --edgePow: 1.0; }
-.summaryCardWrap.rarity-u2.is-rare { --glow: rgba(255, 77, 109, 0.20); --edge: rgba(255, 92, 120, 0.95); --edgePow: 1.15; }
-.summaryCardWrap.rarity-leg-bronze.is-rare { --glow: rgba(255, 155, 90, 0.18); --edge: rgba(255, 170, 110, 0.92); --edgePow: 1.10; }
-.summaryCardWrap.rarity-leg-silver.is-rare { --glow: rgba(210, 230, 255, 0.18); --edge: rgba(230, 245, 255, 0.95); --edgePow: 1.20; }
-.summaryCardWrap.rarity-leg-gold.is-rare { --glow: rgba(255, 220, 120, 0.20); --edge: rgba(255, 230, 150, 0.98); --edgePow: 1.35; }
-.summaryCardWrap.rarity-gold-ticket-winner.is-rare { --glow: rgba(255, 210, 90, 0.18); --edge: rgba(255, 208, 90, 0.96); --edgePow: 1.18; }
-.summaryCardWrap.rarity-gold-ticket.is-rare { --glow: rgba(255, 235, 160, 0.15); --edge: rgba(255, 238, 170, 0.94); --edgePow: 1.08; }
-
 .summaryCardWrap.is-rare {
+  --foil-opacity: 0.72;
+  --spark-opacity: 0.20;
   box-shadow: 0 10px 30px rgba(0,0,0,0.35), 0 0 26px var(--glow);
+}
+
+.summaryCardWrap.rarity-u1.is-rare,
+.summaryCardWrap.rarity-u2.is-rare {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(215, 103, 20, 0.52) 0%,
+      rgba(28, 78, 73, 0.52) 10%,
+      rgba(215, 197, 55, 0.52) 15%,
+      rgba(126, 201, 64, 0.52) 20%,
+      rgba(79, 176, 169, 0.52) 25%,
+      rgba(138, 161, 255, 0.52) 30%,
+      rgba(177, 107, 204, 0.52) 35%,
+      rgba(215, 103, 20, 0.52) 45%
+    );
+  --glow: rgba(150, 110, 255, 0.34);
+  --edge: rgba(168, 110, 255, 0.95);
+  --edgePow: 1.05;
+}
+
+.summaryCardWrap.rarity-leg-bronze.is-rare {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(205, 127, 50, 0.58) 0%,
+      rgba(255, 170, 110, 0.52) 20%,
+      rgba(150, 85, 40, 0.56) 40%,
+      rgba(205, 127, 50, 0.58) 60%
+    );
+  --glow: rgba(255, 170, 110, 0.38);
+  --edge: rgba(255, 170, 110, 0.92);
+  --edgePow: 1.10;
+}
+
+.summaryCardWrap.rarity-leg-silver.is-rare {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(220, 230, 240, 0.58) 0%,
+      rgba(180, 200, 220, 0.56) 20%,
+      rgba(240, 245, 255, 0.62) 40%,
+      rgba(200, 210, 220, 0.56) 60%
+    );
+  --glow: rgba(210, 230, 255, 0.42);
+  --edge: rgba(230, 245, 255, 0.95);
+  --edgePow: 1.18;
+  --spark-opacity: 0.24;
+}
+
+.summaryCardWrap.rarity-leg-gold.is-rare {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(255, 215, 0, 0.62) 0%,
+      rgba(255, 230, 120, 0.60) 20%,
+      rgba(200, 160, 0, 0.60) 40%,
+      rgba(255, 215, 0, 0.62) 60%
+    );
+  --glow: rgba(255, 220, 120, 0.48);
+  --edge: rgba(255, 230, 150, 0.98);
+  --edgePow: 1.28;
+  --spark-opacity: 0.24;
+}
+
+.summaryCardWrap.rarity-gold-ticket-winner.is-rare {
+  --holo-gradient:
+    repeating-linear-gradient(
+      112deg,
+      rgba(255, 232, 120, 0.76) 0%,
+      rgba(255, 255, 255, 0.42) 10%,
+      rgba(255, 196, 70, 0.74) 18%,
+      rgba(120, 230, 255, 0.42) 28%,
+      rgba(255, 228, 110, 0.74) 38%,
+      rgba(255, 255, 255, 0.34) 48%,
+      rgba(255, 200, 75, 0.74) 58%
+    );
+  --glow: rgba(255, 208, 90, 0.56);
+  --edge: rgba(255, 208, 90, 0.98);
+  --edgePow: 1.34;
+  --spark-opacity: 0.22;
+}
+
+.summaryCardWrap.rarity-gold-ticket.is-rare {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(255, 236, 165, 0.46) 0%,
+      rgba(255, 249, 220, 0.38) 20%,
+      rgba(228, 210, 110, 0.40) 40%,
+      rgba(255, 236, 165, 0.46) 60%
+    );
+  --glow: rgba(255, 235, 160, 0.30);
+  --edge: rgba(255, 238, 170, 0.94);
+  --edgePow: 1.08;
+  --foil-opacity: 0.58;
+  --spark-opacity: 0.14;
+}
+
+.summaryCardWrap.rarity-starter.is-rare {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(215, 103, 20, 0.46) 0%,
+      rgba(79, 176, 169, 0.50) 12%,
+      rgba(138, 161, 255, 0.50) 24%,
+      rgba(177, 107, 204, 0.48) 36%,
+      rgba(215, 197, 55, 0.46) 48%
+    );
+  --glow: rgba(125, 214, 255, 0.30);
+  --edge: rgba(125, 214, 255, 0.94);
+  --edgePow: 1.02;
 }
 
 .summaryCardWrap.is-rare::before {
   content: "";
   position: absolute;
-  inset: -20%;
+  inset: -18%;
   z-index: 2;
   pointer-events: none;
   mix-blend-mode: color-dodge;
-  opacity: 0.70;
+  opacity: var(--foil-opacity);
   background-image:
-    radial-gradient(320px 220px at 50% 40%, rgba(255,255,255,0.60), rgba(255,255,255,0.18) 30%, transparent 65%),
-    repeating-linear-gradient(
-      120deg,
-      rgba(215, 103, 20, 0.55) 0%,
-      rgba(28, 78, 73, 0.55) 10%,
-      rgba(215, 197, 55, 0.55) 15%,
-      rgba(126, 201, 64, 0.55) 20%,
-      rgba(79, 176, 169, 0.55) 25%,
-      rgba(138, 161, 255, 0.55) 30%,
-      rgba(177, 107, 204, 0.55) 35%,
-      rgba(215, 103, 20, 0.55) 45%
-    );
+    radial-gradient(
+      320px 220px at 50% 40%,
+      rgba(255,255,255,0.58),
+      rgba(255,255,255,0.16) 30%,
+      transparent 66%
+    ),
+    var(--holo-gradient);
   background-size: 140% 140%, 220% 220%;
+  background-repeat: no-repeat, repeat;
   animation: foilShift 7.0s ease-in-out infinite;
 }
 
@@ -785,8 +931,8 @@
   z-index: 2;
   pointer-events: none;
   mix-blend-mode: overlay;
-  opacity: 0.22;
-  background-image: radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1.9px);
+  opacity: var(--spark-opacity);
+  background-image: radial-gradient(rgba(255,255,255,0.34) 1px, transparent 1.9px);
   background-size: 16px 16px;
   animation: foilSparkle 5.0s ease-in-out infinite;
 }

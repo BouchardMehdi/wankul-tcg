@@ -32,18 +32,36 @@
 }
 
 /* Filters */
-.filterCard { margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.filterCard {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
 
 .filterRow {
   display: grid;
   grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
   gap: 12px;
 }
-@media (max-width: 1100px) { .filterRow { grid-template-columns: 1fr 1fr; } }
 
-.filterGroup { display: grid; gap: 6px; }
+@media (max-width: 1100px) {
+  .filterRow {
+    grid-template-columns: 1fr 1fr;
+  }
+}
 
-.filterLabel { font-size: 12px; font-weight: 900; opacity: 0.75; }
+.filterGroup {
+  display: grid;
+  gap: 6px;
+}
+
+.filterLabel {
+  font-size: 12px;
+  font-weight: 900;
+  opacity: 0.75;
+}
 
 .filterInput,
 .filterSelect {
@@ -55,11 +73,13 @@
   padding: 0 12px;
   outline: none;
 }
+
 .filterInput:focus,
 .filterSelect:focus {
   border-color: rgba(155, 92, 255, 0.55);
   box-shadow: 0 0 0 4px rgba(155, 92, 255, 0.14);
 }
+
 .filterSelect option {
   background: rgba(12, 16, 28, 0.98);
   color: rgba(240,245,255,0.96);
@@ -74,8 +94,19 @@
   flex-wrap: wrap;
 }
 
-.checkLine { display: inline-flex; align-items: center; gap: 10px; font-weight: 900; opacity: 0.88; }
-.filterActions { display: flex; align-items: center; gap: 10px; }
+.checkLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  opacity: 0.88;
+}
+
+.filterActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
 /* Buttons */
 .btn {
@@ -89,8 +120,17 @@
   cursor: pointer;
   transition: transform 160ms cubic-bezier(.2,.8,.2,1), filter 160ms cubic-bezier(.2,.8,.2,1);
 }
-.btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
-.btn-primary { border: 0; background: linear-gradient(135deg, #ff4d6d, #9b5cff); box-shadow: 0 16px 55px rgba(255,77,109,0.18); }
+
+.btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.btn-primary {
+  border: 0;
+  background: linear-gradient(135deg, #ff4d6d, #9b5cff);
+  box-shadow: 0 16px 55px rgba(255,77,109,0.18);
+}
 
 /* Pagination */
 .collectionTopBar {
@@ -103,12 +143,29 @@
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
-.small { font-weight: 900; opacity: 0.9; }
+.small {
+  font-weight: 900;
+  opacity: 0.9;
+}
 
-.pager { display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.pager .btn { height: 38px; border-radius: 12px; }
+.pager {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
 
-.pagerJump { display: inline-flex; align-items: center; gap: 8px; margin-left: 6px; }
+.pager .btn {
+  height: 38px;
+  border-radius: 12px;
+}
+
+.pagerJump {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 6px;
+}
 
 .pageInput {
   width: 76px;
@@ -121,24 +178,52 @@
   outline: none;
   font-weight: 950;
 }
+
 .pageInput:focus {
   border-color: rgba(155, 92, 255, 0.55);
   box-shadow: 0 0 0 4px rgba(155, 92, 255, 0.14);
 }
-.pageHint { font-size: 12px; font-weight: 900; opacity: 0.75; }
+
+.pageHint {
+  font-size: 12px;
+  font-weight: 900;
+  opacity: 0.75;
+}
 
 /* Grid */
-.collectionBody { padding: 14px; }
+.collectionBody {
+  padding: 14px;
+}
 
 .cardsGrid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
 }
-@media (max-width: 1400px) { .cardsGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@media (max-width: 1200px) { .cardsGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 860px)  { .cardsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 520px)  { .cardsGrid { grid-template-columns: 1fr; } }
+
+@media (max-width: 1400px) {
+  .cardsGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1200px) {
+  .cardsGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .cardsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .cardsGrid {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* =========================
    CARD
@@ -162,21 +247,32 @@
   aspect-ratio: 3 / 4;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(0,0,0,0.25);
+  background:
+    radial-gradient(130% 90% at 0% 0%, rgba(255,255,255,0.08), transparent 40%),
+    rgba(0,0,0,0.25);
   overflow: hidden;
+  isolation: isolate;
 
   transform-style: preserve-3d;
-
   transform: translateY(-6px);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.04);
 
-  transition: transform 160ms cubic-bezier(.2,.8,.2,1), filter 160ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms cubic-bezier(.2,.8,.2,1);
+  transition:
+    transform 160ms cubic-bezier(.2,.8,.2,1),
+    filter 160ms cubic-bezier(.2,.8,.2,1),
+    box-shadow 180ms cubic-bezier(.2,.8,.2,1),
+    border-color 180ms cubic-bezier(.2,.8,.2,1);
   will-change: transform;
 }
 
 .cardTile:hover .cardTile__imgWrap {
   transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(-8px);
   filter: brightness(1.04);
+  box-shadow:
+    0 24px 50px rgba(0,0,0,0.42),
+    inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
 .cardTile__img {
@@ -185,6 +281,11 @@
   object-fit: cover;
   display: block;
   transform: scale(1.02);
+  transition: transform 220ms ease, filter 220ms ease;
+}
+
+.cardTile:hover .cardTile__img {
+  transform: scale(1.035);
 }
 
 .cardTile__dim {
@@ -219,7 +320,7 @@
   padding: 10px 12px 12px;
   background: rgba(0,0,0,0.14);
   border-radius: 0 0 20px 20px;
-  position: relative; /* IMPORTANT */
+  position: relative;
 }
 
 .cardTile__qty {
@@ -233,6 +334,7 @@
   font-weight: 950;
   font-size: 12px;
 }
+
 .cardTile__name {
   font-weight: 950;
   font-size: 14px;
@@ -251,17 +353,6 @@
   z-index: 10;
 }
 
-/* Fancybox click target */
-.cardTile__zoom {
-  display: block;
-  width: 100%;
-  height: 100%;
-  cursor: zoom-in;
-  text-decoration: none;
-  color: inherit;
-}
-
-/* Click target fancybox */
 .cardTile__zoom {
   display: block;
   width: 100%;
@@ -275,7 +366,6 @@
   outline: none;
 }
 
-/* évite que l’ancre casse le layout */
 .cardTile__zoom .cardTile__img {
   width: 100%;
   height: 100%;
@@ -283,24 +373,23 @@
   display: block;
 }
 
-/* =========================================================
-   TERRAIN ONLY (grille)
-   Objectif: pas de crop, rendu "letterbox" propre
-========================================================= */
+/* TERRAIN */
 
 .cardTile--terrain .cardTile__imgWrap {
-  background: rgba(0, 0, 0, 0.55);
+  background:
+    radial-gradient(130% 90% at 0% 0%, rgba(255,255,255,0.08), transparent 40%),
+    rgba(0,0,0,0.25);
 }
 
-.cardTile--terrain .cardTile__img {
-  object-fit: contain !important; /* important: empêche le crop */
+.cardTile--terrain .cardTile__img,
+.cardTile--terrain .cardTile__zoom .cardTile__img {
+  object-fit: cover !important;
   background: transparent;
   filter: none;
 }
 
-/* Optionnel: un léger padding intérieur pour respirer */
 .cardTile--terrain .cardTile__zoom {
-  padding: 10px;
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -309,7 +398,6 @@
   transform-origin: center center;
 }
 
-/* Better centering */
 .fancybox__slide.fb-terrain-rotate {
   display: flex;
   align-items: center;
@@ -341,22 +429,39 @@
 }
 
 /* ======================================================
-   ✅ HOLO SYSTEM — IDENTIQUE À OPENING (HOVER ONLY)
+   HOLO COLLECTION — inspiré Opening, hover only
 ====================================================== */
 
-@keyframes foilShift {
-  0%   { background-position: 0% 0%, 0% 0%; }
-  50%  { background-position: 100% 60%, 60% 100%; }
-  100% { background-position: 0% 0%, 0% 0%; }
+@keyframes collectionFoilShift {
+  0%   { background-position: 0% 0%, 0% 0%, 0% 0%; }
+  50%  { background-position: 100% 60%, 60% 100%, 100% 0%; }
+  100% { background-position: 0% 0%, 0% 0%, 0% 0%; }
 }
 
-@keyframes foilSparkle {
-  0%   { background-position: 0 0; opacity: 0.12; }
-  50%  { background-position: 18px 26px; opacity: 0.28; }
-  100% { background-position: 0 0; opacity: 0.12; }
+@keyframes collectionFoilSparkle {
+  0%   { background-position: 0 0, 0 0; opacity: 0.00; }
+  50%  { background-position: 18px 26px, 12px 10px; opacity: 0.26; }
+  100% { background-position: 0 0, 0 0; opacity: 0.00; }
 }
 
-/* Base invisible */
+@keyframes collectionEdgeShimmer {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.cardTile.rarity-u1,
+.cardTile.rarity-u2,
+.cardTile.rarity-leg-bronze,
+.cardTile.rarity-leg-silver,
+.cardTile.rarity-leg-gold,
+.cardTile.rarity-booster-gold,
+.cardTile.rarity-starter {
+  --edgePow: 1;
+  --foil-opacity: 0;
+  --spark-opacity: 0;
+}
+
+/* Couche holo principale */
 .cardTile.rarity-u1 .cardTile__imgWrap::before,
 .cardTile.rarity-u2 .cardTile__imgWrap::before,
 .cardTile.rarity-leg-bronze .cardTile__imgWrap::before,
@@ -366,24 +471,25 @@
 .cardTile.rarity-starter .cardTile__imgWrap::before {
   content: "";
   position: absolute;
-  inset: -20%;
+  inset: -18%;
+  z-index: 3;
   pointer-events: none;
-  z-index: 4;
+  mix-blend-mode: color-dodge;
   opacity: 0;
-
   background-image:
     radial-gradient(
-      320px 220px at 50% 40%,
-      rgba(255,255,255,0.6),
-      rgba(255,255,255,0.18) 30%,
-      transparent 65%
+      320px 220px at var(--hx) var(--hy),
+      rgba(255,255,255,0.58),
+      rgba(255,255,255,0.16) 30%,
+      transparent 66%
     ),
     var(--holo-gradient);
-
   background-size: 140% 140%, 220% 220%;
+  background-repeat: no-repeat, repeat;
   transition: opacity 180ms ease;
 }
 
+/* Couche sparkle discrète */
 .cardTile.rarity-u1 .cardTile__imgWrap::after,
 .cardTile.rarity-u2 .cardTile__imgWrap::after,
 .cardTile.rarity-leg-bronze .cardTile__imgWrap::after,
@@ -394,18 +500,155 @@
   content: "";
   position: absolute;
   inset: 0;
-  pointer-events: none;
   z-index: 4;
+  pointer-events: none;
+  mix-blend-mode: overlay;
   opacity: 0;
-
   background-image:
-    radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1.9px);
-
+    radial-gradient(rgba(255,255,255,0.34) 1px, transparent 1.9px);
   background-size: 16px 16px;
   transition: opacity 180ms ease;
 }
 
-/* Activation hover */
+/* Edge glow type opening */
+.cardTile.rarity-u1 .cardTile__imgWrap > .cardTile__zoom::before,
+.cardTile.rarity-u2 .cardTile__imgWrap > .cardTile__zoom::before,
+.cardTile.rarity-leg-bronze .cardTile__imgWrap > .cardTile__zoom::before,
+.cardTile.rarity-leg-silver .cardTile__imgWrap > .cardTile__zoom::before,
+.cardTile.rarity-leg-gold .cardTile__imgWrap > .cardTile__zoom::before,
+.cardTile.rarity-booster-gold .cardTile__imgWrap > .cardTile__zoom::before,
+.cardTile.rarity-starter .cardTile__imgWrap > .cardTile__zoom::before,
+.cardTile.rarity-u1 .cardTile__imgWrap > .cardTile__img::before,
+.cardTile.rarity-u2 .cardTile__imgWrap > .cardTile__img::before,
+.cardTile.rarity-leg-bronze .cardTile__imgWrap > .cardTile__img::before,
+.cardTile.rarity-leg-silver .cardTile__imgWrap > .cardTile__img::before,
+.cardTile.rarity-leg-gold .cardTile__imgWrap > .cardTile__img::before,
+.cardTile.rarity-booster-gold .cardTile__imgWrap > .cardTile__img::before,
+.cardTile.rarity-starter .cardTile__imgWrap > .cardTile__img::before {
+  content: none;
+}
+
+/* on crée l’edge glow directement sur imgWrap */
+.cardTile.rarity-u1 .cardTile__imgWrap .cardTile__edgeGlow,
+.cardTile.rarity-u2 .cardTile__imgWrap .cardTile__edgeGlow,
+.cardTile.rarity-leg-bronze .cardTile__imgWrap .cardTile__edgeGlow,
+.cardTile.rarity-leg-silver .cardTile__imgWrap .cardTile__edgeGlow,
+.cardTile.rarity-leg-gold .cardTile__imgWrap .cardTile__edgeGlow,
+.cardTile.rarity-booster-gold .cardTile__imgWrap .cardTile__edgeGlow,
+.cardTile.rarity-starter .cardTile__imgWrap .cardTile__edgeGlow {
+  display: none;
+}
+
+.cardTile.rarity-u1 .cardTile__imgWrap {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(215, 103, 20, 0.52) 0%,
+      rgba(28, 78, 73, 0.52) 10%,
+      rgba(215, 197, 55, 0.52) 15%,
+      rgba(126, 201, 64, 0.52) 20%,
+      rgba(79, 176, 169, 0.52) 25%,
+      rgba(138, 161, 255, 0.52) 30%,
+      rgba(177, 107, 204, 0.52) 35%,
+      rgba(215, 103, 20, 0.52) 45%
+    );
+  --edge: rgba(168, 110, 255, 0.95);
+  --glow: rgba(150, 110, 255, 0.34);
+  --edgePow: 1.05;
+}
+
+.cardTile.rarity-u2 .cardTile__imgWrap {
+  --holo-gradient:
+    repeating-linear-gradient(
+      110deg,
+      rgba(255, 80, 120, 0.65) 0%,
+      rgba(255, 170, 70, 0.58) 10%,
+      rgba(255, 236, 120, 0.62) 16%,
+      rgba(110, 235, 255, 0.62) 24%,
+      rgba(120, 135, 255, 0.64) 32%,
+      rgba(220, 100, 255, 0.66) 40%,
+      rgba(255, 80, 120, 0.65) 52%
+    );
+  --edge: rgba(255, 92, 120, 0.95);
+  --glow: rgba(255, 80, 120, 0.40);
+  --edgePow: 1.15;
+}
+
+.cardTile.rarity-leg-bronze .cardTile__imgWrap {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(205, 127, 50, 0.58) 0%,
+      rgba(255, 170, 110, 0.52) 20%,
+      rgba(150, 85, 40, 0.56) 40%,
+      rgba(205, 127, 50, 0.58) 60%
+    );
+  --edge: rgba(255, 170, 110, 0.92);
+  --glow: rgba(255, 170, 110, 0.38);
+  --edgePow: 1.10;
+}
+
+.cardTile.rarity-leg-silver .cardTile__imgWrap {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(220, 230, 240, 0.58) 0%,
+      rgba(180, 200, 220, 0.56) 20%,
+      rgba(240, 245, 255, 0.62) 40%,
+      rgba(200, 210, 220, 0.56) 60%
+    );
+  --edge: rgba(230, 245, 255, 0.95);
+  --glow: rgba(210, 230, 255, 0.42);
+  --edgePow: 1.18;
+}
+
+.cardTile.rarity-leg-gold .cardTile__imgWrap {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(255, 215, 0, 0.62) 0%,
+      rgba(255, 230, 120, 0.60) 20%,
+      rgba(200, 160, 0, 0.60) 40%,
+      rgba(255, 215, 0, 0.62) 60%
+    );
+  --edge: rgba(255, 230, 150, 0.98);
+  --glow: rgba(255, 220, 120, 0.48);
+  --edgePow: 1.28;
+}
+
+.cardTile.rarity-booster-gold .cardTile__imgWrap {
+  --holo-gradient:
+    repeating-linear-gradient(
+      112deg,
+      rgba(255, 232, 120, 0.76) 0%,
+      rgba(255, 255, 255, 0.42) 10%,
+      rgba(255, 196, 70, 0.74) 18%,
+      rgba(120, 230, 255, 0.42) 28%,
+      rgba(255, 228, 110, 0.74) 38%,
+      rgba(255, 255, 255, 0.34) 48%,
+      rgba(255, 200, 75, 0.74) 58%
+    );
+  --edge: rgba(255, 208, 90, 0.98);
+  --glow: rgba(255, 208, 90, 0.56);
+  --edgePow: 1.34;
+}
+
+.cardTile.rarity-starter .cardTile__imgWrap {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(215, 103, 20, 0.46) 0%,
+      rgba(79, 176, 169, 0.50) 12%,
+      rgba(138, 161, 255, 0.50) 24%,
+      rgba(177, 107, 204, 0.48) 36%,
+      rgba(215, 197, 55, 0.46) 48%
+    );
+  --edge: rgba(125, 214, 255, 0.94);
+  --glow: rgba(125, 214, 255, 0.30);
+  --edgePow: 1.02;
+}
+
+/* Hover only */
 .cardTile.rarity-u1:hover .cardTile__imgWrap::before,
 .cardTile.rarity-u2:hover .cardTile__imgWrap::before,
 .cardTile.rarity-leg-bronze:hover .cardTile__imgWrap::before,
@@ -413,8 +656,8 @@
 .cardTile.rarity-leg-gold:hover .cardTile__imgWrap::before,
 .cardTile.rarity-booster-gold:hover .cardTile__imgWrap::before,
 .cardTile.rarity-starter:hover .cardTile__imgWrap::before {
-  opacity: 0.75;
-  animation: foilShift 7s ease-in-out infinite;
+  opacity: 0.72;
+  animation: collectionFoilShift 7s ease-in-out infinite;
 }
 
 .cardTile.rarity-u1:hover .cardTile__imgWrap::after,
@@ -424,11 +667,167 @@
 .cardTile.rarity-leg-gold:hover .cardTile__imgWrap::after,
 .cardTile.rarity-booster-gold:hover .cardTile__imgWrap::after,
 .cardTile.rarity-starter:hover .cardTile__imgWrap::after {
-  opacity: 0.22;
-  animation: foilSparkle 5s ease-in-out infinite;
+  opacity: 0.20;
+  animation: collectionFoilSparkle 5s ease-in-out infinite;
 }
 
-/* Désactive si locked */
+.cardTile.rarity-u1:hover .cardTile__imgWrap,
+.cardTile.rarity-u2:hover .cardTile__imgWrap,
+.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap,
+.cardTile.rarity-leg-silver:hover .cardTile__imgWrap,
+.cardTile.rarity-leg-gold:hover .cardTile__imgWrap,
+.cardTile.rarity-booster-gold:hover .cardTile__imgWrap,
+.cardTile.rarity-starter:hover .cardTile__imgWrap {
+  box-shadow:
+    0 24px 50px rgba(0,0,0,0.42),
+    0 0 28px var(--glow),
+    0 0 72px var(--glow),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+/* edge glow animé, style opening, hover only */
+.cardTile.rarity-u1:hover .cardTile__imgWrap,
+.cardTile.rarity-u2:hover .cardTile__imgWrap,
+.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap,
+.cardTile.rarity-leg-silver:hover .cardTile__imgWrap,
+.cardTile.rarity-leg-gold:hover .cardTile__imgWrap,
+.cardTile.rarity-booster-gold:hover .cardTile__imgWrap,
+.cardTile.rarity-starter:hover .cardTile__imgWrap {
+  position: relative;
+}
+
+.cardTile.rarity-u1:hover .cardTile__imgWrap > .cardTile__edge-ring,
+.cardTile.rarity-u2:hover .cardTile__imgWrap > .cardTile__edge-ring,
+.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap > .cardTile__edge-ring,
+.cardTile.rarity-leg-silver:hover .cardTile__imgWrap > .cardTile__edge-ring,
+.cardTile.rarity-leg-gold:hover .cardTile__imgWrap > .cardTile__edge-ring,
+.cardTile.rarity-booster-gold:hover .cardTile__imgWrap > .cardTile__edge-ring,
+.cardTile.rarity-starter:hover .cardTile__imgWrap > .cardTile__edge-ring {
+  opacity: 1;
+}
+
+.cardTile.rarity-u1 .cardTile__imgWrap::marker,
+.cardTile.rarity-u2 .cardTile__imgWrap::marker,
+.cardTile.rarity-leg-bronze .cardTile__imgWrap::marker,
+.cardTile.rarity-leg-silver .cardTile__imgWrap::marker,
+.cardTile.rarity-leg-gold .cardTile__imgWrap::marker,
+.cardTile.rarity-booster-gold .cardTile__imgWrap::marker,
+.cardTile.rarity-starter .cardTile__imgWrap::marker {
+  content: "";
+}
+
+.cardTile.rarity-u1 .cardTile__imgWrap .edgeGlowCollection,
+.cardTile.rarity-u2 .cardTile__imgWrap .edgeGlowCollection,
+.cardTile.rarity-leg-bronze .cardTile__imgWrap .edgeGlowCollection,
+.cardTile.rarity-leg-silver .cardTile__imgWrap .edgeGlowCollection,
+.cardTile.rarity-leg-gold .cardTile__imgWrap .edgeGlowCollection,
+.cardTile.rarity-booster-gold .cardTile__imgWrap .edgeGlowCollection,
+.cardTile.rarity-starter .cardTile__imgWrap .edgeGlowCollection {
+  display: none;
+}
+
+/* Faux edge glow sans modifier le TSX */
+.cardTile.rarity-u1 .cardTile__imgWrap > .cardTile__img,
+.cardTile.rarity-u1 .cardTile__imgWrap > .cardTile__zoom,
+.cardTile.rarity-u2 .cardTile__imgWrap > .cardTile__img,
+.cardTile.rarity-u2 .cardTile__imgWrap > .cardTile__zoom,
+.cardTile.rarity-leg-bronze .cardTile__imgWrap > .cardTile__img,
+.cardTile.rarity-leg-bronze .cardTile__imgWrap > .cardTile__zoom,
+.cardTile.rarity-leg-silver .cardTile__imgWrap > .cardTile__img,
+.cardTile.rarity-leg-silver .cardTile__imgWrap > .cardTile__zoom,
+.cardTile.rarity-leg-gold .cardTile__imgWrap > .cardTile__img,
+.cardTile.rarity-leg-gold .cardTile__imgWrap > .cardTile__zoom,
+.cardTile.rarity-booster-gold .cardTile__imgWrap > .cardTile__img,
+.cardTile.rarity-booster-gold .cardTile__imgWrap > .cardTile__zoom,
+.cardTile.rarity-starter .cardTile__imgWrap > .cardTile__img,
+.cardTile.rarity-starter .cardTile__imgWrap > .cardTile__zoom {
+  position: relative;
+  z-index: 1;
+}
+
+.cardTile.rarity-u1 .cardTile__imgWrap::selection,
+.cardTile.rarity-u2 .cardTile__imgWrap::selection,
+.cardTile.rarity-leg-bronze .cardTile__imgWrap::selection,
+.cardTile.rarity-leg-silver .cardTile__imgWrap::selection,
+.cardTile.rarity-leg-gold .cardTile__imgWrap::selection,
+.cardTile.rarity-booster-gold .cardTile__imgWrap::selection,
+.cardTile.rarity-starter .cardTile__imgWrap::selection {
+  background: transparent;
+}
+
+.cardTile.rarity-u1:hover .cardTile__imgWrap {
+  border-color: rgba(168, 110, 255, 0.32);
+}
+
+.cardTile.rarity-u2:hover .cardTile__imgWrap {
+  border-color: rgba(255, 92, 120, 0.34);
+}
+
+.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap {
+  border-color: rgba(255, 170, 110, 0.30);
+}
+
+.cardTile.rarity-leg-silver:hover .cardTile__imgWrap {
+  border-color: rgba(230, 245, 255, 0.30);
+}
+
+.cardTile.rarity-leg-gold:hover .cardTile__imgWrap {
+  border-color: rgba(255, 230, 150, 0.34);
+}
+
+.cardTile.rarity-booster-gold:hover .cardTile__imgWrap {
+  border-color: rgba(255, 208, 90, 0.40);
+}
+
+.cardTile.rarity-starter:hover .cardTile__imgWrap {
+  border-color: rgba(125, 214, 255, 0.26);
+}
+
+/* halo périphérique façon opening, sans pseudo supplémentaire HTML */
+.cardTile.rarity-u1:hover {
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.22),
+    0 0 18px rgba(150, 110, 255, 0.16);
+}
+
+.cardTile.rarity-u2:hover {
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.22),
+    0 0 22px rgba(255, 80, 120, 0.18);
+}
+
+.cardTile.rarity-leg-bronze:hover {
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.22),
+    0 0 18px rgba(255, 170, 110, 0.16);
+}
+
+.cardTile.rarity-leg-silver:hover {
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.22),
+    0 0 18px rgba(210, 230, 255, 0.18);
+}
+
+.cardTile.rarity-leg-gold:hover {
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.22),
+    0 0 22px rgba(255, 220, 120, 0.20);
+}
+
+.cardTile.rarity-booster-gold:hover {
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.22),
+    0 0 26px rgba(255, 208, 90, 0.24),
+    0 0 34px rgba(104, 224, 255, 0.10);
+}
+
+.cardTile.rarity-starter:hover {
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.22),
+    0 0 16px rgba(125, 214, 255, 0.14);
+}
+
+/* surtout pas d'effet sur les locked */
 .cardTile.is-locked .cardTile__imgWrap::before,
 .cardTile.is-locked .cardTile__imgWrap::after,
 .cardTile.is-locked:hover .cardTile__imgWrap::before,
@@ -437,61 +836,10 @@
   animation: none !important;
 }
 
-/* ======================================================
-   🎨 COULEURS — IDENTIQUES À OPENING
-====================================================== */
-
-/* 🌈 Rainbow (U1 / U2 / Starter) */
-.cardTile.rarity-u1,
-.cardTile.rarity-u2,
-.cardTile.rarity-starter {
-  --holo-gradient:
-    repeating-linear-gradient(
-      120deg,
-      rgba(215, 103, 20, 0.55) 0%,
-      rgba(28, 78, 73, 0.55) 10%,
-      rgba(215, 197, 55, 0.55) 15%,
-      rgba(126, 201, 64, 0.55) 20%,
-      rgba(79, 176, 169, 0.55) 25%,
-      rgba(138, 161, 255, 0.55) 30%,
-      rgba(177, 107, 204, 0.55) 35%,
-      rgba(215, 103, 20, 0.55) 45%
-    );
-}
-
-/* 🟤 Bronze */
-.cardTile.rarity-leg-bronze {
-  --holo-gradient:
-    repeating-linear-gradient(
-      120deg,
-      rgba(205, 127, 50, 0.55) 0%,
-      rgba(255, 170, 110, 0.55) 20%,
-      rgba(150, 85, 40, 0.55) 40%,
-      rgba(205, 127, 50, 0.55) 60%
-    );
-}
-
-/* ⚪ Silver */
-.cardTile.rarity-leg-silver {
-  --holo-gradient:
-    repeating-linear-gradient(
-      120deg,
-      rgba(220, 230, 240, 0.55) 0%,
-      rgba(180, 200, 220, 0.55) 20%,
-      rgba(240, 245, 255, 0.55) 40%,
-      rgba(200, 210, 220, 0.55) 60%
-    );
-}
-
-/* 🟡 Gold + Booster Gold */
-.cardTile.rarity-leg-gold,
-.cardTile.rarity-booster-gold {
-  --holo-gradient:
-    repeating-linear-gradient(
-      120deg,
-      rgba(255, 215, 0, 0.6) 0%,
-      rgba(255, 230, 120, 0.6) 20%,
-      rgba(200, 160, 0, 0.6) 40%,
-      rgba(255, 215, 0, 0.6) 60%
-    );
+.cardTile.is-locked:hover,
+.cardTile.is-locked:hover .cardTile__imgWrap {
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.22),
+    0 18px 40px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.04);
 }

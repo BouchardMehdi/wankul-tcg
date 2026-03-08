@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles.css";
 import "../styles/Collection.css";
@@ -51,14 +51,9 @@ function compareCards(a: any, b: any) {
   return (a.key ?? "").localeCompare(b.key ?? "");
 }
 
-/**
- * Normalise la rareté DB -> clé CSS.
- * Ajout: starter pack
- */
 function normalizeRarity(raw?: string | null) {
   const s0 = (raw ?? "").toString();
 
-  // Match "(U1)" / "(U2)"
   const m = s0.match(/\((u1|u2)\)/i);
   if (m?.[1]) return m[1].toLowerCase();
 
@@ -70,20 +65,19 @@ function normalizeRarity(raw?: string | null) {
     .replace(/\s+/g, " ")
     .trim();
 
-  // ✅ Starter pack
   if (s.includes("starter")) return "starter";
 
-  // Booster gold
-  if (s.includes("booster gold") || (s.includes("booster") && s.includes("gold")) || s === "gold")
+  if (s.includes("booster gold") || (s.includes("booster") && s.includes("gold")) || s === "gold") {
     return "booster-gold";
+  }
 
-  // U1 / U2
-  if (s.includes("u1") || s.includes("ultra rare u1") || s.includes("ultra rare 1") || s.includes("ultra 1"))
+  if (s.includes("u1") || s.includes("ultra rare u1") || s.includes("ultra rare 1") || s.includes("ultra 1")) {
     return "u1";
-  if (s.includes("u2") || s.includes("ultra rare u2") || s.includes("ultra rare 2") || s.includes("ultra 2"))
+  }
+  if (s.includes("u2") || s.includes("ultra rare u2") || s.includes("ultra rare 2") || s.includes("ultra 2")) {
     return "u2";
+  }
 
-  // Legendary
   const isLegendary = s.includes("legendaire") || s.includes("legendary") || s.startsWith("leg ");
   if (isLegendary && s.includes("bronze")) return "leg-bronze";
   if (isLegendary && (s.includes("argent") || s.includes("silver"))) return "leg-silver";
@@ -92,18 +86,17 @@ function normalizeRarity(raw?: string | null) {
   return "";
 }
 
-/** Parallax hover sur imgWrap */
-function handleImgParallaxMove(e: React.MouseEvent<HTMLDivElement>) {
+function handleImgParallaxMove(e: MouseEvent<HTMLDivElement>) {
   const el = e.currentTarget;
   const rect = el.getBoundingClientRect();
 
-  const x = (e.clientX - rect.left) / rect.width; // 0..1
-  const y = (e.clientY - rect.top) / rect.height; // 0..1
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
 
   const dx = x - 0.5;
   const dy = y - 0.5;
 
-  const max = 10; // deg
+  const max = 10;
   const ry = dx * max * 2;
   const rx = -dy * max * 2;
 
@@ -113,7 +106,7 @@ function handleImgParallaxMove(e: React.MouseEvent<HTMLDivElement>) {
   el.style.setProperty("--hy", `${(y * 100).toFixed(1)}%`);
 }
 
-function handleImgParallaxLeave(e: React.MouseEvent<HTMLDivElement>) {
+function handleImgParallaxLeave(e: MouseEvent<HTMLDivElement>) {
   const el = e.currentTarget;
   el.style.setProperty("--rx", `0deg`);
   el.style.setProperty("--ry", `0deg`);
@@ -130,9 +123,6 @@ function resolveImg(imageUrl?: string | null) {
   return `${API_BASE}/${url}`;
 }
 
-/* =========================
-   ✅ Pager hors du composant
-========================= */
 type PagerProps = {
   pageSafe: number;
   totalPages: number;
@@ -196,7 +186,6 @@ export default function Collection() {
     ownedOnly: false,
   });
 
-  // ✅ Fancybox bind + watcher (fiable même si les events Fancybox sont capricieux)
   useEffect(() => {
     const fb: any = Fancybox;
 
@@ -208,7 +197,6 @@ export default function Collection() {
       Thumbs: { autoStart: true },
     });
 
-    // Watcher: applique la classe uniquement à la slide courante
     let rafId = 0;
     const tick = () => {
       try {
@@ -216,7 +204,6 @@ export default function Collection() {
         if (instance) {
           const slide = instance.getSlide?.();
           if (slide?.el) {
-            // On retire la classe de toutes les slides (sinon elle "reste" sur d'anciennes)
             if (Array.isArray(instance.slides)) {
               for (const s of instance.slides) {
                 s?.el?.classList?.remove("fb-terrain-rotate");
@@ -328,8 +315,7 @@ export default function Collection() {
       setPage(totalPages);
       setPageInput(String(totalPages));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalPages]);
+  }, [page, totalPages]);
 
   const pageItems = useMemo(() => {
     const start = (pageSafe - 1) * PAGE_SIZE;
@@ -516,7 +502,11 @@ export default function Collection() {
                   const isTerrain = String(c.type ?? "").toLowerCase().includes("terrain");
 
                   return (
-                    <div key={c.id} className={`cardTile ${owned ? "" : "is-locked"} ${rarityCls}`} data-rarity={rk}>
+                    <div
+                      key={c.id}
+                      className={`cardTile ${owned ? "" : "is-locked"} ${rarityCls} ${isTerrain ? "cardTile--terrain" : ""}`}
+                      data-rarity={rk}
+                    >
                       <div
                         className="cardTile__imgWrap"
                         onMouseMove={handleImgParallaxMove}
