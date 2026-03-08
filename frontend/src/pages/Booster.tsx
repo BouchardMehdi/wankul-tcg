@@ -28,12 +28,39 @@ type SeasonCard = {
   displayImg: string;
 };
 
+type ConfirmModalState =
+  | {
+      open: false;
+      kind: null;
+      season: null;
+      price: number;
+      title: string;
+      description: string;
+    }
+  | {
+      open: true;
+      kind: "booster" | "display";
+      season: SeasonName;
+      price: number;
+      title: string;
+      description: string;
+    };
+
 const SEASONS: SeasonCard[] = [
   { id: "Origins", label: "Origins", boosterImg: originsBooster, displayImg: originsDisplay },
   { id: "Campus", label: "Campus", boosterImg: campusBooster, displayImg: campusDisplay },
   { id: "Battle", label: "Battle", boosterImg: battleBooster, displayImg: battleDisplay },
   { id: "Stellar", label: "Stellar", boosterImg: stellarBooster, displayImg: stellarDisplay },
 ];
+
+const CLOSED_MODAL: ConfirmModalState = {
+  open: false,
+  kind: null,
+  season: null,
+  price: 0,
+  title: "",
+  description: "",
+};
 
 export default function Booster() {
   const navigate = useNavigate();
@@ -43,6 +70,7 @@ export default function Booster() {
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [confirmModal, setConfirmModal] = useState<ConfirmModalState>(CLOSED_MODAL);
 
   const handleLogout = () => {
     logout();
@@ -66,6 +94,19 @@ export default function Booster() {
     void loadEconomy();
   }, []);
 
+  useEffect(() => {
+    if (!confirmModal.open) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !busyKey) {
+        setConfirmModal(CLOSED_MODAL);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [confirmModal.open, busyKey]);
+
   const boosterCooldown = useMemo(
     () => formatCooldown(eco?.nextBoosterChargeAt ?? null),
     [eco?.nextBoosterChargeAt]
@@ -76,49 +117,11 @@ export default function Booster() {
     [eco?.nextDisplayChargeAt]
   );
 
-  async function onOpenBooster(season: SeasonName) {
-    if (!eco || busyKey) return;
+  const boosterDisabled =
+    !eco || (eco.freeBoosterCharges <= 0 && !!boosterCooldown) || !!busyKey;
 
-    const key = `booster:${season}`;
-    setBusyKey(key);
-    setError("");
-
-    try {
-      const res = await openBooster(season);
-      await refreshWallet();
-      await loadEconomy();
-
-      navigate("/opening", {
-        state: { kind: "booster", season, result: res },
-      });
-    } catch (e: any) {
-      setError(e?.message || "Ouverture impossible.");
-    } finally {
-      setBusyKey(null);
-    }
-  }
-
-  async function onOpenDisplay(season: SeasonName) {
-    if (!eco || busyKey) return;
-
-    const key = `display:${season}`;
-    setBusyKey(key);
-    setError("");
-
-    try {
-      const res = await openDisplay(season);
-      await refreshWallet();
-      await loadEconomy();
-
-      navigate("/opening", {
-        state: { kind: "display", season, result: res },
-      });
-    } catch (e: any) {
-      setError(e?.message || "Ouverture impossible.");
-    } finally {
-      setBusyKey(null);
-    }
-  }
+  const displayDisabled =
+    !eco || (eco.freeDisplayCharges <= 0 && !!displayCooldown) || !!busyKey;
 
   function boosterBtnLabel() {
     if (!eco) return "Ouvrir Booster";
@@ -134,11 +137,100 @@ export default function Booster() {
     return `Ouvrir Display • ${eco.costs.display} crédits`;
   }
 
-  const boosterDisabled =
-    !eco || (eco.freeBoosterCharges <= 0 && !!boosterCooldown) || !!busyKey;
+  function askOpenBooster(season: SeasonName) {
+    if (!eco || busyKey || boosterDisabled) return;
 
-  const displayDisabled =
-    !eco || (eco.freeDisplayCharges <= 0 && !!displayCooldown) || !!busyKey;
+    if (eco.freeBoosterCharges > 0) {
+      void onOpenBooster(season);
+      return;
+    }
+
+    setConfirmModal({
+      open: true,
+      kind: "booster",
+      season,
+      price: eco.costs.booster,
+      title: `Confirmer l'ouverture du booster ${season}`,
+      description: `Cette ouverture te coûtera ${eco.costs.booster} crédits. Aucun débit ne sera effectué tant que tu n’as pas confirmé.`,
+    });
+  }
+
+  function askOpenDisplay(season: SeasonName) {
+    if (!eco || busyKey || displayDisabled) return;
+
+    if (eco.freeDisplayCharges > 0) {
+      void onOpenDisplay(season);
+      return;
+    }
+
+    setConfirmModal({
+      open: true,
+      kind: "display",
+      season,
+      price: eco.costs.display,
+      title: `Confirmer l'ouverture de la display ${season}`,
+      description: `Cette ouverture te coûtera ${eco.costs.display} crédits. Aucun débit ne sera effectué tant que tu n’as pas confirmé.`,
+    });
+  }
+
+  async function onOpenBooster(season: SeasonName) {
+    if (!eco || busyKey || boosterDisabled) return;
+
+    const key = `booster:${season}`;
+    setBusyKey(key);
+    setError("");
+
+    try {
+      const res = await openBooster(season);
+      setConfirmModal(CLOSED_MODAL);
+
+      await refreshWallet();
+      await loadEconomy();
+
+      navigate("/opening", {
+        state: { kind: "booster", season, result: res },
+      });
+    } catch (e: any) {
+      setError(e?.message || "Ouverture impossible.");
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function onOpenDisplay(season: SeasonName) {
+    if (!eco || busyKey || displayDisabled) return;
+
+    const key = `display:${season}`;
+    setBusyKey(key);
+    setError("");
+
+    try {
+      const res = await openDisplay(season);
+      setConfirmModal(CLOSED_MODAL);
+
+      await refreshWallet();
+      await loadEconomy();
+
+      navigate("/opening", {
+        state: { kind: "display", season, result: res },
+      });
+    } catch (e: any) {
+      setError(e?.message || "Ouverture impossible.");
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function confirmCurrentOpening() {
+    if (!confirmModal.open || !confirmModal.kind || !confirmModal.season || busyKey) return;
+
+    if (confirmModal.kind === "booster") {
+      await onOpenBooster(confirmModal.season);
+      return;
+    }
+
+    await onOpenDisplay(confirmModal.season);
+  }
 
   if (loading) {
     return (
@@ -194,7 +286,11 @@ export default function Booster() {
           </div>
         </section>
 
-        {error ? <div className="error" style={{ marginTop: 14 }}>{error}</div> : null}
+        {error ? (
+          <div className="error" style={{ marginTop: 14 }}>
+            {error}
+          </div>
+        ) : null}
 
         <div className="boosterGrid">
           {SEASONS.map((s) => (
@@ -205,7 +301,25 @@ export default function Booster() {
 
               <div className="boosterSeasonCard__packs">
                 <div className="boosterPack">
-                  <div className="boosterPack__visual">
+                  <div
+                    className={[
+                      "boosterPack__visual",
+                      boosterDisabled ? "is-disabled" : "",
+                    ].join(" ")}
+                    role="button"
+                    tabIndex={boosterDisabled ? -1 : 0}
+                    aria-disabled={boosterDisabled}
+                    onClick={() => {
+                      if (!boosterDisabled) askOpenBooster(s.id);
+                    }}
+                    onKeyDown={(e) => {
+                      if (boosterDisabled) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        askOpenBooster(s.id);
+                      }
+                    }}
+                  >
                     <img
                       className="boosterPack__img"
                       src={s.boosterImg}
@@ -216,14 +330,33 @@ export default function Booster() {
                   <button
                     className="btn btn--primary w-full"
                     disabled={boosterDisabled}
-                    onClick={() => onOpenBooster(s.id)}
+                    onClick={() => askOpenBooster(s.id)}
                   >
                     {busyKey === `booster:${s.id}` ? "Ouverture..." : boosterBtnLabel()}
                   </button>
                 </div>
 
                 <div className="boosterPack">
-                  <div className="boosterPack__visual boosterPack__visual--display">
+                  <div
+                    className={[
+                      "boosterPack__visual",
+                      "boosterPack__visual--display",
+                      displayDisabled ? "is-disabled" : "",
+                    ].join(" ")}
+                    role="button"
+                    tabIndex={displayDisabled ? -1 : 0}
+                    aria-disabled={displayDisabled}
+                    onClick={() => {
+                      if (!displayDisabled) askOpenDisplay(s.id);
+                    }}
+                    onKeyDown={(e) => {
+                      if (displayDisabled) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        askOpenDisplay(s.id);
+                      }
+                    }}
+                  >
                     <img
                       className="boosterPack__img boosterPack__img--display"
                       src={s.displayImg}
@@ -234,7 +367,7 @@ export default function Booster() {
                   <button
                     className="btn btn--ghost w-full"
                     disabled={displayDisabled}
-                    onClick={() => onOpenDisplay(s.id)}
+                    onClick={() => askOpenDisplay(s.id)}
                   >
                     {busyKey === `display:${s.id}` ? "Ouverture..." : displayBtnLabel()}
                   </button>
@@ -244,6 +377,84 @@ export default function Booster() {
           ))}
         </div>
       </div>
+
+      {confirmModal.open ? (
+        <div
+          className="confirmModal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-modal-title"
+          onClick={() => {
+            if (!busyKey) setConfirmModal(CLOSED_MODAL);
+          }}
+        >
+          <div
+            className="confirmModal__backdrop"
+            aria-hidden="true"
+          />
+
+          <div
+            className="confirmModal__card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="confirmModal__glow" />
+
+            <div className="confirmModal__header">
+              <div className="confirmModal__eyebrow">
+                Confirmation
+              </div>
+              <h2 id="confirm-modal-title" className="confirmModal__title">
+                {confirmModal.title}
+              </h2>
+              <button
+                type="button"
+                className="confirmModal__close"
+                onClick={() => setConfirmModal(CLOSED_MODAL)}
+                disabled={!!busyKey}
+                aria-label="Fermer"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="confirmModal__body">
+              <p className="confirmModal__text">{confirmModal.description}</p>
+
+              <div className="confirmModal__priceBox">
+                <span className="confirmModal__priceLabel">Coût</span>
+                <span className="confirmModal__priceValue">{confirmModal.price} crédits</span>
+              </div>
+
+              <div className="confirmModal__wallet">
+                <span>Solde actuel</span>
+                <b>{typeof credits === "number" ? credits : eco?.credits ?? 0} crédits</b>
+              </div>
+            </div>
+
+            <div className="confirmModal__actions">
+              <button
+                type="button"
+                className="btn btn--ghost confirmModal__btn"
+                onClick={() => setConfirmModal(CLOSED_MODAL)}
+                disabled={!!busyKey}
+              >
+                Annuler
+              </button>
+
+              <button
+                type="button"
+                className="btn btn--primary confirmModal__btn confirmModal__btn--confirm"
+                onClick={() => {
+                  void confirmCurrentOpening();
+                }}
+                disabled={!!busyKey}
+              >
+                {busyKey ? "Ouverture..." : "Confirmer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
