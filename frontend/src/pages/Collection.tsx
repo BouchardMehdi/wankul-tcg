@@ -352,6 +352,13 @@ export default function Collection() {
     setPageInput(String(clamped));
   };
 
+  const layoutClass =
+    settings.collectionLayout === "compact"
+      ? "cardsGrid--compact"
+      : settings.collectionLayout === "large"
+      ? "cardsGrid--large"
+      : "cardsGrid--standard";
+
   return (
     <div className="app-shell">
       <AppNavbar currentPage="collection" />
@@ -477,8 +484,8 @@ export default function Collection() {
           )}
 
           {!loading && !error && (
-            <div className={`collectionBody ${settings.compactCollectionGrid ? "collectionBody--compact" : ""} ${settings.disableHoloEffects ? "collectionBody--noHolo" : ""}`}>
-              <div className={`cardsGrid ${settings.compactCollectionGrid ? "cardsGrid--compact" : ""} ${settings.disableHoloEffects ? "cardsGrid--noHolo" : ""}`}>
+            <div className={`collectionBody ${settings.disableHoloEffects ? "collectionBody--noHolo" : ""}`}>
+              <div className={`cardsGrid ${layoutClass} ${settings.disableHoloEffects ? "cardsGrid--noHolo" : ""}`}>
                 {pageItems.map((c: any) => {
                   const owned = (c.quantity ?? 0) > 0;
                   const src = resolveImg(c.imageUrl ?? c.image ?? c.img ?? "");

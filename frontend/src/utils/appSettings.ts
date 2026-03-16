@@ -1,15 +1,26 @@
+export type CollectionLayout = "standard" | "compact" | "large";
+
 export type AppSettings = {
   skipOpeningAnimations: boolean;
   autoFlipCards: boolean;
   fastReveal: boolean;
   disableHoloEffects: boolean;
   showDuplicatesCounter: boolean;
-  compactCollectionGrid: boolean;
+  collectionLayout: CollectionLayout;
   hideMissingCards: boolean;
   autoHighlightNewCards: boolean;
   showDropRates: boolean;
   confirmPurchases: boolean;
+
+  /**
+   * Compat ancienne version.
+   * Laisse cette clé pour éviter de casser d'anciens appels éventuels.
+   */
+  compactCollectionGrid?: boolean;
 };
+
+const APP_SETTINGS_KEY = "wankul_app_settings";
+const LAST_NEW_CARD_IDS_KEY = "wankul_last_new_card_ids";
 
 export const APP_SETTINGS_DEFAULTS: AppSettings = {
   skipOpeningAnimations: false,
@@ -17,77 +28,92 @@ export const APP_SETTINGS_DEFAULTS: AppSettings = {
   fastReveal: false,
   disableHoloEffects: false,
   showDuplicatesCounter: true,
-  compactCollectionGrid: false,
+  collectionLayout: "standard",
   hideMissingCards: false,
   autoHighlightNewCards: true,
   showDropRates: true,
   confirmPurchases: true,
+  compactCollectionGrid: false,
 };
 
-const SETTINGS_STORAGE_KEY = "wankul_app_settings";
-export const LAST_NEW_CARD_IDS_STORAGE_KEY = "wankul_last_new_card_ids";
-export const SETTINGS_CHANGED_EVENT = "wankul:settings-changed";
+function normalizeLayout(value: unknown): CollectionLayout {
+  if (value === "compact" || value === "large" || value === "standard") return value;
+  return "standard";
+}
 
-function isBrowser() {
-  return typeof window !== "undefined" && typeof localStorage !== "undefined";
+function migrateSettings(raw: Partial<AppSettings> | null | undefined): AppSettings {
+  const base = { ...APP_SETTINGS_DEFAULTS, ...(raw ?? {}) };
+
+  if (!("collectionLayout" in (raw ?? {})) && typeof raw?.compactCollectionGrid === "boolean") {
+    base.collectionLayout = raw.compactCollectionGrid ? "compact" : "standard";
+  }
+
+  base.collectionLayout = normalizeLayout(base.collectionLayout);
+  base.compactCollectionGrid = base.collectionLayout === "compact";
+
+  return base;
 }
 
 export function readAppSettings(): AppSettings {
-  if (!isBrowser()) return { ...APP_SETTINGS_DEFAULTS };
-
   try {
-    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const raw = localStorage.getItem(APP_SETTINGS_KEY);
     if (!raw) return { ...APP_SETTINGS_DEFAULTS };
-    const parsed = JSON.parse(raw);
-    return {
-      ...APP_SETTINGS_DEFAULTS,
-      ...(parsed && typeof parsed === "object" ? parsed : {}),
-    };
+    return migrateSettings(JSON.parse(raw));
   } catch {
     return { ...APP_SETTINGS_DEFAULTS };
   }
 }
 
-export function writeAppSettings(next: Partial<AppSettings>) {
-  if (!isBrowser()) return;
-  const merged = { ...readAppSettings(), ...next };
-  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
-  localStorage.setItem("wankul_skip_opening_animations", merged.skipOpeningAnimations ? "1" : "0");
-  window.dispatchEvent(new CustomEvent(SETTINGS_CHANGED_EVENT, { detail: merged }));
+export function writeAppSettings(patch: Partial<AppSettings>) {
+  const current = readAppSettings();
+  const merged = migrateSettings({ ...current, ...patch });
+
+  if ("compactCollectionGrid" in patch && !("collectionLayout" in patch)) {
+    merged.collectionLayout = patch.compactCollectionGrid ? "compact" : "standard";
+  }
+
+  merged.compactCollectionGrid = merged.collectionLayout === "compact";
+  localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(merged));
+  window.dispatchEvent(new CustomEvent("wankul:settings-changed"));
 }
 
 export function subscribeAppSettings(callback: () => void) {
-  if (!isBrowser()) return () => {};
-
+  const onChange = () => callback();
   const onStorage = (e: StorageEvent) => {
-    if (!e.key || e.key === SETTINGS_STORAGE_KEY || e.key === "wankul_skip_opening_animations") callback();
+    if (e.key === APP_SETTINGS_KEY || e.key === null) callback();
   };
-  const onCustom = () => callback();
 
+  window.addEventListener("wankul:settings-changed", onChange as EventListener);
   window.addEventListener("storage", onStorage);
-  window.addEventListener(SETTINGS_CHANGED_EVENT, onCustom as EventListener);
 
   return () => {
+    window.removeEventListener("wankul:settings-changed", onChange as EventListener);
     window.removeEventListener("storage", onStorage);
-    window.removeEventListener(SETTINGS_CHANGED_EVENT, onCustom as EventListener);
   };
 }
 
 export function readLastNewCardIds(): number[] {
-  if (!isBrowser()) return [];
   try {
-    const raw = localStorage.getItem(LAST_NEW_CARD_IDS_STORAGE_KEY);
+    const raw = localStorage.getItem(LAST_NEW_CARD_IDS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.map((v) => Number(v)).filter((v) => Number.isFinite(v));
+    return parsed
+      .map((v) => Number(v))
+      .filter((v) => Number.isFinite(v));
   } catch {
     return [];
   }
 }
 
 export function writeLastNewCardIds(ids: Array<number | string>) {
-  if (!isBrowser()) return;
-  const normalized = ids.map((v) => Number(v)).filter((v) => Number.isFinite(v));
-  localStorage.setItem(LAST_NEW_CARD_IDS_STORAGE_KEY, JSON.stringify(normalized));
+  const normalized = Array.from(
+    new Set(
+      ids
+        .map((v) => Number(v))
+        .filter((v) => Number.isFinite(v)),
+    ),
+  );
+  localStorage.setItem(LAST_NEW_CARD_IDS_KEY, JSON.stringify(normalized));
+  window.dispatchEvent(new CustomEvent("wankul:last-new-cards-changed"));
 }
