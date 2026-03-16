@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import "../styles.css";
 import "../styles/Collection.css";
 
+import AppNavbar from "../components/AppNavbar";
+
 import { fetchAllCards, type CardDto } from "../api/cards";
 import { fetchOwnedCollection, type OwnedCardRow } from "../api/collection";
-import { useAuth } from "../auth/AuthContext";
 
-import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
+import { readAppSettings, readLastNewCardIds, subscribeAppSettings } from "../utils/appSettings";
 
 import { Fancybox } from "@fancyapps/ui";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
@@ -166,9 +166,6 @@ function Pager({ pageSafe, totalPages, pageInput, setPageInput, goPrev, goNext, 
 }
 
 export default function Collection() {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
@@ -185,6 +182,10 @@ export default function Collection() {
     artist: "",
     ownedOnly: false,
   });
+  const [settings, setSettings] = useState(() => readAppSettings());
+  const [lastNewCardIds, setLastNewCardIds] = useState<number[]>(() => readLastNewCardIds());
+
+  useEffect(() => subscribeAppSettings(() => setSettings(readAppSettings())), []);
 
   useEffect(() => {
     const fb: any = Fancybox;
@@ -216,7 +217,7 @@ export default function Collection() {
           }
         }
       } catch {
-        // noop
+        //
       }
       rafId = requestAnimationFrame(tick);
     };
@@ -228,15 +229,20 @@ export default function Collection() {
       try {
         fb.destroy();
       } catch {
-        // noop
+        //
       }
     };
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/", { replace: true });
-  };
+  useEffect(() => {
+    const syncLatest = () => setLastNewCardIds(readLastNewCardIds());
+    window.addEventListener("storage", syncLatest);
+    window.addEventListener("focus", syncLatest);
+    return () => {
+      window.removeEventListener("storage", syncLatest);
+      window.removeEventListener("focus", syncLatest);
+    };
+  }, []);
 
   const updateFilter = <K extends keyof Filters>(key: K, value: Filters[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -291,7 +297,7 @@ export default function Collection() {
     return merged.filter((c) => {
       const owned = (c.quantity ?? 0) > 0;
 
-      if (filters.ownedOnly && !owned) return false;
+      if ((filters.ownedOnly || settings.hideMissingCards) && !owned) return false;
       if (filters.season && (c.season ?? c.extension ?? "") !== filters.season) return false;
       if (filters.rarity && (c.rarity ?? "") !== filters.rarity) return false;
       if (filters.type && (c.type ?? "") !== filters.type) return false;
@@ -304,7 +310,7 @@ export default function Collection() {
 
       return true;
     });
-  }, [merged, filters]);
+  }, [merged, filters, settings.hideMissingCards]);
 
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -348,27 +354,7 @@ export default function Collection() {
 
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <div className="container topbar__inner">
-          <Link to="/menu" className="topbar__brand" aria-label="Wankul">
-            <div className="topbar__logo">
-              <img src={wankulLogo} alt="logo" />
-            </div>
-          </Link>
-
-          <nav className="topbar__nav">
-            <Link className="topbar__link" to="/menu">
-              Menu
-            </Link>
-            <Link className="topbar__link is-active" to="/booster">
-              Booster
-            </Link>
-            <button className="topbar__logout" onClick={handleLogout}>
-              Se déconnecter
-            </button>
-          </nav>
-        </div>
-      </header>
+      <AppNavbar currentPage="collection" />
 
       <section className="collectionPage">
         <div className="collectionShell">
@@ -491,8 +477,8 @@ export default function Collection() {
           )}
 
           {!loading && !error && (
-            <div className="collectionBody">
-              <div className="cardsGrid">
+            <div className={`collectionBody ${settings.compactCollectionGrid ? "collectionBody--compact" : ""} ${settings.disableHoloEffects ? "collectionBody--noHolo" : ""}`}>
+              <div className={`cardsGrid ${settings.compactCollectionGrid ? "cardsGrid--compact" : ""} ${settings.disableHoloEffects ? "cardsGrid--noHolo" : ""}`}>
                 {pageItems.map((c: any) => {
                   const owned = (c.quantity ?? 0) > 0;
                   const src = resolveImg(c.imageUrl ?? c.image ?? c.img ?? "");
@@ -500,17 +486,18 @@ export default function Collection() {
                   const rarityCls = rk ? `rarity-${rk}` : "";
 
                   const isTerrain = String(c.type ?? "").toLowerCase().includes("terrain");
+                  const isLatestNew = settings.autoHighlightNewCards && owned && lastNewCardIds.includes(Number(c.id));
 
                   return (
                     <div
                       key={c.id}
-                      className={`cardTile ${owned ? "" : "is-locked"} ${rarityCls} ${isTerrain ? "cardTile--terrain" : ""}`}
+                      className={`cardTile ${owned ? "" : "is-locked"} ${settings.disableHoloEffects ? "" : rarityCls} ${isTerrain ? "cardTile--terrain" : ""} ${isLatestNew ? "is-latest-new" : ""}`}
                       data-rarity={rk}
                     >
                       <div
                         className="cardTile__imgWrap"
-                        onMouseMove={handleImgParallaxMove}
-                        onMouseLeave={handleImgParallaxLeave}
+                        onMouseMove={settings.disableHoloEffects ? undefined : handleImgParallaxMove}
+                        onMouseLeave={settings.disableHoloEffects ? undefined : handleImgParallaxLeave}
                         style={
                           {
                             ["--rx" as any]: "0deg",
@@ -536,11 +523,12 @@ export default function Collection() {
 
                         {!owned && <div className="cardTile__dim" />}
                         {!owned && <div className="cardTile__lock">NON DÉBLOQUÉE</div>}
+                        {isLatestNew && <div className="cardTile__new">NEW</div>}
                       </div>
 
                       <div className="cardTile__meta">
                         <div className="cardTile__name">{c.name}</div>
-                        {owned && (c.quantity ?? 0) > 1 && <div className="cardTile__qty">x{c.quantity}</div>}
+                        {settings.showDuplicatesCounter && owned && (c.quantity ?? 0) > 1 && <div className="cardTile__qty">x{c.quantity}</div>}
 
                         <div className="cardTile__sub">
                           <span className="pill">{c.rarity}</span>

@@ -1,0 +1,91 @@
+.settingsPage {
+  padding-top: 24px;
+  padding-bottom: 40px;
+}
+
+.settingsPanel {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.settingsPanel .panel-inner {
+  padding: 28px 32px 32px;
+}
+
+.settingsHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.settingsSummary {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
+
+.settingsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settingsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.03);
+}
+
+.settingsRow__content {
+  min-width: 0;
+}
+
+.settingsRow__title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.settingsRow__desc {
+  margin-top: 6px;
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.settingsFooter {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 700px) {
+  .settingsPanel .panel-inner {
+    padding: 20px 16px 22px;
+  }
+
+  .settingsHeading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .settingsRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .settingsFooter {
+    justify-content: stretch;
+  }
+
+  .settingsFooter .btn {
+    width: 100%;
+  }
+}

@@ -5,13 +5,14 @@ import "../styles.css";
 import "../styles/Menu.css";
 import "../styles/Opening.css";
 
-import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
+import AppNavbar from "../components/AppNavbar";
+
 import { useAuth } from "../auth/AuthContext";
 import { getEconomyMe, type EconomySnapshot } from "../api/economy";
 import { openBooster, openDisplay, type SeasonName } from "../api/booster";
+import { readAppSettings, subscribeAppSettings, writeLastNewCardIds } from "../utils/appSettings";
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-const SKIP_STORAGE_KEY = "wankul_skip_opening_animations";
 
 const CARD_BACK = new URL("../assets/wankul_back.webp", import.meta.url).href;
 
@@ -284,7 +285,7 @@ function dedupeCards(cards: any[]) {
 
 export default function Opening() {
   const navigate = useNavigate();
-  const { logout, refreshWallet } = useAuth();
+  const { refreshWallet } = useAuth();
   const location = useLocation() as any;
   const state = (location?.state ?? null) as OpeningStatePayload | null;
 
@@ -312,8 +313,9 @@ export default function Opening() {
   const [throwRot, setThrowRot] = useState(0);
   const [throwMs, setThrowMs] = useState(280);
   const [animatingNext, setAnimatingNext] = useState(false);
+  const [settings, setSettings] = useState(() => readAppSettings());
 
-  const [skipAnimations, setSkipAnimations] = useState(false);
+  const skipAnimations = settings.skipOpeningAnimations;
 
   const cardWrapRef = useRef<HTMLDivElement | null>(null);
   const pointerIdRef = useRef<number | null>(null);
@@ -337,6 +339,9 @@ export default function Opening() {
 
   const currentPackImg = currentDisplayBoosterIsGold ? GOLD_BOOSTER_IMG : defaultBoosterImg;
   const remainingPillImg = currentDisplayBoosterIsGold ? GOLD_BOOSTER_IMG : defaultBoosterImg;
+  const revealIntroMs = settings.fastReveal ? 450 : 1100;
+  const displayIntroMs = settings.fastReveal ? 800 : 1700;
+  const autoFlipMs = settings.fastReveal ? 380 : 850;
 
   function queueTimeout(cb: () => void, ms: number) {
     const id = window.setTimeout(cb, ms);
@@ -368,17 +373,15 @@ export default function Opening() {
   }
 
   function isCardMarkedNew(card: any) {
-    return Boolean(card?.isNew);
+    const id = card?.id ?? card?.cardId ?? null;
+    return Boolean(card?.isNew) || (id != null && newCardIds.has(id));
   }
 
-  useEffect(() => {
-    const saved = localStorage.getItem(SKIP_STORAGE_KEY);
-    setSkipAnimations(saved === "1");
-  }, []);
+  useEffect(() => subscribeAppSettings(() => setSettings(readAppSettings())), []);
 
   useEffect(() => {
-    localStorage.setItem(SKIP_STORAGE_KEY, skipAnimations ? "1" : "0");
-  }, [skipAnimations]);
+    writeLastNewCardIds(Array.from(newCardIds));
+  }, [newCardIds]);
 
   useEffect(() => {
     return () => clearQueuedTimeouts();
@@ -468,10 +471,12 @@ export default function Opening() {
   }
 
   function handleHoloMove(e: React.MouseEvent) {
+    if (settings.disableHoloEffects) return;
     updateRevealHoloPosition(e.clientX, e.clientY);
   }
 
   function handleHoloLeave() {
+    if (settings.disableHoloEffects) return;
     const el = cardWrapRef.current;
     if (!el) return;
     el.style.setProperty("--hx", "50%");
@@ -487,6 +492,22 @@ export default function Opening() {
 
   const currentId = current?.id ?? current?.cardId ?? current?.key ?? index;
   const isCurrentNew = isCardMarkedNew(current);
+
+  useEffect(() => {
+    if (!settings.autoFlipCards) return;
+    if (phase !== "reveal") return;
+    if (animatingNext || isDragging) return;
+
+    const id = window.setTimeout(() => {
+      if (index >= total - 1) {
+        setPhase("summary");
+        return;
+      }
+      animateNext(1);
+    }, autoFlipMs);
+
+    return () => window.clearTimeout(id);
+  }, [settings.autoFlipCards, phase, index, total, animatingNext, isDragging, autoFlipMs]);
 
   const currentCredits =
     perCardCredits.get(currentId) ??
@@ -572,7 +593,7 @@ export default function Opening() {
       const bName = String(b?.name ?? "");
       return aName.localeCompare(bName, "fr", { sensitivity: "base" });
     });
-  }, [isDisplayMode, displayBoosters]);
+  }, [isDisplayMode, displayBoosters, newCardIds]);
 
   const openAnotherLabel = useMemo(() => {
     const free = (eco?.freeBoosterCharges ?? 0) > 0;
@@ -592,13 +613,8 @@ export default function Opening() {
 
   const dragRot = useMemo(() => clamp(dragX * 0.06, -14, 14), [dragX]);
   const rarityCls = rarityKey ? `rarity-${rarityKey}` : "";
-  const rareAppearCls = phase === "reveal" && isRare ? "rare-appear" : "";
-  const surpriseCls = phase === "reveal" && isSurprise11 ? "surprise-appear" : "";
-
-  function handleLogout() {
-    logout();
-    navigate("/", { replace: true });
-  }
+  const rareAppearCls = phase === "reveal" && isRare && !settings.disableHoloEffects ? "rare-appear" : "";
+  const surpriseCls = phase === "reveal" && isSurprise11 && !settings.disableHoloEffects ? "surprise-appear" : "";
 
   function beginRevealSequence(boosterCards: any[]) {
     prepareBoosterCards(boosterCards);
@@ -607,7 +623,7 @@ export default function Opening() {
     queueTimeout(() => {
       setPhase("reveal");
       setOpeningLock(false);
-    }, 1100);
+    }, revealIntroMs);
   }
 
   function startOpening() {
@@ -635,7 +651,7 @@ export default function Opening() {
         queueTimeout(() => {
           const boosterCards = Array.isArray(displayBoosters[0]) ? displayBoosters[0] : [];
           beginRevealSequence(boosterCards);
-        }, 1700);
+        }, displayIntroMs);
         return;
       }
 
@@ -819,28 +835,10 @@ export default function Opening() {
     isDisplayMode && !displayStarted ? displayImg : currentPackImg;
 
   return (
-    <>
-      <header className="topbar">
-        <div className="container topbar__inner">
-          <div className="topbar__brand">
-            <img src={wankulLogo} className="topbar__logo" alt="Wankul" />
-          </div>
+    <div className="app-shell">
+      <AppNavbar currentPage="opening" visibleItems={["menu", "collection", "settings"]} />
 
-          <nav className="topbar__nav">
-            <Link className="topbar__link" to="/menu">
-              Menu
-            </Link>
-            <Link className="topbar__link" to="/collection">
-              Collection
-            </Link>
-            <button className="topbar__logout" onClick={handleLogout}>
-              Se déconnecter
-            </button>
-          </nav>
-        </div>
-      </header>
-
-      <div className="container openingPage">
+      <div className={`container openingPage ${settings.disableHoloEffects ? "openingPage--noHolo" : ""}`}>
         <div className="openingHeader panel">
           <div className="openingHeader__left">
             <h1 className="openingTitle">
@@ -900,18 +898,6 @@ export default function Opening() {
                 {loadingEco ? "…" : `Prix booster : ${eco?.costs?.booster ?? "?"} crédits`}
               </div>
             )}
-
-            <button
-              type="button"
-              className={`skipToggleBtn ${skipAnimations ? "is-on" : "is-off"}`}
-              onClick={() => setSkipAnimations((v) => !v)}
-              aria-pressed={skipAnimations}
-            >
-              <span className="skipToggleBtn__track">
-                <span className="skipToggleBtn__thumb" />
-              </span>
-              <span className="skipToggleBtn__label">Skip animations</span>
-            </button>
           </div>
         </div>
 
@@ -1004,8 +990,8 @@ export default function Opening() {
                   }}
                   className={[
                     "openingCardWrap",
-                    rarityCls,
-                    isRare ? "is-rare" : "",
+                    settings.disableHoloEffects ? "" : rarityCls,
+                    isRare && !settings.disableHoloEffects ? "is-rare" : "",
                     isCurrentNew ? "is-new" : "",
                     rareAppearCls,
                     surpriseCls,
@@ -1026,10 +1012,10 @@ export default function Opening() {
                     ["--throw-ms" as any]: `${throwMs}ms`,
                   }}
                 >
-                  {isRare ? <span className="edgeGlow" aria-hidden="true" /> : null}
-                  {isSurprise11 ? <span className="surpriseRing" aria-hidden="true" /> : null}
-                  {isSurprise11 ? <span className="surpriseSparkles" aria-hidden="true" /> : null}
-                  {isSurprise11 ? <span className="surpriseShine" aria-hidden="true" /> : null}
+                  {isRare && !settings.disableHoloEffects ? <span className="edgeGlow" aria-hidden="true" /> : null}
+                  {isSurprise11 && !settings.disableHoloEffects ? <span className="surpriseRing" aria-hidden="true" /> : null}
+                  {isSurprise11 && !settings.disableHoloEffects ? <span className="surpriseSparkles" aria-hidden="true" /> : null}
+                  {isSurprise11 && !settings.disableHoloEffects ? <span className="surpriseShine" aria-hidden="true" /> : null}
                   {isCurrentNew ? <span className="newRibbon" aria-hidden="true">NEW</span> : null}
 
                   {current ? (
@@ -1082,7 +1068,7 @@ export default function Opening() {
                         isNew ? "is-new" : "",
                       ].join(" ")}
                     >
-                      {rare ? <span className="edgeGlow edgeGlow--summary" aria-hidden="true" /> : null}
+                      {rare && !settings.disableHoloEffects ? <span className="edgeGlow edgeGlow--summary" aria-hidden="true" /> : null}
                       {isNew ? <span className="summaryNewTag">NOUVELLE</span> : null}
                       <span className="summaryCreditTag">+{cc}</span>
 
@@ -1153,7 +1139,7 @@ export default function Opening() {
                         isNew ? "is-new" : "",
                       ].join(" ")}
                     >
-                      {rare ? <span className="edgeGlow edgeGlow--summary" aria-hidden="true" /> : null}
+                      {rare && !settings.disableHoloEffects ? <span className="edgeGlow edgeGlow--summary" aria-hidden="true" /> : null}
                       {isNew ? <span className="summaryNewTag">NOUVELLE</span> : null}
                       <span className="summaryCreditTag">+{cc}</span>
 
@@ -1183,6 +1169,6 @@ export default function Opening() {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

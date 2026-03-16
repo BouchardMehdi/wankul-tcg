@@ -949,3 +949,15 @@
   flex-wrap: wrap;
   gap: 10px;
 }
+.openingPage--noHolo .openingCardWrap::before,
+.openingPage--noHolo .openingCardWrap::after,
+.openingPage--noHolo .edgeGlow,
+.openingPage--noHolo .surpriseRing,
+.openingPage--noHolo .surpriseSparkles,
+.openingPage--noHolo .surpriseShine,
+.openingPage--noHolo .rare-appear,
+.openingPage--noHolo .summaryCardWrap::before,
+.openingPage--noHolo .summaryCardWrap::after {
+  display: none !important;
+  opacity: 0 !important;
+}

@@ -9,6 +9,7 @@ import Menu from "./pages/Menu";
 import Collection from "./pages/Collection";
 import Booster from "./pages/Booster";
 import Opening from "./pages/Opening";
+import Settings from "./pages/Settings";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -62,6 +63,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <Opening />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <PrivateRoute>
+            <Settings />
           </PrivateRoute>
         }
       />

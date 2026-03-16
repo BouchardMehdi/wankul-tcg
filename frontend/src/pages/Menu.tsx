@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "../styles.css";
 import "../styles/Menu.css";
+
+import AppNavbar from "../components/AppNavbar";
 
 import { getMe, getWallet } from "../api/me";
 import type { MeResponse, WalletResponse } from "../api/me";
@@ -9,9 +11,7 @@ import type { MeResponse, WalletResponse } from "../api/me";
 import { getMyStats } from "../api/stats";
 import type { MyStatsResponse, SeasonProgress } from "../api/stats";
 
-import { useAuth } from "../auth/AuthContext";
-
-import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
+import { readAppSettings, subscribeAppSettings } from "../utils/appSettings";
 
 type DonutSlice = {
   label: string;
@@ -19,6 +19,8 @@ type DonutSlice = {
   color: string;
   percent: number;
 };
+
+type LootSeasonFilter = "global" | "Origins" | "Campus" | "Battle" | "Stellar";
 
 function pct(value: number, total: number) {
   if (!total || total <= 0) return 0;
@@ -175,7 +177,6 @@ function SeasonBars({ seasons }: { seasons: SeasonProgress[] }) {
 
 export default function Menu() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
 
   const [me, setMe] = useState<MeResponse | null>(null);
   const [wallet, setWallet] = useState<WalletResponse | null>(null);
@@ -184,13 +185,12 @@ export default function Menu() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeDonutIndex, setActiveDonutIndex] = useState<number | null>(null);
+  const [settings, setSettings] = useState(() => readAppSettings());
+  const [lootSeason, setLootSeason] = useState<LootSeasonFilter>("global");
 
   const username = useMemo(() => me?.username ?? "Joueur", [me]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/", { replace: true });
-  };
+  useEffect(() => subscribeAppSettings(() => setSettings(readAppSettings())), []);
 
   useEffect(() => {
     let mounted = true;
@@ -250,7 +250,15 @@ export default function Menu() {
     return seasonOrder.map((name) => map.get(name)!);
   }, [stats]);
 
-  const rarityCounts = stats?.rarities ?? {};
+  const rarityCounts = useMemo(() => {
+    if (!stats) return {};
+    if (lootSeason === "global") return stats.rarities ?? {};
+    return stats.raritiesBySeason?.[lootSeason] ?? {};
+  }, [stats, lootSeason]);
+
+  useEffect(() => {
+    setActiveDonutIndex(null);
+  }, [lootSeason]);
 
   const donutSlices: DonutSlice[] = useMemo(() => {
     const raw = [
@@ -307,6 +315,7 @@ export default function Menu() {
   if (loading) {
     return (
       <div className="app-shell">
+        <AppNavbar currentPage="menu" />
         <div className="container">
           <div className="panel">
             <div className="panel-inner">
@@ -321,6 +330,7 @@ export default function Menu() {
   if (error) {
     return (
       <div className="app-shell">
+        <AppNavbar currentPage="menu" />
         <div className="container">
           <div className="panel">
             <div className="panel-inner">
@@ -339,27 +349,7 @@ export default function Menu() {
 
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <div className="container topbar__inner">
-          <Link to="/menu" className="topbar__brand" aria-label="Wankul">
-            <div className="topbar__logo">
-              <img src={wankulLogo} alt="logo" />
-            </div>
-          </Link>
-
-          <nav className="topbar__nav">
-            <Link className="topbar__link" to="/booster">
-              Booster
-            </Link>
-            <Link className="topbar__link" to="/collection">
-              Collection
-            </Link>
-            <button className="topbar__logout" onClick={handleLogout}>
-              Se déconnecter
-            </button>
-          </nav>
-        </div>
-      </header>
+      <AppNavbar currentPage="menu" />
 
       <section className="container menuSection menuSection--hero">
         <div className="welcome">
@@ -423,51 +413,81 @@ export default function Menu() {
               </div>
 
               <div className="chartCard chartCard--donut">
-                <div className="chartCard__header">
-                  <div className="chartIcon chartIcon--pie" />
-                  <div className="chartCard__title">DISTRIBUTION DU BUTIN</div>
+                <div className="chartCard__header chartCard__header--between">
+                  <div className="chartCard__headerLeft">
+                    <div className="chartIcon chartIcon--pie" />
+                    <div className="chartCard__title">DISTRIBUTION DU BUTIN</div>
+                  </div>
+
+                  {settings.showDropRates ? (
+                    <div className="lootFilter">
+                      <label className="lootFilter__label" htmlFor="lootSeason">
+                        Saison
+                      </label>
+                      <select
+                        id="lootSeason"
+                        className="lootFilter__select"
+                        value={lootSeason}
+                        onChange={(e) => setLootSeason(e.target.value as LootSeasonFilter)}
+                      >
+                        <option value="global">Global</option>
+                        <option value="Origins">Origins</option>
+                        <option value="Campus">Campus</option>
+                        <option value="Battle">Battle</option>
+                        <option value="Stellar">Stellar</option>
+                      </select>
+                    </div>
+                  ) : null}
                 </div>
 
-                <div className="chartCard__body chartCard__body--donut">
-                  <Donut
-                    slices={donutSlices}
-                    activeIndex={activeDonutIndex}
-                    setActiveIndex={setActiveDonutIndex}
-                  />
+                {settings.showDropRates ? (
+                  <>
+                    <div className="chartCard__body chartCard__body--donut">
+                      <Donut
+                        slices={donutSlices}
+                        activeIndex={activeDonutIndex}
+                        setActiveIndex={setActiveDonutIndex}
+                      />
 
-                  <div className="legend legend--wide">
-                    {donutSlices.length === 0 ? (
-                      <div className="small">Pas assez de données pour afficher la distribution.</div>
-                    ) : (
-                      donutSlices.map((s, i) => {
-                        const isActive = activeDonutIndex === i;
-                        const isDimmed = activeDonutIndex !== null && activeDonutIndex !== i;
+                      <div className="legend legend--wide">
+                        {donutSlices.length === 0 ? (
+                          <div className="small">Pas assez de données pour afficher la distribution.</div>
+                        ) : (
+                          donutSlices.map((s, i) => {
+                            const isActive = activeDonutIndex === i;
+                            const isDimmed = activeDonutIndex !== null && activeDonutIndex !== i;
 
-                        return (
-                          <div
-                            className={[
-                              "legendRow",
-                              isActive ? "is-active" : "",
-                              isDimmed ? "is-dimmed" : "",
-                            ].join(" ")}
-                            key={s.label}
-                            onMouseEnter={() => setActiveDonutIndex(i)}
-                            onMouseLeave={() => setActiveDonutIndex(null)}
-                          >
-                            <div className="legendRow__left">
-                              <span className="legendDot" style={{ background: s.color }} />
-                              <span className="legendLabel">{s.label}</span>
-                            </div>
-                            <div className="legendValue">{formatPercent(s.percent)}</div>
-                          </div>
-                        );
-                      })
-                    )}
-                    <div className="small mt-2">
-                      Les terrains ne sont pas comptés ici, car ils sont garantis.
+                            return (
+                              <div
+                                className={[
+                                  "legendRow",
+                                  isActive ? "is-active" : "",
+                                  isDimmed ? "is-dimmed" : "",
+                                ].join(" ")}
+                                key={s.label}
+                                onMouseEnter={() => setActiveDonutIndex(i)}
+                                onMouseLeave={() => setActiveDonutIndex(null)}
+                              >
+                                <div className="legendRow__left">
+                                  <span className="legendDot" style={{ background: s.color }} />
+                                  <span className="legendLabel">{s.label}</span>
+                                </div>
+                                <div className="legendValue">{formatPercent(s.percent)}</div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="chartCard__body chartCard__body--disabled">
+                    <div className="chartDisabledState">
+                      <div className="chartDisabledState__title">Drop rates masqués</div>
+                      <div className="small">Active l'option <b>Show drop rates</b> dans les paramètres pour afficher ce graphique.</div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

@@ -161,7 +161,29 @@
   min-height: 440px;
 }
 
-.chartCard__header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.chartCard__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.chartCard__header--between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.chartCard__headerLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .chartCard__title { font-weight: 950; letter-spacing: 0.4px; font-size: 14px; }
 
 .chartIcon {
@@ -473,3 +495,102 @@
 }
 
 .tooltip__muted { color: var(--muted); font-weight: 800; }
+
+.chartCard__body--disabled {
+  display: grid;
+  place-items: center;
+  min-height: 320px;
+}
+
+.chartDisabledState {
+  max-width: 360px;
+  text-align: center;
+  padding: 22px 24px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.04);
+}
+
+.chartDisabledState__title {
+  font-size: 18px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+/* Filter */
+.lootFilter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.lootFilter__label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text);
+}
+
+.lootFilter__select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  min-width: 138px;
+  height: 38px;
+  padding: 0 38px 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04)),
+    rgba(10, 16, 34, 0.92);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 38px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04)),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'><path fill='white' d='M3.2 5.1 7 8.9l3.8-3.8.9.9L7 10.7 2.3 6z'/></svg>");
+  background-repeat: no-repeat, no-repeat;
+  background-position: 0 0, right 12px center;
+  background-size: auto, 14px 14px;
+}
+
+.lootFilter__select:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.lootFilter__select:focus {
+  border-color: rgba(120, 190, 255, 0.85);
+  box-shadow:
+    0 0 0 3px rgba(120, 190, 255, 0.18),
+    0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.lootFilter__select option {
+  background: #0b1220;
+  color: #fff;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .chartCard__header--between {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lootFilter {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+}

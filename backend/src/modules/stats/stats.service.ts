@@ -150,10 +150,28 @@ export class StatsService {
     const totalCards = userCards.reduce((sum, row) => sum + Number(row.quantity ?? 0), 0);
     const uniqueCardsTotal = userCards.length;
 
+    // ✅ Global
     const rarities: Record<string, number> = {};
     for (const row of userCards) {
       const bucket = normalizeRarityBucket(row);
       inc(rarities, bucket, Number(row.quantity ?? 0));
+    }
+
+    // ✅ Par saison (Origins/Campus/Battle/Stellar)
+    const raritiesBySeason: Record<CoreSeason, Record<string, number>> = {
+      Origins: {},
+      Campus: {},
+      Battle: {},
+      Stellar: {},
+    };
+
+    for (const row of userCards) {
+      // si la carte n'est pas rattachée à une saison core (starter/tickets/etc), on ne la met pas dans raritiesBySeason
+      const season = normalizeSeasonKey(row.seasonKey);
+      if (!season) continue;
+
+      const bucket = normalizeRarityBucket(row);
+      inc(raritiesBySeason[season], bucket, Number(row.quantity ?? 0));
     }
 
     const seasonProgress = this.buildSeasonProgress(userCards, allCards);
@@ -166,6 +184,7 @@ export class StatsService {
       uniqueCards: uniqueCardsTotal,
       seasonProgress,
       rarities,
+      raritiesBySeason, // ✅ NEW
     };
   }
 
