@@ -1,26 +1,35 @@
-import { Link } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { Link } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import "../styles/Home.css";
 
-import wankilLogo from '../assets/Wankil_Studio_Logo.png';
-import wankulLogo from '../assets/Wankul_Logo_Blanc.webp';
-import lainkImg from '../assets/wankul_laink.png';
-import terracidImg from '../assets/wankul_terra.png';
+import wankilLogo from "../assets/Wankil_Studio_Logo.png";
+import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
+import lainkImg from "../assets/wankul_laink.png";
+import terracidImg from "../assets/wankul_terra.png";
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
 
   return (
     <div className="landing">
-      {/* HERO */}
+      <div className="landing__bg" />
+
       <section className="hero">
         <div className="hero__inner">
           <div className="hero__left">
-            <div className="badge">Projet fan • WebApp</div>
-            <h1>Wankul WebApp</h1>
+            <div className="hero__eyebrow">
+              <span className="badge">Projet fan • WebApp</span>
+              <span className="hero__status">Opening • Collection • Stats</span>
+            </div>
+
+            <h1 className="hero__title">
+              Ouvre, collectionne et suis ta progression sur les cartes <span>Wankul</span>
+            </h1>
+
             <p className="hero__subtitle">
-              Une application web <strong>créée par un fan</strong> autour des cartes <strong>Wankul</strong> :
-              ouverture de boosters, collection, progression et stats — avec un tirage 100% côté serveur.
+              Une webapp créée par un fan pour retrouver le plaisir des openings Wankul avec
+              boosters, displays, collection, économie en crédits et statistiques de drop.
+              Le tirage est géré côté serveur pour garder une ouverture propre et cohérente.
             </p>
 
             <div className="hero__actions">
@@ -38,38 +47,74 @@ export default function Home() {
                   <Link className="btn btn-lg" to="/booster">
                     Ouvrir un booster
                   </Link>
-                  <Link className="btn secondary btn-lg" to="/collection">
-                    Voir ma collection
+                  <Link className="btn secondary btn-lg" to="/menu">
+                    Aller au dashboard
                   </Link>
                 </>
               )}
             </div>
 
+            <div className="hero__meta">
+              <div className="heroStat">
+                <div className="heroStat__value">4</div>
+                <div className="heroStat__label">Saisons principales</div>
+              </div>
+              <div className="heroStat">
+                <div className="heroStat__value">Booster + Display</div>
+                <div className="heroStat__label">Deux formats d’ouverture</div>
+              </div>
+              <div className="heroStat">
+                <div className="heroStat__value">100%</div>
+                <div className="heroStat__label">Tirage côté serveur</div>
+              </div>
+            </div>
+
             <div className="disclaimer">
-              Disclaimer : projet non-officiel, fait pour le fun/portfolio, sans affiliation avec Wankil Studio.
+              Projet non officiel, réalisé pour le fun et le portfolio, sans affiliation avec Wankil Studio.
             </div>
           </div>
 
           <div className="hero__right">
-            <div className="heroCard">
-              <img className="heroCard__logo" src={wankulLogo} alt="Wankul logo" />
-              <div className="heroCard__grid">
-                <div className="mini">
-                  <div className="mini__title">Boosters</div>
-                  <div className="mini__text">Ouverture animée (phase suivante)</div>
+            <div className="showcaseCard">
+              <div className="showcaseCard__top">
+                <img className="showcaseCard__logo" src={wankulLogo} alt="Wankul logo" />
+                <div className="showcaseCard__tag">TCG fan experience</div>
+              </div>
+
+              <div className="showcaseCard__grid">
+                <div className="showcaseMini">
+                  <div className="showcaseMini__title">Boosters</div>
+                  <div className="showcaseMini__text">
+                    Ouvertures rapides ou animées, cartes rares, holo et résumés.
+                  </div>
                 </div>
-                <div className="mini">
-                  <div className="mini__title">Collection</div>
-                  <div className="mini__text">Progression + filtres</div>
+
+                <div className="showcaseMini">
+                  <div className="showcaseMini__title">Displays</div>
+                  <div className="showcaseMini__text">
+                    Sessions multi-boosters avec gestion correcte des nouvelles cartes.
+                  </div>
                 </div>
-                <div className="mini">
-                  <div className="mini__title">Économie</div>
-                  <div className="mini__text">Crédits + cooldowns</div>
+
+                <div className="showcaseMini">
+                  <div className="showcaseMini__title">Collection</div>
+                  <div className="showcaseMini__text">
+                    Filtres, progression, effets visuels et suivi des doublons.
+                  </div>
                 </div>
-                <div className="mini">
-                  <div className="mini__title">Stats</div>
-                  <div className="mini__text">Taux réels / simulés</div>
+
+                <div className="showcaseMini">
+                  <div className="showcaseMini__title">Statistiques</div>
+                  <div className="showcaseMini__text">
+                    Répartition du butin, progression par saison et comparaison visuelle.
+                  </div>
                 </div>
+              </div>
+
+              <div className="showcaseCard__footer">
+                <span className="showcasePill">React + Vite</span>
+                <span className="showcasePill">NestJS</span>
+                <span className="showcasePill">MySQL</span>
               </div>
             </div>
           </div>
@@ -78,46 +123,62 @@ export default function Home() {
         <div className="hero__glow" />
       </section>
 
-      {/* SECTION : C'EST QUOI */}
       <section className="section">
         <div className="container">
-          <h2>C’est quoi ce site ?</h2>
-          <p className="muted">
-            Cette webapp simule l’univers des cartes Wankul : tu ouvres des boosters (ou des displays),
-            tu récupères les cartes dans ta collection, et tu gagnes des crédits en fonction de la rareté.
-            L’objectif est de reproduire un opening “propre” avec des animations et une progression claire.
-          </p>
+          <div className="sectionHead">
+            <span className="sectionHead__kicker">LE CONCEPT</span>
+            <h2>Une vraie sensation d’opening, pensée comme une mini expérience TCG</h2>
+            <p className="muted">
+              Le but de la webapp est de recréer l’ouverture de cartes avec une interface agréable,
+              une progression claire et une logique backend propre pour la gestion des récompenses.
+            </p>
+          </div>
 
           <div className="featureGrid">
-            <div className="feature">
-              <div className="feature__title">Tirage serveur</div>
-              <div className="feature__text">Le RNG est 100% côté backend (anti-triche).</div>
+            <div className="feature feature--cyan">
+              <div className="feature__title">Tirage sécurisé</div>
+              <div className="feature__text">
+                Les ouvertures sont générées côté serveur, ce qui évite la triche et garde une logique fiable.
+              </div>
             </div>
-            <div className="feature">
-              <div className="feature__title">Collection</div>
-              <div className="feature__text">Toutes les cartes obtenues sont enregistrées en base.</div>
+
+            <div className="feature feature--green">
+              <div className="feature__title">Collection persistante</div>
+              <div className="feature__text">
+                Toutes les cartes obtenues sont enregistrées et réutilisées pour la progression et les doublons.
+              </div>
             </div>
-            <div className="feature">
-              <div className="feature__title">Booster / Display</div>
-              <div className="feature__text">Booster gold, légendaire garantie en display, etc.</div>
+
+            <div className="feature feature--pink">
+              <div className="feature__title">Économie intégrée</div>
+              <div className="feature__text">
+                Les crédits, charges gratuites et coûts d’ouverture donnent une vraie boucle de jeu.
+              </div>
             </div>
-            <div className="feature">
-              <div className="feature__title">Stats</div>
-              <div className="feature__text">Comparaison des probabilités théoriques vs résultats réels.</div>
+
+            <div className="feature feature--gold">
+              <div className="feature__title">Dashboard visuel</div>
+              <div className="feature__text">
+                Progression par saison, distribution du butin et suivi global de ton compte.
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION : WANKIL + CARTES */}
       <section className="section section--alt">
         <div className="container">
-          <div className="twoCols">
-            <div>
-              <h2>Wankil Studio & l’univers Wankul</h2>
+          <div className="infoGrid">
+            <div className="infoPanel">
+              <div className="sectionHead sectionHead--tight">
+                <span className="sectionHead__kicker">UNIVERS</span>
+                <h2>Wankil Studio & les cartes Wankul</h2>
+              </div>
+
               <p className="muted">
-                Wankil Studio est un duo de créateurs de contenu, notamment <strong>Laink</strong> et <strong>Terracid</strong>.
-                Les cartes Wankul reprennent des références, des personnages, liés à leurs univers.
+                L’univers Wankul reprend l’imaginaire et les références liées à Wankil Studio,
+                notamment autour de <strong>Laink</strong> et <strong>Terracid</strong>. Cette webapp
+                cherche à retranscrire ce plaisir de collection dans un format interactif.
               </p>
 
               <div className="logoRow">
@@ -125,6 +186,7 @@ export default function Home() {
                   <img src={wankilLogo} alt="Wankil Studio logo" />
                   <div className="logoCard__label">Wankil Studio</div>
                 </div>
+
                 <div className="logoCard">
                   <img src={wankulLogo} alt="Wankul logo" />
                   <div className="logoCard__label">Cartes Wankul</div>
@@ -132,29 +194,63 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="avatars">
-              <div className="avatarCard">
-                <img src={lainkImg} alt="Laink (Wankil)" />
-                <div className="avatarCard__name">Laink</div>
+            <div className="creatorsPanel">
+              <div className="avatars">
+                <div className="avatarCard">
+                  <div className="avatarCard__media">
+                    <img src={lainkImg} alt="Laink" />
+                  </div>
+                  <div className="avatarCard__body">
+                    <div className="avatarCard__name">Laink</div>
+                    <div className="avatarCard__text">Références, personnages, humour et moments cultes.</div>
+                  </div>
+                </div>
+
+                <div className="avatarCard">
+                  <div className="avatarCard__media">
+                    <img src={terracidImg} alt="Terracid" />
+                  </div>
+                  <div className="avatarCard__body">
+                    <div className="avatarCard__name">Terracid</div>
+                    <div className="avatarCard__text">L’autre moitié du duo, au cœur de l’identité Wankul.</div>
+                  </div>
+                </div>
               </div>
-              <div className="avatarCard">
-                <img src={terracidImg} alt="Terracid (Wankil)" />
-                <div className="avatarCard__name">Terracid</div>
+            </div>
+          </div>
+
+          <div className="roadmap">
+            <div className="roadmap__item">
+              <div className="roadmap__step">01</div>
+              <div>
+                <div className="roadmap__title">Créer un compte</div>
+                <div className="roadmap__text">Accède à ton espace personnel et à ta progression.</div>
+              </div>
+            </div>
+
+            <div className="roadmap__item">
+              <div className="roadmap__step">02</div>
+              <div>
+                <div className="roadmap__title">Ouvrir boosters et displays</div>
+                <div className="roadmap__text">Récupère des cartes, des rares et des doublons convertis en crédits.</div>
+              </div>
+            </div>
+
+            <div className="roadmap__item">
+              <div className="roadmap__step">03</div>
+              <div>
+                <div className="roadmap__title">Compléter la collection</div>
+                <div className="roadmap__text">Suis les saisons, les cartes uniques et les performances d’ouverture.</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer className="footer">
         <div className="container footer__inner">
-          <div className="muted">
-            Wankul WebApp — projet fan / portfolio.
-          </div>
-          <div className="muted">
-            Backend NestJS • MySQL • RNG serveur • Front React + Vite
-          </div>
+          <div className="muted">Wankul WebApp — projet fan / portfolio.</div>
+          <div className="muted">Backend NestJS • MySQL • RNG serveur • Front React + Vite</div>
         </div>
       </footer>
     </div>
