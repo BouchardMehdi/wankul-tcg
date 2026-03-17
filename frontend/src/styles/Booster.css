@@ -379,3 +379,69 @@
     flex-direction: column;
   }
 }
+
+
+/* =========================================
+   PWA / MOBILE
+========================================= */
+
+@media (max-width: 860px) {
+  .boosterPage {
+    padding: 12px 0 calc(108px + env(safe-area-inset-bottom));
+  }
+
+  .boosterHero {
+    margin-top: 12px;
+    padding: 16px;
+    border-radius: 22px;
+    gap: 14px;
+  }
+
+  .boosterHero__right,
+  .boosterWallet {
+    width: 100%;
+  }
+
+  .boosterWallet {
+    text-align: left;
+    min-width: 0;
+  }
+
+  .boosterGrid {
+    margin-top: 14px;
+    gap: 12px;
+    grid-template-columns: 1fr;
+  }
+
+  .boosterSeasonCard {
+    padding: 14px;
+    border-radius: 22px;
+  }
+
+  .boosterSeasonCard__packs {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .boosterPack__visual,
+  .boosterPack__visual--display {
+    min-height: 300px;
+    border-radius: 20px;
+  }
+
+  .boosterPack__img {
+    width: min(52vw, 210px);
+    height: auto;
+    max-height: 280px;
+  }
+
+  .boosterPack__img--display {
+    width: min(72vw, 290px);
+    height: auto;
+    max-height: 240px;
+  }
+
+  .confirmModal {
+    padding: 12px;
+  }
+}

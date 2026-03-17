@@ -96,3 +96,28 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+
+/* =========================================
+   PWA / MOBILE
+========================================= */
+
+.auth-page {
+  padding: max(28px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+}
+
+@media (max-width: 520px) {
+  .auth-page {
+    padding: max(18px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom));
+    align-items: start;
+  }
+
+  .auth-card {
+    border-radius: 24px;
+    padding: 16px;
+  }
+
+  .auth-card h1 {
+    font-size: 26px;
+  }
+}

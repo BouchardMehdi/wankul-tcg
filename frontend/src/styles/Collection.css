@@ -7,6 +7,7 @@
   max-width: 1560px;
   margin: 0 auto;
   padding: 16px;
+  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
 }
 
 .collectionShell {
@@ -42,13 +43,21 @@
 
 .filterRow {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(4, minmax(160px, 1fr));
   gap: 12px;
+  align-items: end;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
   .filterRow {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .filterRow {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 }
 
@@ -66,6 +75,7 @@
 
 .filterInput,
 .filterSelect {
+  width: 100%;
   height: 42px;
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.14);
@@ -73,6 +83,7 @@
   color: rgba(240,245,255,0.96);
   padding: 0 12px;
   outline: none;
+  min-width: 0;
 }
 
 .filterInput:focus,
@@ -81,9 +92,35 @@
   box-shadow: 0 0 0 4px rgba(155, 92, 255, 0.14);
 }
 
+.filterSelect {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 38px;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'><path fill='white' d='M3.2 5.1 7 8.9l3.8-3.8.9.9L7 10.7 2.3 6z'/></svg>");
+  background-repeat: no-repeat, no-repeat;
+  background-position: 0 0, right 12px center;
+  background-size: auto, 14px 14px;
+}
+
 .filterSelect option {
   background: rgba(12, 16, 28, 0.98);
   color: rgba(240,245,255,0.96);
+}
+
+.filterSelect::-webkit-scrollbar {
+  width: 10px;
+}
+
+.filterSelect::-webkit-scrollbar-track {
+  background: rgba(10, 14, 24, 0.92);
+}
+
+.filterSelect::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ff4d6d, #9b5cff);
+  border-radius: 999px;
 }
 
 .filterRow--bottom {
@@ -97,10 +134,11 @@
 
 .checkLine {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   font-weight: 900;
   opacity: 0.88;
+  line-height: 1.3;
 }
 
 .filterActions {
@@ -456,11 +494,6 @@
   box-sizing: border-box;
 }
 
-.fancybox__slide.fb-terrain-rotate .f-panzoom__viewport {
-  transform: rotate(90deg) !important;
-  transform-origin: center center;
-}
-
 .fancybox__slide.fb-terrain-rotate {
   display: flex;
   align-items: center;
@@ -468,9 +501,33 @@
 }
 
 .fancybox__slide.fb-terrain-rotate .fancybox__content {
+  width: min(96vw, 1400px) !important;
+  height: min(88vh, 920px) !important;
+  max-width: none !important;
+  max-height: none !important;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.fancybox__slide.fb-terrain-rotate .f-panzoom {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.fancybox__slide.fb-terrain-rotate .f-panzoom__viewport {
+  transform: rotate(90deg) scale(0.82) !important;
+  transform-origin: center center !important;
+}
+
+.fancybox__slide.fb-terrain-rotate .fancybox__image {
+  width: auto !important;
+  height: auto !important;
+  max-width: min(84vh, 980px) !important;
+  max-height: min(94vw, 1280px) !important;
+  object-fit: contain !important;
 }
 
 .pill {
@@ -665,7 +722,9 @@
   --edgePow: 1.18;
 }
 
-.cardTile.rarity-leg-gold .cardTile__imgWrap {
+.cardTile.rarity-leg-gold .cardTile__imgWrap,
+.cardTile.rarity-booster-gold .cardTile__imgWrap,
+.cardTile.rarity-starter .cardTile__imgWrap {
   --holo-gradient:
     repeating-linear-gradient(
       120deg,
@@ -677,38 +736,6 @@
   --edge: rgba(255, 230, 150, 0.98);
   --glow: rgba(255, 220, 120, 0.48);
   --edgePow: 1.28;
-}
-
-.cardTile.rarity-booster-gold .cardTile__imgWrap {
-  --holo-gradient:
-    repeating-linear-gradient(
-      112deg,
-      rgba(255, 232, 120, 0.76) 0%,
-      rgba(255, 255, 255, 0.42) 10%,
-      rgba(255, 196, 70, 0.74) 18%,
-      rgba(120, 230, 255, 0.42) 28%,
-      rgba(255, 228, 110, 0.74) 38%,
-      rgba(255, 255, 255, 0.34) 48%,
-      rgba(255, 200, 75, 0.74) 58%
-    );
-  --edge: rgba(255, 208, 90, 0.98);
-  --glow: rgba(255, 208, 90, 0.56);
-  --edgePow: 1.34;
-}
-
-.cardTile.rarity-starter .cardTile__imgWrap {
-  --holo-gradient:
-    repeating-linear-gradient(
-      120deg,
-      rgba(215, 103, 20, 0.46) 0%,
-      rgba(79, 176, 169, 0.50) 12%,
-      rgba(138, 161, 255, 0.50) 24%,
-      rgba(177, 107, 204, 0.48) 36%,
-      rgba(215, 197, 55, 0.46) 48%
-    );
-  --edge: rgba(125, 214, 255, 0.94);
-  --glow: rgba(125, 214, 255, 0.30);
-  --edgePow: 1.02;
 }
 
 /* Hover only */
@@ -746,165 +773,6 @@
     0 0 28px var(--glow),
     0 0 72px var(--glow),
     inset 0 1px 0 rgba(255,255,255,0.08);
-}
-
-/* edge glow animé, style opening, hover only */
-.cardTile.rarity-u1:hover .cardTile__imgWrap,
-.cardTile.rarity-u2:hover .cardTile__imgWrap,
-.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap,
-.cardTile.rarity-leg-silver:hover .cardTile__imgWrap,
-.cardTile.rarity-leg-gold:hover .cardTile__imgWrap,
-.cardTile.rarity-booster-gold:hover .cardTile__imgWrap,
-.cardTile.rarity-starter:hover .cardTile__imgWrap {
-  position: relative;
-}
-
-.cardTile.rarity-u1:hover .cardTile__imgWrap > .cardTile__edge-ring,
-.cardTile.rarity-u2:hover .cardTile__imgWrap > .cardTile__edge-ring,
-.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap > .cardTile__edge-ring,
-.cardTile.rarity-leg-silver:hover .cardTile__imgWrap > .cardTile__edge-ring,
-.cardTile.rarity-leg-gold:hover .cardTile__imgWrap > .cardTile__edge-ring,
-.cardTile.rarity-booster-gold:hover .cardTile__imgWrap > .cardTile__edge-ring,
-.cardTile.rarity-starter:hover .cardTile__imgWrap > .cardTile__edge-ring {
-  opacity: 1;
-}
-
-.cardTile.rarity-u1 .cardTile__imgWrap::marker,
-.cardTile.rarity-u2 .cardTile__imgWrap::marker,
-.cardTile.rarity-leg-bronze .cardTile__imgWrap::marker,
-.cardTile.rarity-leg-silver .cardTile__imgWrap::marker,
-.cardTile.rarity-leg-gold .cardTile__imgWrap::marker,
-.cardTile.rarity-booster-gold .cardTile__imgWrap::marker,
-.cardTile.rarity-starter .cardTile__imgWrap::marker {
-  content: "";
-}
-
-.cardTile.rarity-u1 .cardTile__imgWrap .edgeGlowCollection,
-.cardTile.rarity-u2 .cardTile__imgWrap .edgeGlowCollection,
-.cardTile.rarity-leg-bronze .cardTile__imgWrap .edgeGlowCollection,
-.cardTile.rarity-leg-silver .cardTile__imgWrap .edgeGlowCollection,
-.cardTile.rarity-leg-gold .cardTile__imgWrap .edgeGlowCollection,
-.cardTile.rarity-booster-gold .cardTile__imgWrap .edgeGlowCollection,
-.cardTile.rarity-starter .cardTile__imgWrap .edgeGlowCollection {
-  display: none;
-}
-
-/* Faux edge glow sans modifier le TSX */
-.cardTile.rarity-u1 .cardTile__imgWrap > .cardTile__img,
-.cardTile.rarity-u1 .cardTile__imgWrap > .cardTile__zoom,
-.cardTile.rarity-u2 .cardTile__imgWrap > .cardTile__img,
-.cardTile.rarity-u2 .cardTile__imgWrap > .cardTile__zoom,
-.cardTile.rarity-leg-bronze .cardTile__imgWrap > .cardTile__img,
-.cardTile.rarity-leg-bronze .cardTile__imgWrap > .cardTile__zoom,
-.cardTile.rarity-leg-silver .cardTile__imgWrap > .cardTile__img,
-.cardTile.rarity-leg-silver .cardTile__imgWrap > .cardTile__zoom,
-.cardTile.rarity-leg-gold .cardTile__imgWrap > .cardTile__img,
-.cardTile.rarity-leg-gold .cardTile__imgWrap > .cardTile__zoom,
-.cardTile.rarity-booster-gold .cardTile__imgWrap > .cardTile__img,
-.cardTile.rarity-booster-gold .cardTile__imgWrap > .cardTile__zoom,
-.cardTile.rarity-starter .cardTile__imgWrap > .cardTile__img,
-.cardTile.rarity-starter .cardTile__imgWrap > .cardTile__zoom {
-  position: relative;
-  z-index: 1;
-}
-
-.cardTile.rarity-u1 .cardTile__imgWrap::selection,
-.cardTile.rarity-u2 .cardTile__imgWrap::selection,
-.cardTile.rarity-leg-bronze .cardTile__imgWrap::selection,
-.cardTile.rarity-leg-silver .cardTile__imgWrap::selection,
-.cardTile.rarity-leg-gold .cardTile__imgWrap::selection,
-.cardTile.rarity-booster-gold .cardTile__imgWrap::selection,
-.cardTile.rarity-starter .cardTile__imgWrap::selection {
-  background: transparent;
-}
-
-.cardTile.rarity-u1:hover .cardTile__imgWrap {
-  border-color: rgba(168, 110, 255, 0.32);
-}
-
-.cardTile.rarity-u2:hover .cardTile__imgWrap {
-  border-color: rgba(255, 92, 120, 0.34);
-}
-
-.cardTile.rarity-leg-bronze:hover .cardTile__imgWrap {
-  border-color: rgba(255, 170, 110, 0.30);
-}
-
-.cardTile.rarity-leg-silver:hover .cardTile__imgWrap {
-  border-color: rgba(230, 245, 255, 0.30);
-}
-
-.cardTile.rarity-leg-gold:hover .cardTile__imgWrap {
-  border-color: rgba(255, 230, 150, 0.34);
-}
-
-.cardTile.rarity-booster-gold:hover .cardTile__imgWrap {
-  border-color: rgba(255, 208, 90, 0.40);
-}
-
-.cardTile.rarity-starter:hover .cardTile__imgWrap {
-  border-color: rgba(125, 214, 255, 0.26);
-}
-
-/* halo périphérique façon opening, sans pseudo supplémentaire HTML */
-.cardTile.rarity-u1:hover {
-  box-shadow:
-    0 10px 30px rgba(0,0,0,0.22),
-    0 0 18px rgba(150, 110, 255, 0.16);
-}
-
-.cardTile.rarity-u2:hover {
-  box-shadow:
-    0 10px 30px rgba(0,0,0,0.22),
-    0 0 22px rgba(255, 80, 120, 0.18);
-}
-
-.cardTile.rarity-leg-bronze:hover {
-  box-shadow:
-    0 10px 30px rgba(0,0,0,0.22),
-    0 0 18px rgba(255, 170, 110, 0.16);
-}
-
-.cardTile.rarity-leg-silver:hover {
-  box-shadow:
-    0 10px 30px rgba(0,0,0,0.22),
-    0 0 18px rgba(210, 230, 255, 0.18);
-}
-
-.cardTile.rarity-leg-gold:hover {
-  box-shadow:
-    0 10px 30px rgba(0,0,0,0.22),
-    0 0 22px rgba(255, 220, 120, 0.20);
-}
-
-.cardTile.rarity-booster-gold:hover {
-  box-shadow:
-    0 10px 30px rgba(0,0,0,0.22),
-    0 0 26px rgba(255, 208, 90, 0.24),
-    0 0 34px rgba(104, 224, 255, 0.10);
-}
-
-.cardTile.rarity-starter:hover {
-  box-shadow:
-    0 10px 30px rgba(0,0,0,0.22),
-    0 0 16px rgba(125, 214, 255, 0.14);
-}
-
-/* surtout pas d'effet sur les locked */
-.cardTile.is-locked .cardTile__imgWrap::before,
-.cardTile.is-locked .cardTile__imgWrap::after,
-.cardTile.is-locked:hover .cardTile__imgWrap::before,
-.cardTile.is-locked:hover .cardTile__imgWrap::after {
-  opacity: 0 !important;
-  animation: none !important;
-}
-
-.cardTile.is-locked:hover,
-.cardTile.is-locked:hover .cardTile__imgWrap {
-  box-shadow:
-    0 10px 30px rgba(0,0,0,0.22),
-    0 18px 40px rgba(0,0,0,0.35),
-    inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
 /* Settings-driven variants */
@@ -946,6 +814,38 @@
 }
 
 @media (max-width: 860px) {
+  .collectionPage {
+    padding: 12px;
+  }
+
+  .collectionHeader {
+    padding: 12px;
+  }
+
+  .collectionHeader h2 {
+    font-size: 24px;
+  }
+
+  .filterInput,
+  .filterSelect {
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .filterActions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .filterActions .btn {
+    width: 100%;
+  }
+
+  .checkLine {
+    width: 100%;
+  }
+
   .cardTile__name {
     font-size: 13px;
   }

@@ -36,25 +36,13 @@
 [data-theme="light"] .topbar__link { background: rgba(11, 16, 32, 0.05); }
 .topbar__link:hover { transform: translateY(-1px); filter: brightness(1.06); }
 
-.topbar__logout {
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 0;
-  cursor: pointer;
-  color: var(--text);
-  font-weight: 900;
-  background: linear-gradient(135deg, var(--a-pink), var(--a-violet));
-  box-shadow: 0 16px 55px rgba(255, 77, 109, 0.18);
-  transition: transform var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
-}
-.topbar__logout:hover { transform: translateY(-1px); filter: brightness(1.06); }
-
 .menuSection {
   margin-top: 24px;
 }
 
 .menuSection--stats {
   margin-top: 28px;
+  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Welcome */
@@ -158,7 +146,7 @@
 }
 
 .chartCard--donut {
-  min-height: 440px;
+  min-height: 560px;
 }
 
 .chartCard__header {
@@ -169,9 +157,9 @@
 }
 
 .chartCard__header--between {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 18px;
   margin-bottom: 20px;
 }
@@ -225,16 +213,22 @@
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   gap: 30px;
-  align-items: center;
+  align-items: start;
+  min-height: 430px;
 }
 @media (max-width: 760px) {
   .chartCard__body--donut {
     grid-template-columns: 1fr;
     justify-items: center;
+    min-height: auto;
+    gap: 24px;
   }
 }
 
-/* Bar chart */
+/* =========================
+   BAR CHART
+========================= */
+
 .barChart {
   position: relative;
   padding: 18px 12px 12px;
@@ -243,20 +237,26 @@
 
 .barChart__grid {
   position: absolute;
-  inset: 56px 12px 10px 168px;
+  inset: 44px 12px 10px 180px;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   pointer-events: none;
   opacity: 0.32;
 }
-.barChart__grid > div { border-left: 1px dashed rgba(255, 255, 255, 0.16); }
 
-.barChart__rows { display: grid; gap: 24px; }
+.barChart__grid > div {
+  border-left: 1px dashed rgba(255, 255, 255, 0.16);
+}
+
+.barChart__rows {
+  display: grid;
+  gap: 24px;
+}
 
 .barRow {
   display: grid;
-  grid-template-columns: 154px 1fr;
-  gap: 14px;
+  grid-template-columns: 180px 1fr;
+  gap: 16px;
   align-items: center;
 }
 
@@ -264,11 +264,15 @@
   font-weight: 900;
   font-size: 13px;
   color: var(--text);
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  min-height: 18px;
 }
 
 .barHover {
   position: relative;
-  padding-top: 28px;
+  width: 100%;
 }
 
 .barRow__track {
@@ -278,6 +282,7 @@
   border: 1px solid var(--border2);
   background: rgba(255, 255, 255, 0.06);
   overflow: visible;
+  width: 100%;
 }
 
 .barRow__fill {
@@ -314,7 +319,7 @@
 
 .barRow__tooltip {
   position: absolute;
-  top: -36px;
+  top: -34px;
   transform: translateX(-50%) translateY(6px);
   opacity: 0;
   pointer-events: none;
@@ -414,9 +419,12 @@
 .legend {
   border-left: 1px solid rgba(255,255,255,0.12);
   padding-left: 18px;
-  max-height: 300px;
-  overflow: auto;
+  padding-top: 6px;
+  padding-bottom: 14px;
+  max-height: none;
+  overflow: visible;
   min-width: 0;
+  align-self: stretch;
 }
 
 .legend--wide {
@@ -429,6 +437,8 @@
   .legend {
     border-left: 0;
     padding-left: 0;
+    padding-top: 4px;
+    padding-bottom: 18px;
     width: 100%;
     max-height: none;
   }
@@ -539,9 +549,9 @@
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  min-width: 138px;
-  height: 38px;
-  padding: 0 38px 0 14px;
+  min-width: 148px;
+  height: 40px;
+  padding: 0 40px 0 14px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background:
@@ -550,7 +560,7 @@
   color: #fff;
   font-size: 15px;
   font-weight: 800;
-  line-height: 38px;
+  line-height: 40px;
   cursor: pointer;
   outline: none;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
@@ -583,14 +593,69 @@
   font-weight: 700;
 }
 
+.lootFilterHint {
+  margin-top: 10px;
+  color: var(--text2);
+}
+
 @media (max-width: 760px) {
   .chartCard__header--between {
-    flex-direction: column;
-    align-items: flex-start;
+    grid-template-columns: 1fr;
+    align-items: start;
   }
 
   .lootFilter {
     margin-left: 0;
     justify-content: flex-start;
+  }
+}
+
+/* =========================================
+   MOBILE TWEAKS
+========================================= */
+
+@media (max-width: 560px) {
+  .chartCard {
+    padding: 18px 16px 18px;
+  }
+
+  .chartCard--donut {
+    min-height: 600px;
+  }
+
+  .legend {
+    padding-bottom: 18px;
+  }
+
+  .barChart {
+    min-height: 360px;
+    padding: 16px 6px 10px;
+  }
+
+  .barChart__grid {
+    inset: 42px 6px 10px 130px;
+  }
+
+  .barChart__rows {
+    gap: 22px;
+  }
+
+  .barRow {
+    grid-template-columns: 120px 1fr;
+    gap: 12px;
+  }
+
+  .barRow__label {
+    font-size: 12px;
+    min-height: 18px;
+  }
+
+  .barHover {
+    width: 100%;
+  }
+
+  .barRow__track {
+    width: 100%;
+    min-width: 0;
   }
 }

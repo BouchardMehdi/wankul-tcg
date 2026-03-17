@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import "../styles.css";
 import "../styles/Menu.css";
@@ -13,6 +14,7 @@ import {
   writeAppSettings,
   type AppSettings,
 } from "../utils/appSettings";
+import { useAuth } from "../auth/AuthContext";
 
 type ToggleSettingKey = Exclude<keyof AppSettings, "collectionLayout">;
 
@@ -94,6 +96,9 @@ const SETTING_ROWS: SettingRow[] = [
 ];
 
 export default function Settings() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
   const [settings, setSettings] = useState<AppSettings>(() => readAppSettings());
 
   useEffect(() => subscribeAppSettings(() => setSettings(readAppSettings())), []);
@@ -123,6 +128,11 @@ export default function Settings() {
   function resetAll() {
     setSettings(APP_SETTINGS_DEFAULTS);
     writeAppSettings(APP_SETTINGS_DEFAULTS);
+  }
+
+  function handleLogout() {
+    logout();
+    navigate("/", { replace: true });
   }
 
   return (
@@ -197,6 +207,21 @@ export default function Settings() {
             <div className="settingsFooter">
               <button type="button" className="btn" onClick={resetAll}>
                 Réinitialiser les paramètres
+              </button>
+            </div>
+
+            <div className="settingsDangerZone">
+              <div className="settingsDangerZone__title">Compte</div>
+              <div className="settingsDangerZone__desc">
+                Déconnecte-toi de l'application sur cet appareil.
+              </div>
+
+              <button
+                type="button"
+                className="btn settingsLogoutBtn"
+                onClick={handleLogout}
+              >
+                Se déconnecter
               </button>
             </div>
           </div>

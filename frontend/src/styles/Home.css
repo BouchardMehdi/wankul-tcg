@@ -613,3 +613,61 @@
   flex-wrap: wrap;
   opacity: 0.75;
 }
+
+
+/* =========================================
+   PWA / MOBILE
+========================================= */
+
+@media (max-width: 860px) {
+  .hero {
+    padding: calc(18px + env(safe-area-inset-top)) 0 22px;
+  }
+
+  .hero__inner,
+  .container {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .hero__actions .btn {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+  }
+
+  .hero__meta {
+    gap: 10px;
+  }
+
+  .showcaseCard,
+  .feature,
+  .infoPanel,
+  .creatorsPanel,
+  .roadmap__item {
+    border-radius: 22px;
+  }
+
+  .section {
+    padding: 24px 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .hero__actions .btn {
+    width: 100%;
+  }
+
+  .logoRow {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .logoCard {
+    min-width: 0;
+  }
+}
