@@ -4,10 +4,16 @@ import { Link } from "react-router-dom";
 import "../styles/Nav.css";
 import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
 
-type NavPage = "menu" | "booster" | "collection" | "settings" | "opening";
+type NavPage =
+  | "menu"
+  | "booster"
+  | "collection"
+  | "market"
+  | "settings"
+  | "opening";
 
 type NavItem = {
-  key: "menu" | "booster" | "collection" | "settings";
+  key: "menu" | "booster" | "collection" | "market" | "settings";
   label: string;
   mobileLabel: string;
   to: string;
@@ -86,6 +92,38 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    key: "market",
+    label: "Market",
+    mobileLabel: "Market",
+    to: "/market",
+    icon: (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M5.5 8.25 7.1 4.75h9.8l1.6 3.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M6 8.25h12a1.5 1.5 0 0 1 1.5 1.5v7.5A2.75 2.75 0 0 1 16.75 20h-9.5A2.75 2.75 0 0 1 4.5 17.25v-7.5A1.5 1.5 0 0 1 6 8.25Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M9 12h6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+      </svg>
+    ),
+  },
+  {
     key: "settings",
     label: "Paramètres",
     mobileLabel: "Réglages",
@@ -118,7 +156,7 @@ type AppNavbarProps = {
 
 export default function AppNavbar({
   currentPage,
-  visibleItems = ["menu", "booster", "collection", "settings"],
+  visibleItems = ["menu", "booster", "collection", "market", "settings"],
 }: AppNavbarProps) {
   const links = NAV_ITEMS.filter((item) => visibleItems.includes(item.key));
 

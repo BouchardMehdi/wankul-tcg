@@ -1,21 +1,26 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+
 import { useAuth } from "./auth/AuthContext";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-
 import Menu from "./pages/Menu";
 import Collection from "./pages/Collection";
 import Booster from "./pages/Booster";
 import Opening from "./pages/Opening";
 import Settings from "./pages/Settings";
+import Market from "./pages/Market";
+import MarketCreate from "./pages/MarketCreate";
+import QuickSell from "./pages/QuickSell";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
   return <>{children}</>;
 }
 
@@ -23,17 +28,26 @@ export default function App() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="container">Chargement...</div>;
+    return <div>Chargement...</div>;
   }
 
   return (
     <Routes>
-      {/* Public */}
-      <Route path="/" element={isAuthenticated ? <Navigate to="/menu" replace /> : <Home />} />
-      <Route path="/login" element={isAuthenticated ? <Navigate to="/menu" replace /> : <Login />} />
-      <Route path="/register" element={isAuthenticated ? <Navigate to="/menu" replace /> : <Register />} />
+      <Route
+        path="/"
+        element={isAuthenticated ? <Navigate to="/menu" replace /> : <Home />}
+      />
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/menu" replace /> : <Login />}
+      />
+      <Route
+        path="/register"
+        element={
+          isAuthenticated ? <Navigate to="/menu" replace /> : <Register />
+        }
+      />
 
-      {/* Private */}
       <Route
         path="/menu"
         element={
@@ -74,9 +88,37 @@ export default function App() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/market"
+        element={
+          <PrivateRoute>
+            <Market />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/market/create"
+        element={
+          <PrivateRoute>
+            <MarketCreate />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/market/quick-sell"
+        element={
+          <PrivateRoute>
+            <QuickSell />
+          </PrivateRoute>
+        }
+      />
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route
+        path="*"
+        element={
+          <Navigate to={isAuthenticated ? "/menu" : "/"} replace />
+        }
+      />
     </Routes>
   );
 }

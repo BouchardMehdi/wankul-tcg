@@ -129,7 +129,7 @@
     bottom: calc(10px + env(safe-area-inset-bottom));
     z-index: 60;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 8px;
     padding: 8px;
     border-radius: 24px;
@@ -210,8 +210,12 @@
     order: 3;
   }
 
-  .topbar__link[data-navkey="settings"] {
+  .topbar__link[data-navkey="market"] {
     order: 4;
+  }
+
+  .topbar__link[data-navkey="settings"] {
+    order: 5;
   }
 
   .topbar__link[data-center="true"] .topbar__icon svg {
