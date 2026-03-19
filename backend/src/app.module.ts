@@ -14,6 +14,7 @@ import { BoosterModule } from './modules/booster/booster.module';
 import { EconomyModule } from './modules/economy/economy.module';
 import { MailModule } from './modules/mail/mail.module';
 import { StatsModule } from './modules/stats/stats.module';
+import { MarketModule } from './modules/market/market.module';
 
 @Module({
   imports: [
@@ -21,13 +22,11 @@ import { StatsModule } from './modules/stats/stats.module';
 
     TypeOrmModule.forRoot(typeOrmConfig()),
 
-    // Sert backend/public/*
-    // backend/public/cards/xxx.webp -> http://localhost:3000/cards/xxx.webp
-   ServeStaticModule.forRoot({
-  rootPath: join(__dirname, '..', 'public'),
-  serveRoot: '/',
-  exclude: ['/api', '/api/*rest'],
-}),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+      serveRoot: '/',
+      exclude: ['/api', '/api/*rest'],
+    }),
 
     UsersModule,
     AuthModule,
@@ -36,6 +35,7 @@ import { StatsModule } from './modules/stats/stats.module';
     EconomyModule,
     MailModule,
     StatsModule,
+    MarketModule,
   ],
 })
 export class AppModule {}

@@ -1,0 +1,6 @@
+export enum MarketPricePosition {
+  BELOW_MARKET = 'BELOW_MARKET',
+  AT_MARKET = 'AT_MARKET',
+  ABOVE_MARKET = 'ABOVE_MARKET',
+  NOT_COMPARABLE = 'NOT_COMPARABLE',
+}
