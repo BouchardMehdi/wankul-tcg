@@ -32,6 +32,20 @@
   font-weight: 950;
 }
 
+.collectionSelectBanner {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(155, 92, 255, 0.28);
+  background: linear-gradient(135deg, rgba(255,77,109,0.08), rgba(155,92,255,0.10));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-weight: 900;
+}
+
 /* Filters */
 .filterCard {
   margin: 0;
@@ -158,6 +172,10 @@
   font-weight: 950;
   cursor: pointer;
   transition: transform 160ms cubic-bezier(.2,.8,.2,1), filter 160ms cubic-bezier(.2,.8,.2,1);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn:hover {
@@ -474,6 +492,66 @@
   display: block;
 }
 
+.cardTile__selectBtn {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cardTile__selectBtn:disabled {
+  cursor: not-allowed;
+}
+
+.cardTile__marketPick {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 7;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.18);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+}
+
+.cardTile__marketPick--ok {
+  background: linear-gradient(135deg, rgba(70,196,126,0.92), rgba(76,201,240,0.92));
+  color: #fff;
+}
+
+.cardTile__marketPick--off {
+  background: rgba(0,0,0,0.65);
+  color: rgba(240,245,255,0.88);
+}
+
+.cardTile--selectMode.cardTile--sellable {
+  cursor: pointer;
+}
+
+.cardTile--selectMode.cardTile--sellable .cardTile__imgWrap {
+  border-color: rgba(76, 201, 240, 0.28);
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.35),
+    0 0 0 1px rgba(76, 201, 240, 0.12),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.cardTile--selectMode.cardTile--sellable:hover .cardTile__imgWrap {
+  box-shadow:
+    0 24px 50px rgba(0,0,0,0.42),
+    0 0 28px rgba(76, 201, 240, 0.18),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.cardTile--selectMode.cardTile--notSellable {
+  opacity: 0.78;
+}
+
 /* TERRAIN */
 
 .cardTile--terrain .cardTile__imgWrap {
@@ -540,6 +618,11 @@
   border-radius: 999px;
 }
 
+.pill--market {
+  background: rgba(76, 201, 240, 0.12);
+  border-color: rgba(76, 201, 240, 0.22);
+}
+
 .collectionBottomBar {
   padding: 14px;
   border-top: 1px solid rgba(255,255,255,0.10);
@@ -562,11 +645,6 @@
   0%   { background-position: 0 0, 0 0; opacity: 0.00; }
   50%  { background-position: 18px 26px, 12px 10px; opacity: 0.26; }
   100% { background-position: 0 0, 0 0; opacity: 0.00; }
-}
-
-@keyframes collectionEdgeShimmer {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 .cardTile.rarity-u1,
@@ -628,35 +706,6 @@
     radial-gradient(rgba(255,255,255,0.34) 1px, transparent 1.9px);
   background-size: 16px 16px;
   transition: opacity 180ms ease;
-}
-
-/* Edge glow type opening */
-.cardTile.rarity-u1 .cardTile__imgWrap > .cardTile__zoom::before,
-.cardTile.rarity-u2 .cardTile__imgWrap > .cardTile__zoom::before,
-.cardTile.rarity-leg-bronze .cardTile__imgWrap > .cardTile__zoom::before,
-.cardTile.rarity-leg-silver .cardTile__imgWrap > .cardTile__zoom::before,
-.cardTile.rarity-leg-gold .cardTile__imgWrap > .cardTile__zoom::before,
-.cardTile.rarity-booster-gold .cardTile__imgWrap > .cardTile__zoom::before,
-.cardTile.rarity-starter .cardTile__imgWrap > .cardTile__zoom::before,
-.cardTile.rarity-u1 .cardTile__imgWrap > .cardTile__img::before,
-.cardTile.rarity-u2 .cardTile__imgWrap > .cardTile__img::before,
-.cardTile.rarity-leg-bronze .cardTile__imgWrap > .cardTile__img::before,
-.cardTile.rarity-leg-silver .cardTile__imgWrap > .cardTile__img::before,
-.cardTile.rarity-leg-gold .cardTile__imgWrap > .cardTile__img::before,
-.cardTile.rarity-booster-gold .cardTile__imgWrap > .cardTile__img::before,
-.cardTile.rarity-starter .cardTile__imgWrap > .cardTile__img::before {
-  content: none;
-}
-
-/* on crée l’edge glow directement sur imgWrap */
-.cardTile.rarity-u1 .cardTile__imgWrap .cardTile__edgeGlow,
-.cardTile.rarity-u2 .cardTile__imgWrap .cardTile__edgeGlow,
-.cardTile.rarity-leg-bronze .cardTile__imgWrap .cardTile__edgeGlow,
-.cardTile.rarity-leg-silver .cardTile__imgWrap .cardTile__edgeGlow,
-.cardTile.rarity-leg-gold .cardTile__imgWrap .cardTile__edgeGlow,
-.cardTile.rarity-booster-gold .cardTile__imgWrap .cardTile__edgeGlow,
-.cardTile.rarity-starter .cardTile__imgWrap .cardTile__edgeGlow {
-  display: none;
 }
 
 .cardTile.rarity-u1 .cardTile__imgWrap {
@@ -824,6 +873,11 @@
 
   .collectionHeader h2 {
     font-size: 24px;
+  }
+
+  .collectionSelectBanner {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .filterInput,

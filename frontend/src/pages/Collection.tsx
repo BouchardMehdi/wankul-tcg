@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../styles.css";
 import "../styles/Collection.css";
 
@@ -6,8 +7,14 @@ import AppNavbar from "../components/AppNavbar";
 
 import { fetchAllCards, type CardDto } from "../api/cards";
 import { fetchOwnedCollection, type OwnedCardRow } from "../api/collection";
+import { getMySellableCards } from "../api/market";
 
-import { readAppSettings, readLastNewCardIds, subscribeAppSettings } from "../utils/appSettings";
+import {
+  readAppSettings,
+  readLastNewCardIds,
+  subscribeAppSettings,
+} from "../utils/appSettings";
+import { saveMarketCreateSelectedCardId } from "../utils/marketCreateSelection";
 
 import { Fancybox } from "@fancyapps/ui";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
@@ -24,12 +31,16 @@ type Filters = {
 };
 
 function uniqSorted(values: Array<string | null | undefined>) {
-  return Array.from(new Set(values.filter((v): v is string => !!v && v.trim().length > 0))).sort((a, b) =>
-    a.localeCompare(b),
-  );
+  return Array.from(
+    new Set(values.filter((v): v is string => !!v && v.trim().length > 0)),
+  ).sort((a, b) => a.localeCompare(b));
 }
 
-function seasonRank(season?: string | null, extension?: string | null, seasonNumber?: number | null) {
+function seasonRank(
+  season?: string | null,
+  extension?: string | null,
+  seasonNumber?: number | null,
+) {
   if (typeof seasonNumber === "number" && seasonNumber > 0) return seasonNumber;
   const s = (season ?? extension ?? "").toLowerCase();
   if (s.includes("origins")) return 1;
@@ -67,7 +78,11 @@ function normalizeRarity(raw?: string | null) {
 
   if (s.includes("starter")) return "starter";
 
-  if (s.includes("booster gold") || (s.includes("booster") && s.includes("gold")) || s === "gold") {
+  if (
+    s.includes("booster gold") ||
+    (s.includes("booster") && s.includes("gold")) ||
+    s === "gold"
+  ) {
     return "booster-gold";
   }
 
@@ -133,7 +148,15 @@ type PagerProps = {
   jumpToPage: () => void;
 };
 
-function Pager({ pageSafe, totalPages, pageInput, setPageInput, goPrev, goNext, jumpToPage }: PagerProps) {
+function Pager({
+  pageSafe,
+  totalPages,
+  pageInput,
+  setPageInput,
+  goPrev,
+  goNext,
+  jumpToPage,
+}: PagerProps) {
   return (
     <div className="pager">
       <button className="btn" onClick={goPrev} disabled={pageSafe <= 1}>
@@ -166,6 +189,11 @@ function Pager({ pageSafe, totalPages, pageInput, setPageInput, goPrev, goNext, 
 }
 
 export default function Collection() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const selectForMarket = new URLSearchParams(location.search).get("selectForMarket") === "1";
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
@@ -173,6 +201,7 @@ export default function Collection() {
 
   const [allCards, setAllCards] = useState<CardDto[]>([]);
   const [ownedRows, setOwnedRows] = useState<OwnedCardRow[]>([]);
+  const [sellableIds, setSellableIds] = useState<Set<number>>(new Set());
 
   const [filters, setFilters] = useState<Filters>({
     q: "",
@@ -180,14 +209,24 @@ export default function Collection() {
     rarity: "",
     type: "",
     artist: "",
-    ownedOnly: false,
+    ownedOnly: selectForMarket,
   });
   const [settings, setSettings] = useState(() => readAppSettings());
-  const [lastNewCardIds, setLastNewCardIds] = useState<number[]>(() => readLastNewCardIds());
+  const [lastNewCardIds, setLastNewCardIds] = useState<number[]>(() =>
+    readLastNewCardIds(),
+  );
 
   useEffect(() => subscribeAppSettings(() => setSettings(readAppSettings())), []);
 
   useEffect(() => {
+    if (selectForMarket) {
+      setFilters((prev) => ({ ...prev, ownedOnly: true }));
+    }
+  }, [selectForMarket]);
+
+  useEffect(() => {
+    if (selectForMarket) return;
+
     const fb: any = Fancybox;
 
     fb.bind('[data-fancybox="wankul-cards"]', {
@@ -232,7 +271,7 @@ export default function Collection() {
         //
       }
     };
-  }, []);
+  }, [selectForMarket]);
 
   useEffect(() => {
     const syncLatest = () => setLastNewCardIds(readLastNewCardIds());
@@ -254,9 +293,17 @@ export default function Collection() {
     setLoading(true);
     setError("");
     try {
-      const [cardsRes, ownedRes] = await Promise.all([fetchAllCards(), fetchOwnedCollection()]);
+      const [cardsRes, ownedRes, sellableRes] = await Promise.all([
+        fetchAllCards(),
+        fetchOwnedCollection(),
+        selectForMarket ? getMySellableCards() : Promise.resolve([]),
+      ]);
+
       setAllCards(Array.isArray(cardsRes) ? cardsRes : []);
       setOwnedRows(Array.isArray(ownedRes) ? ownedRes : []);
+      setSellableIds(
+        new Set((Array.isArray(sellableRes) ? sellableRes : []).map((row) => row.cardId)),
+      );
     } catch (e: any) {
       setError(e?.message || "Impossible de charger la collection.");
     } finally {
@@ -266,7 +313,7 @@ export default function Collection() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [selectForMarket]);
 
   const ownedMap = useMemo(() => {
     const m = new Map<number, number>();
@@ -278,10 +325,14 @@ export default function Collection() {
   }, [ownedRows]);
 
   const merged: any[] = useMemo(() => {
-    const list = (allCards as any[]).map((c) => ({ ...c, quantity: ownedMap.get(c.id) ?? 0 }));
+    const list = (allCards as any[]).map((c) => ({
+      ...c,
+      quantity: ownedMap.get(c.id) ?? 0,
+      isSellable: sellableIds.has(Number(c.id)),
+    }));
     list.sort(compareCards);
     return list;
-  }, [allCards, ownedMap]);
+  }, [allCards, ownedMap, sellableIds]);
 
   const options = useMemo(() => {
     const seasons = uniqSorted(merged.map((c) => c.season ?? c.extension ?? ""));
@@ -304,7 +355,8 @@ export default function Collection() {
       if (filters.artist && (c.artist ?? "") !== filters.artist) return false;
 
       if (q) {
-        const hay = `${c.name} ${c.key ?? ""} ${c.number ?? ""} ${c.rarity ?? ""} ${c.type ?? ""} ${c.artist ?? ""}`.toLowerCase();
+        const hay =
+          `${c.name} ${c.key ?? ""} ${c.number ?? ""} ${c.rarity ?? ""} ${c.type ?? ""} ${c.artist ?? ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
 
@@ -359,6 +411,15 @@ export default function Collection() {
       ? "cardsGrid--large"
       : "cardsGrid--standard";
 
+  function handleSelectForMarket(cardId: number, isSellable: boolean) {
+    if (!selectForMarket || !isSellable) return;
+
+    saveMarketCreateSelectedCardId(cardId);
+    navigate("/market/create", {
+      state: { marketSelectedCardId: cardId },
+    });
+  }
+
   return (
     <div className="app-shell">
       <AppNavbar currentPage="collection" />
@@ -367,8 +428,20 @@ export default function Collection() {
         <div className="collectionShell">
           <div className="collectionHeader">
             <div className="section-title">
-              <h2>Collection</h2>
+              <h2>{selectForMarket ? "Choisir une carte à vendre" : "Collection"}</h2>
             </div>
+
+            {selectForMarket && (
+              <div className="collectionSelectBanner">
+                <div>
+                  Clique sur une carte <strong>vendable</strong> pour revenir à la
+                  création d’annonce.
+                </div>
+                <Link className="btn" to="/market/create">
+                  Retour à la création
+                </Link>
+              </div>
+            )}
 
             <div className="filterCard">
               <div className="filterRow">
@@ -384,7 +457,11 @@ export default function Collection() {
 
                 <div className="filterGroup">
                   <label className="filterLabel">Saison</label>
-                  <select className="filterSelect" value={filters.season} onChange={(e) => updateFilter("season", e.target.value)}>
+                  <select
+                    className="filterSelect"
+                    value={filters.season}
+                    onChange={(e) => updateFilter("season", e.target.value)}
+                  >
                     <option value="">Toutes</option>
                     {options.seasons.map((s) => (
                       <option key={s} value={s}>
@@ -396,7 +473,11 @@ export default function Collection() {
 
                 <div className="filterGroup">
                   <label className="filterLabel">Rareté</label>
-                  <select className="filterSelect" value={filters.rarity} onChange={(e) => updateFilter("rarity", e.target.value)}>
+                  <select
+                    className="filterSelect"
+                    value={filters.rarity}
+                    onChange={(e) => updateFilter("rarity", e.target.value)}
+                  >
                     <option value="">Toutes</option>
                     {options.rarities.map((r) => (
                       <option key={r} value={r}>
@@ -408,7 +489,11 @@ export default function Collection() {
 
                 <div className="filterGroup">
                   <label className="filterLabel">Type</label>
-                  <select className="filterSelect" value={filters.type} onChange={(e) => updateFilter("type", e.target.value)}>
+                  <select
+                    className="filterSelect"
+                    value={filters.type}
+                    onChange={(e) => updateFilter("type", e.target.value)}
+                  >
                     <option value="">Tous</option>
                     {options.types.map((t) => (
                       <option key={t} value={t}>
@@ -420,7 +505,11 @@ export default function Collection() {
 
                 <div className="filterGroup">
                   <label className="filterLabel">Artiste</label>
-                  <select className="filterSelect" value={filters.artist} onChange={(e) => updateFilter("artist", e.target.value)}>
+                  <select
+                    className="filterSelect"
+                    value={filters.artist}
+                    onChange={(e) => updateFilter("artist", e.target.value)}
+                  >
                     <option value="">Tous</option>
                     {options.artists.map((a) => (
                       <option key={a} value={a}>
@@ -433,7 +522,12 @@ export default function Collection() {
 
               <div className="filterRow filterRow--bottom">
                 <label className="checkLine">
-                  <input type="checkbox" checked={filters.ownedOnly} onChange={(e) => updateFilter("ownedOnly", e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    checked={filters.ownedOnly}
+                    onChange={(e) => updateFilter("ownedOnly", e.target.checked)}
+                    disabled={selectForMarket}
+                  />
                   <span>Afficher uniquement les cartes débloquées</span>
                 </label>
 
@@ -442,7 +536,14 @@ export default function Collection() {
                     className="btn"
                     type="button"
                     onClick={() => {
-                      setFilters({ q: "", season: "", rarity: "", type: "", artist: "", ownedOnly: false });
+                      setFilters({
+                        q: "",
+                        season: "",
+                        rarity: "",
+                        type: "",
+                        artist: "",
+                        ownedOnly: selectForMarket ? true : false,
+                      });
                       setPage(1);
                       setPageInput("1");
                     }}
@@ -484,8 +585,12 @@ export default function Collection() {
           )}
 
           {!loading && !error && (
-            <div className={`collectionBody ${settings.disableHoloEffects ? "collectionBody--noHolo" : ""}`}>
-              <div className={`cardsGrid ${layoutClass} ${settings.disableHoloEffects ? "cardsGrid--noHolo" : ""}`}>
+            <div
+              className={`collectionBody ${settings.disableHoloEffects ? "collectionBody--noHolo" : ""}`}
+            >
+              <div
+                className={`cardsGrid ${layoutClass} ${settings.disableHoloEffects ? "cardsGrid--noHolo" : ""}`}
+              >
                 {pageItems.map((c: any) => {
                   const owned = (c.quantity ?? 0) > 0;
                   const src = resolveImg(c.imageUrl ?? c.image ?? c.img ?? "");
@@ -493,18 +598,34 @@ export default function Collection() {
                   const rarityCls = rk ? `rarity-${rk}` : "";
 
                   const isTerrain = String(c.type ?? "").toLowerCase().includes("terrain");
-                  const isLatestNew = settings.autoHighlightNewCards && owned && lastNewCardIds.includes(Number(c.id));
+                  const isLatestNew =
+                    settings.autoHighlightNewCards &&
+                    owned &&
+                    lastNewCardIds.includes(Number(c.id));
+
+                  const isSellable = !!c.isSellable;
+                  const isSelectableDisabled = selectForMarket && !isSellable;
 
                   return (
                     <div
                       key={c.id}
-                      className={`cardTile ${owned ? "" : "is-locked"} ${settings.disableHoloEffects ? "" : rarityCls} ${isTerrain ? "cardTile--terrain" : ""} ${isLatestNew ? "is-latest-new" : ""}`}
+                      className={`cardTile ${owned ? "" : "is-locked"} ${settings.disableHoloEffects ? "" : rarityCls} ${
+                        isTerrain ? "cardTile--terrain" : ""
+                      } ${isLatestNew ? "is-latest-new" : ""} ${
+                        selectForMarket ? "cardTile--selectMode" : ""
+                      } ${isSellable ? "cardTile--sellable" : ""} ${
+                        isSelectableDisabled ? "cardTile--notSellable" : ""
+                      }`}
                       data-rarity={rk}
                     >
                       <div
                         className="cardTile__imgWrap"
-                        onMouseMove={settings.disableHoloEffects ? undefined : handleImgParallaxMove}
-                        onMouseLeave={settings.disableHoloEffects ? undefined : handleImgParallaxLeave}
+                        onMouseMove={
+                          settings.disableHoloEffects ? undefined : handleImgParallaxMove
+                        }
+                        onMouseLeave={
+                          settings.disableHoloEffects ? undefined : handleImgParallaxLeave
+                        }
                         style={
                           {
                             ["--rx" as any]: "0deg",
@@ -514,7 +635,16 @@ export default function Collection() {
                           } as any
                         }
                       >
-                        {owned ? (
+                        {selectForMarket ? (
+                          <button
+                            type="button"
+                            className="cardTile__selectBtn"
+                            disabled={!isSellable}
+                            onClick={() => handleSelectForMarket(Number(c.id), isSellable)}
+                          >
+                            <img className="cardTile__img" src={src} alt={c.name} />
+                          </button>
+                        ) : owned ? (
                           <a
                             className="cardTile__zoom"
                             href={src}
@@ -531,17 +661,33 @@ export default function Collection() {
                         {!owned && <div className="cardTile__dim" />}
                         {!owned && <div className="cardTile__lock">NON DÉBLOQUÉE</div>}
                         {isLatestNew && <div className="cardTile__new">NEW</div>}
+
+                        {selectForMarket && (
+                          <div
+                            className={`cardTile__marketPick ${
+                              isSellable ? "cardTile__marketPick--ok" : "cardTile__marketPick--off"
+                            }`}
+                          >
+                            {isSellable ? "Sélectionner" : "Non vendable"}
+                          </div>
+                        )}
                       </div>
 
                       <div className="cardTile__meta">
                         <div className="cardTile__name">{c.name}</div>
-                        {settings.showDuplicatesCounter && owned && (c.quantity ?? 0) > 1 && <div className="cardTile__qty">x{c.quantity}</div>}
+                        {settings.showDuplicatesCounter && owned && (c.quantity ?? 0) > 1 && (
+                          <div className="cardTile__qty">x{c.quantity}</div>
+                        )}
 
                         <div className="cardTile__sub">
                           <span className="pill">{c.rarity}</span>
                           <span className="pill">
-                            {c.season ?? c.extension ?? "—"} {typeof c.number === "number" ? `#${c.number}` : ""}
+                            {c.season ?? c.extension ?? "—"}{" "}
+                            {typeof c.number === "number" ? `#${c.number}` : ""}
                           </span>
+                          {selectForMarket && isSellable && (
+                            <span className="pill pill--market">Vendable</span>
+                          )}
                         </div>
                       </div>
                     </div>

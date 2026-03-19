@@ -107,6 +107,101 @@
   padding: 20px;
 }
 
+.marketCreatePickCard {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.marketCreatePickCard__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.marketCreatePickCard__head > span {
+  font-size: 12px;
+  font-weight: 900;
+  opacity: 0.75;
+}
+
+.marketCreateSelectedCard {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--border2);
+  background: rgba(255,255,255,0.04);
+}
+
+.marketCreateSelectedCard__image {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border2);
+  background: rgba(255,255,255,0.04);
+}
+
+.marketCreateSelectedCard__image img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.marketCreateSelectedCard__content {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.marketCreateSelectedCard__content strong {
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.marketCreateSelectedCard__content span {
+  color: var(--text2);
+  font-weight: 800;
+}
+
+.marketCreateSelectedCard__meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.marketCreateSelectedCard__meta > div {
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border2);
+  background: rgba(255,255,255,0.04);
+}
+
+.marketCreateSelectedCard__meta small {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.marketCreateSelectedCard__meta b {
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.marketCreateNoCard {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px dashed rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.03);
+  color: var(--text2);
+  font-weight: 800;
+}
+
 .marketCreateField {
   display: grid;
   gap: 6px;
@@ -275,6 +370,14 @@
   .marketCreateLayout {
     grid-template-columns: 1fr;
   }
+
+  .marketCreateSelectedCard {
+    grid-template-columns: 1fr;
+  }
+
+  .marketCreateSelectedCard__image {
+    max-width: 220px;
+  }
 }
 
 @media (max-width: 860px) {
@@ -308,7 +411,8 @@
   }
 
   .marketCreateGrid,
-  .marketCreateSummary__grid {
+  .marketCreateSummary__grid,
+  .marketCreateSelectedCard__meta {
     grid-template-columns: 1fr;
   }
 }
@@ -326,5 +430,13 @@
   .marketCreateSummary__cardImage--wanted {
     width: 100%;
     max-width: 220px;
+  }
+
+  .marketCreatePickCard__head {
+    align-items: stretch;
+  }
+
+  .marketCreatePickCard__head .marketCreateBtn {
+    width: 100%;
   }
 }

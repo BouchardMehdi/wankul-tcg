@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import "../styles.css";
 import "../styles/MarketCreate.css";
@@ -13,6 +13,10 @@ import {
   type MarketOfferType,
   type SellableCardRow,
 } from "../api/market";
+import {
+  clearMarketCreateSelectedCardId,
+  readMarketCreateSelectedCardId,
+} from "../utils/marketCreateSelection";
 
 type FormState = {
   cardId: string;
@@ -96,6 +100,8 @@ function formatOfferType(offerType: MarketOfferType) {
 }
 
 export default function MarketCreate() {
+  const location = useLocation();
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -126,20 +132,39 @@ export default function MarketCreate() {
           fetchAllCards(),
         ]);
 
+        const sellableRows = sellable ?? [];
         const sortedCards = sortCards(cards ?? []);
 
-        setSellableCards(sellable ?? []);
+        setSellableCards(sellableRows);
         setAllCards(sortedCards);
         setCardImageMap(buildCardImageMap(sortedCards));
 
-        if (sellable?.[0]) {
+        const stateCardId = Number((location.state as any)?.marketSelectedCardId ?? 0);
+        const storageCardId = readMarketCreateSelectedCardId() ?? 0;
+
+        const preferredCardId =
+          Number.isInteger(stateCardId) && stateCardId > 0
+            ? stateCardId
+            : Number.isInteger(storageCardId) && storageCardId > 0
+            ? storageCardId
+            : Number(sellableRows?.[0]?.cardId ?? 0);
+
+        const selectedSellable =
+          sellableRows.find((row) => row.cardId === preferredCardId) ?? sellableRows?.[0] ?? null;
+
+        if (selectedSellable) {
           setForm((prev) => ({
             ...prev,
-            cardId: String(sellable[0].cardId),
+            cardId: String(selectedSellable.cardId),
             quantity: "1",
-            priceCredits: String(sellable[0].marketPrice),
+            priceCredits:
+              prev.cardId && Number(prev.cardId) === selectedSellable.cardId
+                ? prev.priceCredits || String(selectedSellable.marketPrice)
+                : String(selectedSellable.marketPrice),
           }));
         }
+
+        clearMarketCreateSelectedCardId();
       } catch (e: any) {
         setError(e?.message || "Impossible de charger le formulaire de vente.");
       } finally {
@@ -148,7 +173,7 @@ export default function MarketCreate() {
     }
 
     load();
-  }, []);
+  }, [location.state]);
 
   const selectedSellable = useMemo(() => {
     const cardId = Number(form.cardId);
@@ -187,7 +212,13 @@ export default function MarketCreate() {
         : 0;
 
     return priceCredits + wantedMarket * wantedQty;
-  }, [form.priceCredits, form.wantedCardId, form.wantedCardQuantity, selectedWantedCard, sellableCards]);
+  }, [
+    form.priceCredits,
+    form.wantedCardId,
+    form.wantedCardQuantity,
+    selectedWantedCard,
+    sellableCards,
+  ]);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -218,7 +249,10 @@ export default function MarketCreate() {
 
     if (form.offerType === "CARD_ONLY") {
       updateField("priceCredits", "0");
-    } else if (form.offerType === "CARD_AND_CREDITS" && Number(form.priceCredits) < 1) {
+    } else if (
+      form.offerType === "CARD_AND_CREDITS" &&
+      Number(form.priceCredits) < 1
+    ) {
       updateField("priceCredits", String(selectedSellable?.marketPrice ?? 1));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -312,19 +346,59 @@ export default function MarketCreate() {
         {!loading && !error && (
           <div className="marketCreateLayout">
             <form className="marketCreateForm" onSubmit={handleSubmit}>
-              <label className="marketCreateField">
-                <span>Carte à vendre</span>
-                <select
-                  value={form.cardId}
-                  onChange={(e) => updateField("cardId", e.target.value)}
-                >
-                  {sellableCards.map((card) => (
-                    <option key={card.cardId} value={card.cardId}>
-                      #{card.cardId} • {card.cardName} • {card.rarity} • vendable : {card.sellableQuantity}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="marketCreatePickCard">
+                <div className="marketCreatePickCard__head">
+                  <span>Carte à vendre</span>
+                  <Link
+                    className="marketCreateBtn marketCreateBtn--secondary"
+                    to="/collection?selectForMarket=1"
+                    state={{ returnTo: "/market/create" }}
+                  >
+                    Choisir dans ma collection
+                  </Link>
+                </div>
+
+                {selectedSellable ? (
+                  <div className="marketCreateSelectedCard">
+                    <div className="marketCreateSelectedCard__image">
+                      {selectedCardImage ? (
+                        <img src={selectedCardImage} alt={selectedSellable.cardName} />
+                      ) : (
+                        <div className="marketCreateSummary__placeholder">
+                          Aucune image
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="marketCreateSelectedCard__content">
+                      <strong>{selectedSellable.cardName}</strong>
+                      <span>
+                        {selectedSellable.rarity} • {selectedSellable.season ?? "—"}
+                      </span>
+                      <span>ID BDD : #{selectedSellable.cardId}</span>
+
+                      <div className="marketCreateSelectedCard__meta">
+                        <div>
+                          <small>Possédées</small>
+                          <b>{selectedSellable.totalQuantity}</b>
+                        </div>
+                        <div>
+                          <small>Vendables</small>
+                          <b>{selectedSellable.sellableQuantity}</b>
+                        </div>
+                        <div>
+                          <small>Prix du marché</small>
+                          <b>{selectedSellable.marketPrice}</b>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="marketCreateNoCard">
+                    Aucune carte vendable sélectionnée.
+                  </div>
+                )}
+              </div>
 
               <div className="marketCreateGrid">
                 <label className="marketCreateField">
@@ -335,6 +409,7 @@ export default function MarketCreate() {
                     max={Math.max(1, maxQuantity)}
                     value={form.quantity}
                     onChange={(e) => updateField("quantity", e.target.value)}
+                    disabled={!selectedSellable}
                   />
                 </label>
 
@@ -345,6 +420,7 @@ export default function MarketCreate() {
                     onChange={(e) =>
                       updateField("listingMode", e.target.value as MarketListingMode)
                     }
+                    disabled={!selectedSellable}
                   >
                     <option value="UNIT">À l’unité</option>
                     <option value="LOT">En lot</option>
@@ -358,6 +434,7 @@ export default function MarketCreate() {
                     onChange={(e) =>
                       updateField("offerType", e.target.value as MarketOfferType)
                     }
+                    disabled={!selectedSellable}
                   >
                     <option value="CREDITS_ONLY">Crédits uniquement</option>
                     <option value="CARD_ONLY">Échange de carte</option>
@@ -376,7 +453,7 @@ export default function MarketCreate() {
                     min={0}
                     value={form.priceCredits}
                     onChange={(e) => updateField("priceCredits", e.target.value)}
-                    disabled={form.offerType === "CARD_ONLY"}
+                    disabled={!selectedSellable || form.offerType === "CARD_ONLY"}
                   />
                 </label>
               </div>
@@ -391,6 +468,7 @@ export default function MarketCreate() {
                       <select
                         value={form.wantedCardId}
                         onChange={(e) => updateField("wantedCardId", e.target.value)}
+                        disabled={!selectedSellable}
                       >
                         <option value="">Choisir une carte</option>
                         {allCards
@@ -416,6 +494,7 @@ export default function MarketCreate() {
                         onChange={(e) =>
                           updateField("wantedCardQuantity", e.target.value)
                         }
+                        disabled={!selectedSellable}
                       />
                     </label>
                   </div>
