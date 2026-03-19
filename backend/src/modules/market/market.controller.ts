@@ -112,6 +112,16 @@ export class MarketController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('transactions/:transactionId/claim')
+  async claimTransactionReward(
+    @CurrentUser() user: CurrentAuthUser,
+    @Param('transactionId', ParseIntPipe) transactionId: number,
+  ) {
+    const userId = this.resolveUserId(user);
+    return this.marketService.claimTransactionReward(userId, transactionId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('transactions/me')
   async getMyTransactions(@CurrentUser() user: CurrentAuthUser) {
     const userId = this.resolveUserId(user);

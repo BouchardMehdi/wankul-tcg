@@ -76,4 +76,11 @@ export class MarketTransaction {
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt!: Date;
+
+  @Column({
+    name: 'seller_reward_claimed_at',
+    type: 'datetime',
+    nullable: true,
+  })
+  sellerRewardClaimedAt!: Date | null;
 }

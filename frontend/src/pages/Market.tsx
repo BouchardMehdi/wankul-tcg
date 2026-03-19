@@ -10,11 +10,11 @@ import { fetchAllCards, type CardDto } from "../api/cards";
 import {
   buyMarketListing,
   cancelMarketListing,
+  claimMarketTransactionReward,
   getMarketListings,
   getMyMarketListings,
   getMyMarketPurchases,
   getMyMarketSales,
-  type GetListingsParams,
   type MarketListingMode,
   type MarketListingRow,
   type MarketOfferType,
@@ -41,6 +41,8 @@ type SearchFilters = {
 };
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const PREVIEW_COUNT = 3;
+const HISTORY_PAGE_SIZE = 10;
 
 function resolveImg(imageUrl?: string | null) {
   const url = (imageUrl ?? "").trim();
@@ -175,13 +177,57 @@ function getCardImageFromMap(
   return "";
 }
 
-function TransactionSection({
+function paginateItems<T>(items: T[], page: number, pageSize: number) {
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * pageSize;
+  return {
+    page: safePage,
+    totalPages,
+    items: items.slice(start, start + pageSize),
+  };
+}
+
+function SectionPreviewHeader({
+  total,
+  shown,
+  previewLabel = "Voir tout",
+}: {
+  total: number;
+  shown: number;
+  previewLabel?: string;
+}) {
+  if (total <= shown) return null;
+
+  return (
+    <div className="marketSection__subnote">
+      <span>
+        Affichage de {shown} sur {total}
+      </span>
+      <span>{previewLabel}</span>
+    </div>
+  );
+}
+
+function HistorySection({
   title,
   items,
+  expanded,
+  page,
+  onToggleExpanded,
+  onPageChange,
 }: {
   title: string;
   items: MarketTransactionRow[];
+  expanded: boolean;
+  page: number;
+  onToggleExpanded: () => void;
+  onPageChange: (page: number) => void;
 }) {
+  const previewItems = items.slice(0, PREVIEW_COUNT);
+  const paginated = paginateItems(items, page, HISTORY_PAGE_SIZE);
+  const displayed = expanded ? paginated.items : previewItems;
+
   return (
     <section className="marketSection">
       <div className="marketSection__head">
@@ -192,51 +238,121 @@ function TransactionSection({
       {items.length === 0 ? (
         <div className="marketEmpty">Aucune transaction pour le moment.</div>
       ) : (
-        <div className="marketTransactions">
-          {items.map((tx) => (
-            <article className="marketTransactionCard" key={tx.id}>
-              <div className="marketTransactionCard__top">
-                <strong>{tx.cardName}</strong>
-                <span>{formatDate(tx.createdAt)}</span>
-              </div>
+        <>
+          {expanded ? (
+            <div className="marketSection__subnote">
+              <span>
+                Page {paginated.page} / {paginated.totalPages}
+              </span>
+              <button
+                type="button"
+                className="marketLinkBtn"
+                onClick={onToggleExpanded}
+              >
+                Réduire
+              </button>
+            </div>
+          ) : (
+            <SectionPreviewHeader
+              total={items.length}
+              shown={displayed.length}
+              previewLabel="Voir plus"
+            />
+          )}
 
-              <div className="marketTransactionCard__meta">
-                <span>
-                  Rôle :{" "}
-                  {tx.role === "BUYER"
-                    ? "Acheteur"
-                    : tx.role === "SELLER"
-                    ? "Vendeur"
-                    : "Acheteur/Vendeur"}
-                </span>
-                <span>Quantité : {tx.quantity}</span>
-                <span>
-                  Type :{" "}
-                  {tx.transactionType === "CREDITS_SALE"
-                    ? "Achat en crédits"
-                    : tx.transactionType === "CARD_TRADE"
-                    ? "Échange de cartes"
-                    : "Carte + crédits"}
-                </span>
-              </div>
+          <div className="marketTransactions">
+            {displayed.map((tx) => (
+              <article className="marketTransactionCard" key={tx.id}>
+                <div className="marketTransactionCard__top">
+                  <strong>{tx.cardName}</strong>
+                  <span>{formatDate(tx.createdAt)}</span>
+                </div>
 
-              <div className="marketTransactionCard__meta">
-                <span>Vendeur : {tx.sellerUsername}</span>
-                <span>Acheteur : {tx.buyerUsername}</span>
-              </div>
+                <div className="marketTransactionCard__meta">
+                  <span>
+                    Rôle :{" "}
+                    {tx.role === "BUYER"
+                      ? "Acheteur"
+                      : tx.role === "SELLER"
+                      ? "Vendeur"
+                      : "Acheteur/Vendeur"}
+                  </span>
+                  <span>Quantité : {tx.quantity}</span>
+                  <span>
+                    Type :{" "}
+                    {tx.transactionType === "CREDITS_SALE"
+                      ? "Achat en crédits"
+                      : tx.transactionType === "CARD_TRADE"
+                      ? "Échange de cartes"
+                      : "Carte + crédits"}
+                  </span>
+                </div>
 
-              <div className="marketTransactionCard__meta">
-                <span>Crédits : {tx.totalPriceCredits}</span>
-                <span>
-                  Carte offerte :{" "}
-                  {tx.buyerOfferedCardName
-                    ? `${tx.buyerOfferedCardQuantity}x ${tx.buyerOfferedCardName}`
-                    : "Aucune"}
-                </span>
-              </div>
-            </article>
-          ))}
-        </div>
+                <div className="marketTransactionCard__meta">
+                  <span>Vendeur : {tx.sellerUsername}</span>
+                  <span>Acheteur : {tx.buyerUsername}</span>
+                </div>
+
+                <div className="marketTransactionCard__meta">
+                  <span>Crédits : {tx.totalPriceCredits}</span>
+                  <span>
+                    Carte offerte :{" "}
+                    {tx.buyerOfferedCardName
+                      ? `${tx.buyerOfferedCardQuantity}x ${tx.buyerOfferedCardName}`
+                      : "Aucune"}
+                  </span>
+                </div>
+
+                <div className="marketTransactionCard__meta">
+                  <span>
+                    Récompense vendeur :{" "}
+                    {tx.sellerRewardClaimed
+                      ? `Récupérée le ${formatDate(tx.sellerRewardClaimedAt)}`
+                      : "En attente"}
+                  </span>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {items.length > PREVIEW_COUNT && !expanded && (
+            <div className="marketPager marketPager--single">
+              <button
+                type="button"
+                className="marketBtn marketBtn--secondary"
+                onClick={onToggleExpanded}
+              >
+                Voir plus
+              </button>
+            </div>
+          )}
+
+          {expanded && paginated.totalPages > 1 && (
+            <div className="marketPager">
+              <button
+                type="button"
+                className="marketBtn marketBtn--secondary"
+                disabled={paginated.page <= 1}
+                onClick={() => onPageChange(paginated.page - 1)}
+              >
+                Précédent
+              </button>
+
+              <span className="marketPager__text">
+                Page {paginated.page} / {paginated.totalPages}
+              </span>
+
+              <button
+                type="button"
+                className="marketBtn marketBtn--secondary"
+                disabled={paginated.page >= paginated.totalPages}
+                onClick={() => onPageChange(paginated.page + 1)}
+              >
+                Suivant
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );
@@ -249,7 +365,7 @@ export default function Market() {
   const [error, setError] = useState("");
 
   const [myListings, setMyListings] = useState<MarketListingRow[]>([]);
-  const [allListings, setAllListings] = useState<MarketListingRow[]>([]);
+  const [allListingsRaw, setAllListingsRaw] = useState<MarketListingRow[]>([]);
   const [ownedIds, setOwnedIds] = useState<Set<number>>(new Set());
   const [allCards, setAllCards] = useState<CardDto[]>([]);
   const [cardImageMap, setCardImageMap] = useState<Record<string, string>>({});
@@ -274,12 +390,15 @@ export default function Market() {
   const [buyQuantityByListing, setBuyQuantityByListing] = useState<
     Record<number, string>
   >({});
-  const [offeredCardByListing, setOfferedCardByListing] = useState<
-    Record<number, string>
-  >({});
   const [buyingId, setBuyingId] = useState<number | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [claimingTransactionId, setClaimingTransactionId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
+
+  const [showAllPurchases, setShowAllPurchases] = useState(false);
+  const [showAllSales, setShowAllSales] = useState(false);
+  const [purchasesPage, setPurchasesPage] = useState(1);
+  const [salesPage, setSalesPage] = useState(1);
 
   const rarities = useMemo(
     () => uniqSorted(allCards.map((c) => c.rarity)),
@@ -290,8 +409,95 @@ export default function Market() {
     [allCards],
   );
 
+  const filteredListings = useMemo(() => {
+    const search = searchFilters.search.trim().toLowerCase();
+
+    let result = [...allListingsRaw];
+
+    if (searchFilters.rarity) {
+      result = result.filter((listing) => listing.rarity === searchFilters.rarity);
+    }
+
+    if (searchFilters.season) {
+      result = result.filter((listing) => (listing.season ?? "") === searchFilters.season);
+    }
+
+    if (searchFilters.listingMode) {
+      result = result.filter(
+        (listing) => listing.listingMode === searchFilters.listingMode,
+      );
+    }
+
+    if (searchFilters.offerType) {
+      result = result.filter(
+        (listing) => listing.offerType === searchFilters.offerType,
+      );
+    }
+
+    if (searchFilters.minPrice.trim() !== "") {
+      const minPrice = Number(searchFilters.minPrice);
+      if (!Number.isNaN(minPrice)) {
+        result = result.filter((listing) => listing.priceCredits >= minPrice);
+      }
+    }
+
+    if (searchFilters.maxPrice.trim() !== "") {
+      const maxPrice = Number(searchFilters.maxPrice);
+      if (!Number.isNaN(maxPrice)) {
+        result = result.filter((listing) => listing.priceCredits <= maxPrice);
+      }
+    }
+
+    if (search) {
+      result = result.filter((listing) => {
+        const haystack = [
+          listing.cardName,
+          listing.rarity,
+          listing.season ?? "",
+          listing.cardId,
+          listing.cardKey ?? "",
+          listing.sellerUsername,
+          listing.wantedCardName ?? "",
+          listing.wantedCardId ?? "",
+          listing.wantedCardKey ?? "",
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        return haystack.includes(search);
+      });
+    }
+
+    result.sort((a, b) => {
+      const orderFactor = searchFilters.sortOrder === "ASC" ? 1 : -1;
+
+      switch (searchFilters.sortBy) {
+        case "priceCredits":
+          return (a.priceCredits - b.priceCredits) * orderFactor;
+
+        case "marketPriceSnapshot":
+          return (a.marketPriceSnapshot - b.marketPriceSnapshot) * orderFactor;
+
+        case "rarity":
+          return a.rarity.localeCompare(b.rarity, "fr") * orderFactor;
+
+        case "cardName":
+          return a.cardName.localeCompare(b.cardName, "fr") * orderFactor;
+
+        case "createdAt":
+        default:
+          return (
+            (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) *
+            orderFactor
+          );
+      }
+    });
+
+    return result;
+  }, [allListingsRaw, searchFilters]);
+
   const suggestedListings = useMemo(() => {
-    return allListings
+    return filteredListings
       .filter((listing) => !ownedIds.has(listing.cardId))
       .sort((a, b) => {
         const aScore = Math.abs(a.priceDifferencePercent ?? 99999);
@@ -300,32 +506,54 @@ export default function Market() {
         return a.priceCredits - b.priceCredits;
       })
       .slice(0, 12);
-  }, [allListings, ownedIds]);
+  }, [filteredListings, ownedIds]);
 
-  async function loadData(filters: SearchFilters) {
+  const rewardPendingSales = useMemo(
+    () =>
+      [...sales]
+        .filter((sale) => !sale.sellerRewardClaimed)
+        .sort((a, b) => {
+          const aHasValue =
+            a.pendingRewardCredits > 0 || a.pendingRewardCardQuantity > 0;
+          const bHasValue =
+            b.pendingRewardCredits > 0 || b.pendingRewardCardQuantity > 0;
+          if (aHasValue !== bHasValue) return aHasValue ? -1 : 1;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }),
+    [sales],
+  );
+
+  const activeMyListings = useMemo(
+    () => myListings.filter((listing) => listing.status === "ACTIVE"),
+    [myListings],
+  );
+
+  const cancelledMyListings = useMemo(
+    () =>
+      myListings
+        .filter((listing) => listing.status === "CANCELLED")
+        .slice(0, PREVIEW_COUNT),
+    [myListings],
+  );
+
+  const soldMyListings = useMemo(
+    () =>
+      [...myListings]
+        .filter((listing) => listing.status === "SOLD")
+        .sort((a, b) => new Date(b.closedAt ?? b.updatedAt).getTime() - new Date(a.closedAt ?? a.updatedAt).getTime())
+        .slice(0, PREVIEW_COUNT),
+    [myListings],
+  );
+
+  async function loadData() {
     setLoading(true);
     setError("");
 
     try {
-      const params: GetListingsParams = {
-        search: filters.search || undefined,
-        rarity: filters.rarity || undefined,
-        season: filters.season || undefined,
-        listingMode: filters.listingMode || undefined,
-        offerType: filters.offerType || undefined,
-        minPrice:
-          filters.minPrice.trim() !== "" ? Number(filters.minPrice) : undefined,
-        maxPrice:
-          filters.maxPrice.trim() !== "" ? Number(filters.maxPrice) : undefined,
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder,
-        limit: 100,
-      };
-
       const [ownedRows, activeListings, mine, myPurchases, mySales, cards] =
         await Promise.all([
           fetchOwnedCollection(),
-          getMarketListings(params),
+          getMarketListings({ limit: 100 }),
           getMyMarketListings(),
           getMyMarketPurchases(),
           getMyMarketSales(),
@@ -338,7 +566,7 @@ export default function Market() {
       }
 
       setOwnedIds(owned);
-      setAllListings(activeListings ?? []);
+      setAllListingsRaw(activeListings ?? []);
       setMyListings(mine ?? []);
       setPurchases(myPurchases ?? []);
       setSales(mySales ?? []);
@@ -352,12 +580,23 @@ export default function Market() {
   }
 
   useEffect(() => {
-    loadData(searchFilters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadData();
   }, []);
 
+  useEffect(() => {
+    setPurchasesPage(1);
+  }, [showAllPurchases]);
+
+  useEffect(() => {
+    setSalesPage(1);
+  }, [showAllSales]);
+
+  useEffect(() => {
+    setActiveTab((prev) => (prev === "search" ? "search" : prev));
+  }, [searchFilters]);
+
   async function refreshCurrentData() {
-    await loadData(searchFilters);
+    await loadData();
   }
 
   function updateFilter<K extends keyof SearchFilters>(
@@ -365,11 +604,9 @@ export default function Market() {
     value: SearchFilters[K],
   ) {
     setSearchFilters((prev) => ({ ...prev, [key]: value }));
-  }
-
-  async function applySearchFilters() {
-    await loadData(searchFilters);
-    setActiveTab("search");
+    if (activeTab !== "search") {
+      setActiveTab("search");
+    }
   }
 
   async function handleCancel(listingId: number) {
@@ -386,20 +623,34 @@ export default function Market() {
     }
   }
 
+  async function handleClaimReward(transactionId: number) {
+    try {
+      setClaimingTransactionId(transactionId);
+      setFeedback("");
+      await claimMarketTransactionReward(transactionId);
+      setFeedback("Récompense récupérée avec succès.");
+      await refreshCurrentData();
+    } catch (e: any) {
+      setFeedback(e?.message || "Impossible de récupérer la récompense.");
+    } finally {
+      setClaimingTransactionId(null);
+    }
+  }
+
   async function handleBuy(listing: MarketListingRow) {
-    const rawQty = buyQuantityByListing[listing.id] ?? "1";
-    const quantity = Number(rawQty);
+    const quantity =
+      listing.listingMode === "LOT"
+        ? listing.remainingQuantity
+        : Number(buyQuantityByListing[listing.id] ?? "1");
 
     if (!Number.isInteger(quantity) || quantity < 1) {
       setFeedback("Quantité d’achat invalide.");
       return;
     }
 
-    const rawOfferedCardId = offeredCardByListing[listing.id];
-    const offeredCardId =
-      rawOfferedCardId && rawOfferedCardId.trim().length > 0
-        ? Number(rawOfferedCardId)
-        : undefined;
+    const offeredCardId = listingNeedsCard(listing)
+      ? listing.wantedCardId ?? undefined
+      : undefined;
 
     try {
       setBuyingId(listing.id);
@@ -412,7 +663,6 @@ export default function Market() {
 
       setFeedback("Achat effectué avec succès.");
       setBuyQuantityByListing((prev) => ({ ...prev, [listing.id]: "1" }));
-      setOfferedCardByListing((prev) => ({ ...prev, [listing.id]: "" }));
       await refreshCurrentData();
     } catch (e: any) {
       setFeedback(e?.message || "Impossible d’acheter cette annonce.");
@@ -559,25 +809,13 @@ export default function Market() {
               </label>
 
               {listingNeedsCard(listing) && (
-                <label className="marketField">
-                  <span>ID de la carte à proposer</span>
-                  <input
-                    type="number"
-                    min={1}
-                    placeholder={
-                      listing.wantedCardId
-                        ? String(listing.wantedCardId)
-                        : "ID de la carte demandée"
-                    }
-                    value={offeredCardByListing[listing.id] ?? ""}
-                    onChange={(e) =>
-                      setOfferedCardByListing((prev) => ({
-                        ...prev,
-                        [listing.id]: e.target.value,
-                      }))
-                    }
-                  />
-                </label>
+                <div className="marketListingCard__requiredTrade">
+                  <span className="marketLabel">Carte exigée</span>
+                  <strong>
+                    {listing.wantedCardQuantity}x{" "}
+                    {listing.wantedCardName ?? `Carte #${listing.wantedCardId}`}
+                  </strong>
+                </div>
               )}
 
               <button
@@ -594,6 +832,94 @@ export default function Market() {
               </button>
             </div>
           ) : null}
+        </div>
+      </article>
+    );
+  }
+
+  function renderPendingRewardCard(tx: MarketTransactionRow) {
+    const soldCardImage = getCardImageFromMap(cardImageMap, {
+      cardId: tx.cardId,
+      cardKey: tx.cardKey,
+    });
+
+    const rewardCardImage = tx.pendingRewardCardId
+      ? getCardImageFromMap(cardImageMap, {
+          cardId: tx.pendingRewardCardId,
+          cardKey: tx.buyerOfferedCardKey,
+        })
+      : "";
+
+    return (
+      <article className="marketRewardCard" key={tx.id}>
+        <div className="marketRewardCard__media">
+          {soldCardImage ? (
+            <img src={soldCardImage} alt={tx.cardName} />
+          ) : (
+            <div className="marketListingCard__placeholder">Aucune image</div>
+          )}
+        </div>
+
+        <div className="marketRewardCard__content">
+          <div className="marketRewardCard__top">
+            <div>
+              <h4>{tx.cardName}</h4>
+              <p>Vendu le {formatDate(tx.createdAt)}</p>
+            </div>
+
+            <span className="badge badge--above_market">Récompense à récupérer</span>
+          </div>
+
+          <div className="marketRewardCard__grid">
+            <div>
+              <span className="marketLabel">Acheteur</span>
+              <strong>{tx.buyerUsername}</strong>
+            </div>
+            <div>
+              <span className="marketLabel">Quantité vendue</span>
+              <strong>{tx.quantity}</strong>
+            </div>
+            <div>
+              <span className="marketLabel">Crédits à récupérer</span>
+              <strong>{tx.pendingRewardCredits}</strong>
+            </div>
+            <div>
+              <span className="marketLabel">Carte à récupérer</span>
+              <strong>
+                {tx.pendingRewardCardName
+                  ? `${tx.pendingRewardCardQuantity}x ${tx.pendingRewardCardName}`
+                  : "Aucune"}
+              </strong>
+            </div>
+          </div>
+
+          {tx.pendingRewardCardName && (
+            <div className="marketRewardCard__wanted">
+              <span>Carte reçue</span>
+              <div className="marketRewardCard__wantedThumb">
+                {rewardCardImage ? (
+                  <img src={rewardCardImage} alt={tx.pendingRewardCardName} />
+                ) : (
+                  <div className="marketListingCard__placeholder marketListingCard__placeholder--small">
+                    ?
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="marketRewardCard__actions">
+            <button
+              type="button"
+              className="marketBtn"
+              disabled={claimingTransactionId === tx.id}
+              onClick={() => handleClaimReward(tx.id)}
+            >
+              {claimingTransactionId === tx.id
+                ? "Récupération..."
+                : "Récupérer la récompense"}
+            </button>
+          </div>
         </div>
       </article>
     );
@@ -655,14 +981,14 @@ export default function Market() {
         </nav>
 
         <section className="marketSearchPanel">
-          <div className="marketSearchQuickRow">
+          <div className="marketSearchQuickRow marketSearchQuickRow--single">
             <label className="marketField marketField--quickSearch">
               <span>Recherche rapide</span>
               <input
                 type="text"
                 value={searchFilters.search}
                 onChange={(e) => updateFilter("search", e.target.value)}
-                placeholder="Nom, ID, mot-clé..."
+                placeholder="Nom, numéro, ID, mot-clé..."
               />
             </label>
 
@@ -672,10 +998,6 @@ export default function Market() {
               onClick={() => setShowAdvancedFilters((prev) => !prev)}
             >
               {showAdvancedFilters ? "Masquer les filtres" : "Plus de filtres"}
-            </button>
-
-            <button type="button" className="marketBtn" onClick={applySearchFilters}>
-              Rechercher
             </button>
           </div>
 
@@ -804,14 +1126,11 @@ export default function Market() {
               </div>
 
               <div className="marketSearchActions">
-                <button type="button" className="marketBtn" onClick={applySearchFilters}>
-                  Appliquer les filtres
-                </button>
                 <button
                   type="button"
                   className="marketBtn marketBtn--secondary"
                   onClick={() => {
-                    const reset: SearchFilters = {
+                    setSearchFilters({
                       search: "",
                       rarity: "",
                       season: "",
@@ -821,9 +1140,7 @@ export default function Market() {
                       maxPrice: "",
                       sortBy: "createdAt",
                       sortOrder: "DESC",
-                    };
-                    setSearchFilters(reset);
-                    loadData(reset);
+                    });
                   }}
                 >
                   Réinitialiser
@@ -838,22 +1155,98 @@ export default function Market() {
         {error && !loading && <div className="marketError">{error}</div>}
 
         {!loading && !error && activeTab === "my-listings" && (
-          <section className="marketSection">
-            <div className="marketSection__head">
-              <h2>Mes annonces</h2>
-              <span>{myListings.length} annonce(s)</span>
-            </div>
+          <div className="marketStack">
+            <section className="marketSection">
+              <div className="marketSection__head">
+                <h2>Récompenses à récupérer</h2>
+                <span>{rewardPendingSales.length} vente(s)</span>
+              </div>
 
-            {myListings.length === 0 ? (
-              <div className="marketEmpty">
-                Aucune annonce pour le moment. Crée ta première vente.
+              {rewardPendingSales.length === 0 ? (
+                <div className="marketEmpty">
+                  Aucune récompense en attente.
+                </div>
+              ) : (
+                <>
+                  <SectionPreviewHeader
+                    total={rewardPendingSales.length}
+                    shown={Math.min(PREVIEW_COUNT, rewardPendingSales.length)}
+                    previewLabel="Les plus récentes"
+                  />
+                  <div className="marketRewards">
+                    {rewardPendingSales.slice(0, PREVIEW_COUNT).map((tx) =>
+                      renderPendingRewardCard(tx),
+                    )}
+                  </div>
+                </>
+              )}
+            </section>
+
+            <section className="marketSection">
+              <div className="marketSection__head">
+                <h2>Cartes en vente</h2>
+                <span>{activeMyListings.length} annonce(s)</span>
               </div>
-            ) : (
-              <div className="marketCards">
-                {myListings.map((listing) => renderListingCard(listing, "mine"))}
+
+              {activeMyListings.length === 0 ? (
+                <div className="marketEmpty">
+                  Aucune annonce active.
+                </div>
+              ) : (
+                <div className="marketCards">
+                  {activeMyListings.map((listing) => renderListingCard(listing, "mine"))}
+                </div>
+              )}
+            </section>
+
+            <section className="marketSection">
+              <div className="marketSection__head">
+                <h2>Cartes annulées</h2>
+                <span>{myListings.filter((l) => l.status === "CANCELLED").length} annonce(s)</span>
               </div>
-            )}
-          </section>
+
+              {cancelledMyListings.length === 0 ? (
+                <div className="marketEmpty">
+                  Aucune annonce annulée.
+                </div>
+              ) : (
+                <>
+                  <SectionPreviewHeader
+                    total={myListings.filter((l) => l.status === "CANCELLED").length}
+                    shown={cancelledMyListings.length}
+                    previewLabel="Les plus récentes"
+                  />
+                  <div className="marketCards">
+                    {cancelledMyListings.map((listing) => renderListingCard(listing, "mine"))}
+                  </div>
+                </>
+              )}
+            </section>
+
+            <section className="marketSection">
+              <div className="marketSection__head">
+                <h2>Cartes vendues</h2>
+                <span>{myListings.filter((l) => l.status === "SOLD").length} annonce(s)</span>
+              </div>
+
+              {soldMyListings.length === 0 ? (
+                <div className="marketEmpty">
+                  Aucune annonce vendue.
+                </div>
+              ) : (
+                <>
+                  <SectionPreviewHeader
+                    total={myListings.filter((l) => l.status === "SOLD").length}
+                    shown={soldMyListings.length}
+                    previewLabel="Les plus récentes"
+                  />
+                  <div className="marketCards">
+                    {soldMyListings.map((listing) => renderListingCard(listing, "mine"))}
+                  </div>
+                </>
+              )}
+            </section>
+          </div>
         )}
 
         {!loading && !error && activeTab === "suggestions" && (
@@ -884,16 +1277,16 @@ export default function Market() {
           <section className="marketSection">
             <div className="marketSection__head">
               <h2>Recherche d’annonces</h2>
-              <span>{allListings.length} résultat(s)</span>
+              <span>{filteredListings.length} résultat(s)</span>
             </div>
 
-            {allListings.length === 0 ? (
+            {filteredListings.length === 0 ? (
               <div className="marketEmpty">
                 Aucune annonce ne correspond à tes filtres.
               </div>
             ) : (
               <div className="marketCards">
-                {allListings.map((listing) => renderListingCard(listing, "market"))}
+                {filteredListings.map((listing) => renderListingCard(listing, "market"))}
               </div>
             )}
           </section>
@@ -901,8 +1294,23 @@ export default function Market() {
 
         {!loading && !error && activeTab === "history" && (
           <div className="marketHistoryGrid">
-            <TransactionSection title="Mes achats" items={purchases} />
-            <TransactionSection title="Mes ventes" items={sales} />
+            <HistorySection
+              title="Mes achats"
+              items={purchases}
+              expanded={showAllPurchases}
+              page={purchasesPage}
+              onToggleExpanded={() => setShowAllPurchases((prev) => !prev)}
+              onPageChange={setPurchasesPage}
+            />
+
+            <HistorySection
+              title="Mes ventes"
+              items={sales}
+              expanded={showAllSales}
+              page={salesPage}
+              onToggleExpanded={() => setShowAllSales((prev) => !prev)}
+              onPageChange={setSalesPage}
+            />
           </div>
         )}
       </main>

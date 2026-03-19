@@ -659,28 +659,6 @@ export class MarketService {
         });
       }
 
-      let sellerWantedCardInventory: UserCard | null = null;
-
-      if (buyerOfferedCard && requiredWantedCardQuantity > 0) {
-        sellerWantedCardInventory = await userCardRepo
-          .createQueryBuilder('uc')
-          .leftJoinAndSelect('uc.user', 'user')
-          .leftJoinAndSelect('uc.card', 'card')
-          .setLock('pessimistic_write')
-          .where('user.id = :sellerId', { sellerId: listing.seller.id })
-          .andWhere('card.id = :cardId', { cardId: buyerOfferedCard.id })
-          .getOne();
-
-        if (!sellerWantedCardInventory) {
-          sellerWantedCardInventory = userCardRepo.create({
-            user: { id: listing.seller.id } as any,
-            card: { id: buyerOfferedCard.id } as any,
-            quantity: 0,
-            quantityLocked: 0,
-          });
-        }
-      }
-
       sellerCard.quantityLocked -= purchaseQuantity;
       sellerCard.quantity -= purchaseQuantity;
       buyerReceivedCard.quantity += purchaseQuantity;
@@ -689,13 +667,8 @@ export class MarketService {
         buyerPaymentCard.quantity -= requiredWantedCardQuantity;
       }
 
-      if (sellerWantedCardInventory && requiredWantedCardQuantity > 0) {
-        sellerWantedCardInventory.quantity += requiredWantedCardQuantity;
-      }
-
-      if (buyerEconomy && sellerEconomy && requiredCredits > 0) {
+      if (buyerEconomy && requiredCredits > 0) {
         buyerEconomy.credits -= requiredCredits;
-        sellerEconomy.credits += requiredCredits;
       }
 
       listing.remainingQuantity -= purchaseQuantity;
@@ -711,13 +684,8 @@ export class MarketService {
         await userCardRepo.save(buyerPaymentCard);
       }
 
-      if (sellerWantedCardInventory) {
-        await userCardRepo.save(sellerWantedCardInventory);
-      }
-
-      if (buyerEconomy && sellerEconomy) {
+      if (buyerEconomy) {
         await userEconomyRepo.save(buyerEconomy);
-        await userEconomyRepo.save(sellerEconomy);
       }
 
       await listingRepo.save(listing);
@@ -747,6 +715,7 @@ export class MarketService {
           : null,
         buyerOfferedCardQuantity: requiredWantedCardQuantity,
         transactionType,
+        sellerRewardClaimedAt: null,
       });
 
       const savedTransaction = await transactionRepo.save(transaction);
@@ -764,6 +733,7 @@ export class MarketService {
           creditsPaid: requiredCredits,
           offeredCardId: buyerOfferedCard?.id ?? null,
           offeredCardQuantity: requiredWantedCardQuantity,
+          sellerRewardPending: true,
         },
         transaction: {
           id: savedTransaction.id,
@@ -778,15 +748,114 @@ export class MarketService {
           buyerOfferedCardId: buyerOfferedCard?.id ?? null,
           buyerOfferedCardQuantity: requiredWantedCardQuantity,
           transactionType: savedTransaction.transactionType,
+          sellerRewardClaimedAt: savedTransaction.sellerRewardClaimedAt,
           createdAt: savedTransaction.createdAt,
         },
-        balances:
-          buyerEconomy && sellerEconomy
-            ? {
-                buyerCredits: buyerEconomy.credits,
-                sellerCredits: sellerEconomy.credits,
-              }
-            : null,
+        balances: buyerEconomy
+          ? {
+              buyerCredits: buyerEconomy.credits,
+              sellerCredits: sellerEconomy?.credits ?? null,
+            }
+          : null,
+      };
+    });
+  }
+
+  async claimTransactionReward(userId: number, transactionId: number) {
+    return this.dataSource.transaction(async (manager) => {
+      const transactionRepo = manager.getRepository(MarketTransaction);
+      const userEconomyRepo = manager.getRepository(UserEconomy);
+      const userCardRepo = manager.getRepository(UserCard);
+
+      const transaction = await transactionRepo
+        .createQueryBuilder('tx')
+        .leftJoinAndSelect('tx.seller', 'seller')
+        .leftJoinAndSelect('tx.buyer', 'buyer')
+        .leftJoinAndSelect('tx.card', 'card')
+        .leftJoinAndSelect('tx.buyerOfferedCard', 'buyerOfferedCard')
+        .leftJoinAndSelect('tx.listing', 'listing')
+        .setLock('pessimistic_write')
+        .where('tx.id = :transactionId', { transactionId })
+        .getOne();
+
+      if (!transaction) {
+        throw new NotFoundException(`Transaction ${transactionId} not found`);
+      }
+
+      if (transaction.seller.id !== userId) {
+        throw new BadRequestException(
+          'You can only claim rewards for your own sales.',
+        );
+      }
+
+      if (transaction.sellerRewardClaimedAt) {
+        throw new BadRequestException('Reward already claimed for this sale.');
+      }
+
+      let sellerEconomy = await userEconomyRepo
+        .createQueryBuilder('ue')
+        .setLock('pessimistic_write')
+        .where('ue.userId = :userId', { userId })
+        .getOne();
+
+      if (!sellerEconomy) {
+        sellerEconomy = userEconomyRepo.create({
+          userId,
+          credits: 0,
+        });
+      }
+
+      if (transaction.totalPriceCredits > 0) {
+        sellerEconomy.credits += transaction.totalPriceCredits;
+        await userEconomyRepo.save(sellerEconomy);
+      }
+
+      let sellerRewardCardInventory: UserCard | null = null;
+
+      if (
+        transaction.buyerOfferedCard &&
+        transaction.buyerOfferedCardQuantity > 0
+      ) {
+        sellerRewardCardInventory = await userCardRepo
+          .createQueryBuilder('uc')
+          .leftJoinAndSelect('uc.user', 'user')
+          .leftJoinAndSelect('uc.card', 'card')
+          .setLock('pessimistic_write')
+          .where('user.id = :sellerId', { sellerId: userId })
+          .andWhere('card.id = :cardId', {
+            cardId: transaction.buyerOfferedCard.id,
+          })
+          .getOne();
+
+        if (!sellerRewardCardInventory) {
+          sellerRewardCardInventory = userCardRepo.create({
+            user: { id: userId } as any,
+            card: { id: transaction.buyerOfferedCard.id } as any,
+            quantity: 0,
+            quantityLocked: 0,
+          });
+        }
+
+        sellerRewardCardInventory.quantity += transaction.buyerOfferedCardQuantity;
+        await userCardRepo.save(sellerRewardCardInventory);
+      }
+
+      transaction.sellerRewardClaimedAt = new Date();
+      await transactionRepo.save(transaction);
+
+      return {
+        success: true,
+        transactionId: transaction.id,
+        claimedAt: transaction.sellerRewardClaimedAt,
+        rewards: {
+          credits: transaction.totalPriceCredits,
+          cardId: transaction.buyerOfferedCard?.id ?? null,
+          cardName: transaction.buyerOfferedCard?.name ?? null,
+          cardQuantity: transaction.buyerOfferedCardQuantity,
+        },
+        balances: {
+          sellerCredits: sellerEconomy.credits,
+        },
       };
     });
   }
@@ -1130,6 +1199,20 @@ export class MarketService {
       buyerOfferedCardRarity: transaction.buyerOfferedCard?.rarity ?? null,
       buyerOfferedCardQuantity: transaction.buyerOfferedCardQuantity,
       transactionType: transaction.transactionType,
+      sellerRewardClaimedAt: transaction.sellerRewardClaimedAt,
+      sellerRewardClaimed: !!transaction.sellerRewardClaimedAt,
+      pendingRewardCredits: transaction.sellerRewardClaimedAt
+        ? 0
+        : transaction.totalPriceCredits,
+      pendingRewardCardId: transaction.sellerRewardClaimedAt
+        ? null
+        : transaction.buyerOfferedCard?.id ?? null,
+      pendingRewardCardName: transaction.sellerRewardClaimedAt
+        ? null
+        : transaction.buyerOfferedCard?.name ?? null,
+      pendingRewardCardQuantity: transaction.sellerRewardClaimedAt
+        ? 0
+        : transaction.buyerOfferedCardQuantity,
       createdAt: transaction.createdAt,
     };
   }

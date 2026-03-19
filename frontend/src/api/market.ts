@@ -90,6 +90,12 @@ export type MarketTransactionRow = {
     | "CREDITS_SALE"
     | "CARD_TRADE"
     | "CARD_AND_CREDITS_TRADE";
+  sellerRewardClaimedAt: string | null;
+  sellerRewardClaimed: boolean;
+  pendingRewardCredits: number;
+  pendingRewardCardId: number | null;
+  pendingRewardCardName: string | null;
+  pendingRewardCardQuantity: number;
   createdAt: string;
 };
 
@@ -192,6 +198,12 @@ export async function buyMarketListing(
 
 export async function cancelMarketListing(listingId: number) {
   return apiFetch(`/market/listings/${listingId}/cancel`, {
+    method: "POST",
+  });
+}
+
+export async function claimMarketTransactionReward(transactionId: number) {
+  return apiFetch(`/market/transactions/${transactionId}/claim`, {
     method: "POST",
   });
 }
