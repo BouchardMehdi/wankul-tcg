@@ -12,6 +12,14 @@ export type AppSettings = {
   showDropRates: boolean;
   confirmPurchases: boolean;
 
+  /* Market */
+  autoClaimMarketRewards: boolean;
+  confirmQuickSell: boolean;
+  confirmCancelListing: boolean;
+  confirmMarketBuy: boolean;
+  confirmBelowMarketSale: boolean;
+  confirmAboveMarketSale: boolean;
+
   /**
    * Compat ancienne version.
    * Laisse cette clé pour éviter de casser d'anciens appels éventuels.
@@ -33,6 +41,14 @@ export const APP_SETTINGS_DEFAULTS: AppSettings = {
   autoHighlightNewCards: true,
   showDropRates: true,
   confirmPurchases: true,
+
+  autoClaimMarketRewards: false,
+  confirmQuickSell: true,
+  confirmCancelListing: true,
+  confirmMarketBuy: true,
+  confirmBelowMarketSale: true,
+  confirmAboveMarketSale: true,
+
   compactCollectionGrid: false,
 };
 
@@ -50,6 +66,36 @@ function migrateSettings(raw: Partial<AppSettings> | null | undefined): AppSetti
 
   base.collectionLayout = normalizeLayout(base.collectionLayout);
   base.compactCollectionGrid = base.collectionLayout === "compact";
+
+  base.autoClaimMarketRewards =
+    typeof base.autoClaimMarketRewards === "boolean"
+      ? base.autoClaimMarketRewards
+      : APP_SETTINGS_DEFAULTS.autoClaimMarketRewards;
+
+  base.confirmQuickSell =
+    typeof base.confirmQuickSell === "boolean"
+      ? base.confirmQuickSell
+      : APP_SETTINGS_DEFAULTS.confirmQuickSell;
+
+  base.confirmCancelListing =
+    typeof base.confirmCancelListing === "boolean"
+      ? base.confirmCancelListing
+      : APP_SETTINGS_DEFAULTS.confirmCancelListing;
+
+  base.confirmMarketBuy =
+    typeof base.confirmMarketBuy === "boolean"
+      ? base.confirmMarketBuy
+      : APP_SETTINGS_DEFAULTS.confirmMarketBuy;
+
+  base.confirmBelowMarketSale =
+    typeof base.confirmBelowMarketSale === "boolean"
+      ? base.confirmBelowMarketSale
+      : APP_SETTINGS_DEFAULTS.confirmBelowMarketSale;
+
+  base.confirmAboveMarketSale =
+    typeof base.confirmAboveMarketSale === "boolean"
+      ? base.confirmAboveMarketSale
+      : APP_SETTINGS_DEFAULTS.confirmAboveMarketSale;
 
   return base;
 }

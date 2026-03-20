@@ -24,6 +24,34 @@
   white-space: nowrap;
 }
 
+.settingsSections {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.settingsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settingsSection__head {
+  display: grid;
+  gap: 6px;
+}
+
+.settingsSection__title {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.settingsSection__desc {
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .settingsList {
   display: flex;
   flex-direction: column;
@@ -161,6 +189,14 @@
 
   .settingsSummary {
     white-space: normal;
+  }
+
+  .settingsSections {
+    gap: 20px;
+  }
+
+  .settingsSection__title {
+    font-size: 18px;
   }
 
   .settingsRow {
