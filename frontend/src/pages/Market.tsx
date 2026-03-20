@@ -274,8 +274,8 @@ function HistorySection({
                     {tx.role === "BUYER"
                       ? "Acheteur"
                       : tx.role === "SELLER"
-                      ? "Vendeur"
-                      : "Acheteur/Vendeur"}
+                        ? "Vendeur"
+                        : "Acheteur/Vendeur"}
                   </span>
                   <span>Quantité : {tx.quantity}</span>
                   <span>
@@ -283,8 +283,8 @@ function HistorySection({
                     {tx.transactionType === "CREDITS_SALE"
                       ? "Achat en crédits"
                       : tx.transactionType === "CARD_TRADE"
-                      ? "Échange de cartes"
-                      : "Carte + crédits"}
+                        ? "Échange de cartes"
+                        : "Carte + crédits"}
                   </span>
                 </div>
 
@@ -387,9 +387,7 @@ export default function Market() {
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const [buyQuantityByListing, setBuyQuantityByListing] = useState<
-    Record<number, string>
-  >({});
+  const [buyQuantityByListing, setBuyQuantityByListing] = useState<Record<number, string>>({});
   const [buyingId, setBuyingId] = useState<number | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [claimingTransactionId, setClaimingTransactionId] = useState<number | null>(null);
@@ -474,16 +472,12 @@ export default function Market() {
       switch (searchFilters.sortBy) {
         case "priceCredits":
           return (a.priceCredits - b.priceCredits) * orderFactor;
-
         case "marketPriceSnapshot":
           return (a.marketPriceSnapshot - b.marketPriceSnapshot) * orderFactor;
-
         case "rarity":
           return a.rarity.localeCompare(b.rarity, "fr") * orderFactor;
-
         case "cardName":
           return a.cardName.localeCompare(b.cardName, "fr") * orderFactor;
-
         case "createdAt":
         default:
           return (
@@ -540,7 +534,11 @@ export default function Market() {
     () =>
       [...myListings]
         .filter((listing) => listing.status === "SOLD")
-        .sort((a, b) => new Date(b.closedAt ?? b.updatedAt).getTime() - new Date(a.closedAt ?? a.updatedAt).getTime())
+        .sort(
+          (a, b) =>
+            new Date(b.closedAt ?? b.updatedAt).getTime() -
+            new Date(a.closedAt ?? a.updatedAt).getTime(),
+        )
         .slice(0, PREVIEW_COUNT),
     [myListings],
   );
@@ -827,8 +825,8 @@ export default function Market() {
                 {buyingId === listing.id
                   ? "Achat..."
                   : listingCanBuyPartially(listing)
-                  ? "Acheter"
-                  : "Acheter le lot"}
+                    ? "Acheter"
+                    : "Acheter le lot"}
               </button>
             </div>
           ) : null}
@@ -943,7 +941,10 @@ export default function Market() {
             <Link className="marketBtn" to="/market/create">
               Créer une annonce
             </Link>
-            <Link className="marketBtn marketBtn--secondary" to="/market/quick-sell">
+            <Link
+              className="marketBtn marketBtn--secondary"
+              to="/collection?quickSellMode=1"
+            >
               Vente rapide
             </Link>
           </div>

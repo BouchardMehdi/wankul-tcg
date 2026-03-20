@@ -7,7 +7,7 @@ import AppNavbar from "../components/AppNavbar";
 
 import { fetchAllCards, type CardDto } from "../api/cards";
 import { fetchOwnedCollection, type OwnedCardRow } from "../api/collection";
-import { getMySellableCards } from "../api/market";
+import { getMySellableCards, quickSellCard, type SellableCardRow } from "../api/market";
 
 import {
   readAppSettings,
@@ -20,6 +20,7 @@ import { Fancybox } from "@fancyapps/ui";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
 const PAGE_SIZE = 25;
+const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 type Filters = {
   q: string;
@@ -28,6 +29,15 @@ type Filters = {
   type: string;
   artist: string;
   ownedOnly: boolean;
+};
+
+type QuickSellModalState = {
+  open: boolean;
+  card: any | null;
+  sellable: SellableCardRow | null;
+  quantity: string;
+  submitting: boolean;
+  error: string;
 };
 
 function uniqSorted(values: Array<string | null | undefined>) {
@@ -129,13 +139,27 @@ function handleImgParallaxLeave(e: MouseEvent<HTMLDivElement>) {
   el.style.setProperty("--hy", `50%`);
 }
 
-const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 function resolveImg(imageUrl?: string | null) {
   const url = (imageUrl ?? "").trim();
   if (!url) return "";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   if (url.startsWith("/")) return `${API_BASE}${url}`;
   return `${API_BASE}/${url}`;
+}
+
+function getCardDisplayNumber(card: any) {
+  if (card?.key) return String(card.key);
+  if (typeof card?.number === "number") return `#${card.number}`;
+  if (typeof card?.number === "string" && card.number.trim()) return card.number.trim();
+  return `#${card?.id ?? "—"}`;
+}
+
+function getCardDisplaySeason(card: any) {
+  return card?.season ?? card?.extension ?? "—";
+}
+
+function getCardDisplayType(card: any) {
+  return card?.type ?? "—";
 }
 
 type PagerProps = {
@@ -192,16 +216,19 @@ export default function Collection() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const selectForMarket = new URLSearchParams(location.search).get("selectForMarket") === "1";
+  const searchParams = new URLSearchParams(location.search);
+  const selectForMarket = searchParams.get("selectForMarket") === "1";
+  const quickSellMode = searchParams.get("quickSellMode") === "1";
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [globalFeedback, setGlobalFeedback] = useState("");
   const [page, setPage] = useState(1);
   const [pageInput, setPageInput] = useState("1");
 
   const [allCards, setAllCards] = useState<CardDto[]>([]);
   const [ownedRows, setOwnedRows] = useState<OwnedCardRow[]>([]);
-  const [sellableIds, setSellableIds] = useState<Set<number>>(new Set());
+  const [sellableRows, setSellableRows] = useState<SellableCardRow[]>([]);
 
   const [filters, setFilters] = useState<Filters>({
     q: "",
@@ -209,23 +236,32 @@ export default function Collection() {
     rarity: "",
     type: "",
     artist: "",
-    ownedOnly: selectForMarket,
+    ownedOnly: selectForMarket || quickSellMode,
   });
   const [settings, setSettings] = useState(() => readAppSettings());
   const [lastNewCardIds, setLastNewCardIds] = useState<number[]>(() =>
     readLastNewCardIds(),
   );
 
+  const [quickSellModal, setQuickSellModal] = useState<QuickSellModalState>({
+    open: false,
+    card: null,
+    sellable: null,
+    quantity: "1",
+    submitting: false,
+    error: "",
+  });
+
   useEffect(() => subscribeAppSettings(() => setSettings(readAppSettings())), []);
 
   useEffect(() => {
-    if (selectForMarket) {
+    if (selectForMarket || quickSellMode) {
       setFilters((prev) => ({ ...prev, ownedOnly: true }));
     }
-  }, [selectForMarket]);
+  }, [selectForMarket, quickSellMode]);
 
   useEffect(() => {
-    if (selectForMarket) return;
+    if (selectForMarket || quickSellMode) return;
 
     const fb: any = Fancybox;
 
@@ -271,7 +307,7 @@ export default function Collection() {
         //
       }
     };
-  }, [selectForMarket]);
+  }, [selectForMarket, quickSellMode]);
 
   useEffect(() => {
     const syncLatest = () => setLastNewCardIds(readLastNewCardIds());
@@ -292,18 +328,17 @@ export default function Collection() {
   const load = async () => {
     setLoading(true);
     setError("");
+    setGlobalFeedback("");
     try {
       const [cardsRes, ownedRes, sellableRes] = await Promise.all([
         fetchAllCards(),
         fetchOwnedCollection(),
-        selectForMarket ? getMySellableCards() : Promise.resolve([]),
+        selectForMarket || quickSellMode ? getMySellableCards() : Promise.resolve([]),
       ]);
 
       setAllCards(Array.isArray(cardsRes) ? cardsRes : []);
       setOwnedRows(Array.isArray(ownedRes) ? ownedRes : []);
-      setSellableIds(
-        new Set((Array.isArray(sellableRes) ? sellableRes : []).map((row) => row.cardId)),
-      );
+      setSellableRows(Array.isArray(sellableRes) ? sellableRes : []);
     } catch (e: any) {
       setError(e?.message || "Impossible de charger la collection.");
     } finally {
@@ -313,7 +348,15 @@ export default function Collection() {
 
   useEffect(() => {
     load();
-  }, [selectForMarket]);
+  }, [selectForMarket, quickSellMode]);
+
+  const sellableMap = useMemo(() => {
+    const map = new Map<number, SellableCardRow>();
+    for (const row of sellableRows) {
+      map.set(row.cardId, row);
+    }
+    return map;
+  }, [sellableRows]);
 
   const ownedMap = useMemo(() => {
     const m = new Map<number, number>();
@@ -328,11 +371,12 @@ export default function Collection() {
     const list = (allCards as any[]).map((c) => ({
       ...c,
       quantity: ownedMap.get(c.id) ?? 0,
-      isSellable: sellableIds.has(Number(c.id)),
+      isSellable: sellableMap.has(Number(c.id)),
+      sellableRow: sellableMap.get(Number(c.id)) ?? null,
     }));
     list.sort(compareCards);
     return list;
-  }, [allCards, ownedMap, sellableIds]);
+  }, [allCards, ownedMap, sellableMap]);
 
   const options = useMemo(() => {
     const seasons = uniqSorted(merged.map((c) => c.season ?? c.extension ?? ""));
@@ -408,8 +452,8 @@ export default function Collection() {
     settings.collectionLayout === "compact"
       ? "cardsGrid--compact"
       : settings.collectionLayout === "large"
-      ? "cardsGrid--large"
-      : "cardsGrid--standard";
+        ? "cardsGrid--large"
+        : "cardsGrid--standard";
 
   function handleSelectForMarket(cardId: number, isSellable: boolean) {
     if (!selectForMarket || !isSellable) return;
@@ -420,6 +464,82 @@ export default function Collection() {
     });
   }
 
+  function openQuickSellModal(card: any) {
+    const sellable = sellableMap.get(Number(card.id)) ?? null;
+    if (!quickSellMode || !sellable) return;
+
+    setQuickSellModal({
+      open: true,
+      card,
+      sellable,
+      quantity: "1",
+      submitting: false,
+      error: "",
+    });
+  }
+
+  function closeQuickSellModal() {
+    if (quickSellModal.submitting) return;
+    setQuickSellModal({
+      open: false,
+      card: null,
+      sellable: null,
+      quantity: "1",
+      submitting: false,
+      error: "",
+    });
+  }
+
+  async function confirmQuickSell() {
+    if (!quickSellModal.card || !quickSellModal.sellable) return;
+
+    const qty = Number(quickSellModal.quantity);
+    const max = quickSellModal.sellable.sellableQuantity;
+
+    if (!Number.isInteger(qty) || qty < 1 || qty > max) {
+      setQuickSellModal((prev) => ({
+        ...prev,
+        error: `La quantité doit être comprise entre 1 et ${max}.`,
+      }));
+      return;
+    }
+
+    try {
+      setQuickSellModal((prev) => ({
+        ...prev,
+        submitting: true,
+        error: "",
+      }));
+
+      await quickSellCard(quickSellModal.sellable.cardId, qty);
+
+      const totalCredits = quickSellModal.sellable.quickSellUnitPrice * qty;
+      closeQuickSellModal();
+      setGlobalFeedback(
+        `${qty} exemplaire(s) de ${quickSellModal.card.name} vendu(s) pour ${totalCredits} crédits.`,
+      );
+      await load();
+    } catch (e: any) {
+      setQuickSellModal((prev) => ({
+        ...prev,
+        submitting: false,
+        error: e?.message || "Impossible d’effectuer la vente rapide.",
+      }));
+    }
+  }
+
+  const quickSellMax = quickSellModal.sellable?.sellableQuantity ?? 0;
+  const quickSellUnitPrice = quickSellModal.sellable?.quickSellUnitPrice ?? 0;
+  const quickSellMarketPrice = quickSellModal.sellable?.marketPrice ?? 0;
+  const quickSellQty = Math.max(1, Number(quickSellModal.quantity || "1"));
+  const quickSellTotal = quickSellUnitPrice * quickSellQty;
+  const quickSellImg = resolveImg(
+    quickSellModal.card?.imageUrl ??
+      quickSellModal.card?.image ??
+      quickSellModal.card?.img ??
+      "",
+  );
+
   return (
     <div className="app-shell">
       <AppNavbar currentPage="collection" />
@@ -428,7 +548,13 @@ export default function Collection() {
         <div className="collectionShell">
           <div className="collectionHeader">
             <div className="section-title">
-              <h2>{selectForMarket ? "Choisir une carte à vendre" : "Collection"}</h2>
+              <h2>
+                {selectForMarket
+                  ? "Choisir une carte à vendre"
+                  : quickSellMode
+                    ? "Choisir une carte pour vente rapide"
+                    : "Collection"}
+              </h2>
             </div>
 
             {selectForMarket && (
@@ -439,6 +565,18 @@ export default function Collection() {
                 </div>
                 <Link className="btn" to="/market/create">
                   Retour à la création
+                </Link>
+              </div>
+            )}
+
+            {quickSellMode && (
+              <div className="collectionSelectBanner collectionSelectBanner--quickSell">
+                <div>
+                  Clique sur une carte <strong>vendable</strong> pour ouvrir la
+                  confirmation de vente rapide.
+                </div>
+                <Link className="btn" to="/market">
+                  Retour au market
                 </Link>
               </div>
             )}
@@ -526,7 +664,7 @@ export default function Collection() {
                     type="checkbox"
                     checked={filters.ownedOnly}
                     onChange={(e) => updateFilter("ownedOnly", e.target.checked)}
-                    disabled={selectForMarket}
+                    disabled={selectForMarket || quickSellMode}
                   />
                   <span>Afficher uniquement les cartes débloquées</span>
                 </label>
@@ -542,7 +680,7 @@ export default function Collection() {
                         rarity: "",
                         type: "",
                         artist: "",
-                        ownedOnly: selectForMarket ? true : false,
+                        ownedOnly: selectForMarket || quickSellMode ? true : false,
                       });
                       setPage(1);
                       setPageInput("1");
@@ -556,6 +694,12 @@ export default function Collection() {
                 </div>
               </div>
             </div>
+
+            {globalFeedback && (
+              <div className="mt-3">
+                <div className="alert alert-success">{globalFeedback}</div>
+              </div>
+            )}
 
             {loading ? (
               <p className="mt-3">Chargement…</p>
@@ -604,7 +748,8 @@ export default function Collection() {
                     lastNewCardIds.includes(Number(c.id));
 
                   const isSellable = !!c.isSellable;
-                  const isSelectableDisabled = selectForMarket && !isSellable;
+                  const isSelectableDisabled =
+                    (selectForMarket || quickSellMode) && !isSellable;
 
                   return (
                     <div
@@ -612,7 +757,7 @@ export default function Collection() {
                       className={`cardTile ${owned ? "" : "is-locked"} ${settings.disableHoloEffects ? "" : rarityCls} ${
                         isTerrain ? "cardTile--terrain" : ""
                       } ${isLatestNew ? "is-latest-new" : ""} ${
-                        selectForMarket ? "cardTile--selectMode" : ""
+                        selectForMarket || quickSellMode ? "cardTile--selectMode" : ""
                       } ${isSellable ? "cardTile--sellable" : ""} ${
                         isSelectableDisabled ? "cardTile--notSellable" : ""
                       }`}
@@ -644,6 +789,15 @@ export default function Collection() {
                           >
                             <img className="cardTile__img" src={src} alt={c.name} />
                           </button>
+                        ) : quickSellMode ? (
+                          <button
+                            type="button"
+                            className="cardTile__selectBtn"
+                            disabled={!isSellable}
+                            onClick={() => openQuickSellModal(c)}
+                          >
+                            <img className="cardTile__img" src={src} alt={c.name} />
+                          </button>
                         ) : owned ? (
                           <a
                             className="cardTile__zoom"
@@ -662,13 +816,17 @@ export default function Collection() {
                         {!owned && <div className="cardTile__lock">NON DÉBLOQUÉE</div>}
                         {isLatestNew && <div className="cardTile__new">NEW</div>}
 
-                        {selectForMarket && (
+                        {(selectForMarket || quickSellMode) && (
                           <div
                             className={`cardTile__marketPick ${
                               isSellable ? "cardTile__marketPick--ok" : "cardTile__marketPick--off"
                             }`}
                           >
-                            {isSellable ? "Sélectionner" : "Non vendable"}
+                            {isSellable
+                              ? selectForMarket
+                                ? "Sélectionner"
+                                : "Vente rapide"
+                              : "Non vendable"}
                           </div>
                         )}
                       </div>
@@ -685,8 +843,10 @@ export default function Collection() {
                             {c.season ?? c.extension ?? "—"}{" "}
                             {typeof c.number === "number" ? `#${c.number}` : ""}
                           </span>
-                          {selectForMarket && isSellable && (
-                            <span className="pill pill--market">Vendable</span>
+                          {(selectForMarket || quickSellMode) && isSellable && (
+                            <span className="pill pill--market">
+                              {quickSellMode ? "Rapide" : "Vendable"}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -712,6 +872,127 @@ export default function Collection() {
           )}
         </div>
       </section>
+
+      {quickSellModal.open && quickSellModal.card && quickSellModal.sellable && (
+        <div className="collectionModalBackdrop" onClick={closeQuickSellModal}>
+          <div
+            className="collectionModal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="collectionModal__head">
+              <h3>Confirmer la vente rapide</h3>
+              <button
+                type="button"
+                className="collectionModal__close"
+                onClick={closeQuickSellModal}
+                disabled={quickSellModal.submitting}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="collectionModal__body">
+              <div className="collectionModal__media">
+                {quickSellImg ? (
+                  <img src={quickSellImg} alt={quickSellModal.card.name} />
+                ) : (
+                  <div className="collectionModal__placeholder">Aucune image</div>
+                )}
+              </div>
+
+              <div className="collectionModal__content">
+                <strong className="collectionModal__title">
+                  {quickSellModal.card.name}
+                </strong>
+                <p className="collectionModal__subtitle">
+                  {getCardDisplayNumber(quickSellModal.card)} • {quickSellModal.card.rarity ?? "—"} •{" "}
+                  {getCardDisplaySeason(quickSellModal.card)} • {getCardDisplayType(quickSellModal.card)}
+                </p>
+
+                <div className="collectionModal__grid">
+                  <div>
+                    <span>Numéro</span>
+                    <strong>{getCardDisplayNumber(quickSellModal.card)}</strong>
+                  </div>
+                  <div>
+                    <span>Rareté</span>
+                    <strong>{quickSellModal.card.rarity ?? "—"}</strong>
+                  </div>
+                  <div>
+                    <span>Saison</span>
+                    <strong>{getCardDisplaySeason(quickSellModal.card)}</strong>
+                  </div>
+                  <div>
+                    <span>Type</span>
+                    <strong>{getCardDisplayType(quickSellModal.card)}</strong>
+                  </div>
+                  <div>
+                    <span>Possédées</span>
+                    <strong>{quickSellModal.sellable.totalQuantity}</strong>
+                  </div>
+                  <div>
+                    <span>Max vendable</span>
+                    <strong>{quickSellMax}</strong>
+                  </div>
+                  <div>
+                    <span>Prix du marché</span>
+                    <strong>{quickSellMarketPrice}</strong>
+                  </div>
+                  <div>
+                    <span>Vente rapide / unité</span>
+                    <strong>{quickSellUnitPrice}</strong>
+                  </div>
+                </div>
+
+                <label className="collectionModal__field">
+                  <span>Quantité à vendre</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={quickSellMax}
+                    value={quickSellModal.quantity}
+                    onChange={(e) =>
+                      setQuickSellModal((prev) => ({
+                        ...prev,
+                        quantity: e.target.value,
+                        error: "",
+                      }))
+                    }
+                  />
+                </label>
+
+                <div className="collectionModal__total">
+                  <span>Gain estimé</span>
+                  <strong>{quickSellTotal} crédits</strong>
+                </div>
+
+                {quickSellModal.error && (
+                  <div className="collectionModal__error">{quickSellModal.error}</div>
+                )}
+              </div>
+            </div>
+
+            <div className="collectionModal__actions">
+              <button
+                type="button"
+                className="btn"
+                onClick={closeQuickSellModal}
+                disabled={quickSellModal.submitting}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={confirmQuickSell}
+                disabled={quickSellModal.submitting}
+              >
+                {quickSellModal.submitting ? "Vente..." : "Confirmer la vente"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
