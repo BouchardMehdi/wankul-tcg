@@ -9,6 +9,8 @@ import { MarketPricingService } from './market-pricing.service';
 import { MarketService } from './market.service';
 import { MarketListing } from './market-listing.entity';
 import { MarketTransaction } from './market-transaction.entity';
+import { MarketPriceHistory } from './market-price-history.entity';
+import { MarketPriceHistoryService } from './market-price-history.service';
 
 @Module({
   imports: [
@@ -18,10 +20,11 @@ import { MarketTransaction } from './market-transaction.entity';
       UserEconomy,
       MarketListing,
       MarketTransaction,
+      MarketPriceHistory,
     ]),
   ],
   controllers: [MarketController],
-  providers: [MarketPricingService, MarketService],
-  exports: [MarketPricingService, MarketService],
+  providers: [MarketPricingService, MarketPriceHistoryService, MarketService],
+  exports: [MarketPricingService, MarketPriceHistoryService, MarketService],
 })
 export class MarketModule {}

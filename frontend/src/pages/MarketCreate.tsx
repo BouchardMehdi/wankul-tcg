@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import "../styles.css";
 import "../styles/MarketCreate.css";
 
 import AppNavbar from "../components/AppNavbar";
+import MarketPriceChart from "../components/MarketPriceChart";
 import { fetchAllCards, type CardDto } from "../api/cards";
 import {
   createMarketListing,
@@ -13,10 +14,6 @@ import {
   type MarketOfferType,
   type SellableCardRow,
 } from "../api/market";
-import {
-  clearMarketCreateSelectedCardId,
-  readMarketCreateSelectedCardId,
-} from "../utils/marketCreateSelection";
 
 type FormState = {
   cardId: string;
@@ -100,8 +97,6 @@ function formatOfferType(offerType: MarketOfferType) {
 }
 
 export default function MarketCreate() {
-  const location = useLocation();
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -132,39 +127,20 @@ export default function MarketCreate() {
           fetchAllCards(),
         ]);
 
-        const sellableRows = sellable ?? [];
         const sortedCards = sortCards(cards ?? []);
 
-        setSellableCards(sellableRows);
+        setSellableCards(sellable ?? []);
         setAllCards(sortedCards);
         setCardImageMap(buildCardImageMap(sortedCards));
 
-        const stateCardId = Number((location.state as any)?.marketSelectedCardId ?? 0);
-        const storageCardId = readMarketCreateSelectedCardId() ?? 0;
-
-        const preferredCardId =
-          Number.isInteger(stateCardId) && stateCardId > 0
-            ? stateCardId
-            : Number.isInteger(storageCardId) && storageCardId > 0
-            ? storageCardId
-            : Number(sellableRows?.[0]?.cardId ?? 0);
-
-        const selectedSellable =
-          sellableRows.find((row) => row.cardId === preferredCardId) ?? sellableRows?.[0] ?? null;
-
-        if (selectedSellable) {
+        if (sellable?.[0]) {
           setForm((prev) => ({
             ...prev,
-            cardId: String(selectedSellable.cardId),
+            cardId: String(sellable[0].cardId),
             quantity: "1",
-            priceCredits:
-              prev.cardId && Number(prev.cardId) === selectedSellable.cardId
-                ? prev.priceCredits || String(selectedSellable.marketPrice)
-                : String(selectedSellable.marketPrice),
+            priceCredits: String(sellable[0].marketPrice),
           }));
         }
-
-        clearMarketCreateSelectedCardId();
       } catch (e: any) {
         setError(e?.message || "Impossible de charger le formulaire de vente.");
       } finally {
@@ -173,7 +149,7 @@ export default function MarketCreate() {
     }
 
     load();
-  }, [location.state]);
+  }, []);
 
   const selectedSellable = useMemo(() => {
     const cardId = Number(form.cardId);
@@ -346,59 +322,60 @@ export default function MarketCreate() {
         {!loading && !error && (
           <div className="marketCreateLayout">
             <form className="marketCreateForm" onSubmit={handleSubmit}>
-              <div className="marketCreatePickCard">
-                <div className="marketCreatePickCard__head">
-                  <span>Carte à vendre</span>
-                  <Link
-                    className="marketCreateBtn marketCreateBtn--secondary"
-                    to="/collection?selectForMarket=1"
-                    state={{ returnTo: "/market/create" }}
-                  >
-                    Choisir dans ma collection
-                  </Link>
-                </div>
+              <label className="marketCreateField">
+                <span>Carte à vendre</span>
+                <select
+                  value={form.cardId}
+                  onChange={(e) => updateField("cardId", e.target.value)}
+                >
+                  {sellableCards.map((card) => (
+                    <option key={card.cardId} value={card.cardId}>
+                      #{card.cardId} • {card.cardName} • {card.rarity} • vendable : {card.sellableQuantity}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-                {selectedSellable ? (
-                  <div className="marketCreateSelectedCard">
-                    <div className="marketCreateSelectedCard__image">
-                      {selectedCardImage ? (
-                        <img src={selectedCardImage} alt={selectedSellable.cardName} />
-                      ) : (
-                        <div className="marketCreateSummary__placeholder">
-                          Aucune image
-                        </div>
-                      )}
-                    </div>
+              {selectedSellable && (
+                <div className="marketCreateSelectedCard">
+                  <div className="marketCreateSelectedCard__image">
+                    {selectedCardImage ? (
+                      <img src={selectedCardImage} alt={selectedSellable.cardName} />
+                    ) : (
+                      <div className="marketCreateSummary__placeholder">Aucune image</div>
+                    )}
+                  </div>
 
-                    <div className="marketCreateSelectedCard__content">
-                      <strong>{selectedSellable.cardName}</strong>
-                      <span>
-                        {selectedSellable.rarity} • {selectedSellable.season ?? "—"}
-                      </span>
-                      <span>ID BDD : #{selectedSellable.cardId}</span>
+                  <div className="marketCreateSelectedCard__content">
+                    <strong>{selectedSellable.cardName}</strong>
+                    <span>
+                      {selectedSellable.rarity} • {selectedSellable.season ?? "—"} • {selectedSellable.type ?? "—"}
+                    </span>
 
-                      <div className="marketCreateSelectedCard__meta">
-                        <div>
-                          <small>Possédées</small>
-                          <b>{selectedSellable.totalQuantity}</b>
-                        </div>
-                        <div>
-                          <small>Vendables</small>
-                          <b>{selectedSellable.sellableQuantity}</b>
-                        </div>
-                        <div>
-                          <small>Prix du marché</small>
-                          <b>{selectedSellable.marketPrice}</b>
-                        </div>
+                    <div className="marketCreateSelectedCard__meta">
+                      <div>
+                        <small>Possédées</small>
+                        <b>{selectedSellable.totalQuantity}</b>
+                      </div>
+                      <div>
+                        <small>Vendables</small>
+                        <b>{selectedSellable.sellableQuantity}</b>
+                      </div>
+                      <div>
+                        <small>Prix marché</small>
+                        <b>{selectedSellable.marketPrice}</b>
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="marketCreateNoCard">
-                    Aucune carte vendable sélectionnée.
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {selectedSellable && (
+                <MarketPriceChart
+                  cardId={selectedSellable.cardId}
+                  title="Historique du prix de la carte"
+                />
+              )}
 
               <div className="marketCreateGrid">
                 <label className="marketCreateField">
@@ -409,7 +386,6 @@ export default function MarketCreate() {
                     max={Math.max(1, maxQuantity)}
                     value={form.quantity}
                     onChange={(e) => updateField("quantity", e.target.value)}
-                    disabled={!selectedSellable}
                   />
                 </label>
 
@@ -420,7 +396,6 @@ export default function MarketCreate() {
                     onChange={(e) =>
                       updateField("listingMode", e.target.value as MarketListingMode)
                     }
-                    disabled={!selectedSellable}
                   >
                     <option value="UNIT">À l’unité</option>
                     <option value="LOT">En lot</option>
@@ -434,7 +409,6 @@ export default function MarketCreate() {
                     onChange={(e) =>
                       updateField("offerType", e.target.value as MarketOfferType)
                     }
-                    disabled={!selectedSellable}
                   >
                     <option value="CREDITS_ONLY">Crédits uniquement</option>
                     <option value="CARD_ONLY">Échange de carte</option>
@@ -453,7 +427,7 @@ export default function MarketCreate() {
                     min={0}
                     value={form.priceCredits}
                     onChange={(e) => updateField("priceCredits", e.target.value)}
-                    disabled={!selectedSellable || form.offerType === "CARD_ONLY"}
+                    disabled={form.offerType === "CARD_ONLY"}
                   />
                 </label>
               </div>
@@ -468,7 +442,6 @@ export default function MarketCreate() {
                       <select
                         value={form.wantedCardId}
                         onChange={(e) => updateField("wantedCardId", e.target.value)}
-                        disabled={!selectedSellable}
                       >
                         <option value="">Choisir une carte</option>
                         {allCards
@@ -494,7 +467,6 @@ export default function MarketCreate() {
                         onChange={(e) =>
                           updateField("wantedCardQuantity", e.target.value)
                         }
-                        disabled={!selectedSellable}
                       />
                     </label>
                   </div>
@@ -502,11 +474,7 @@ export default function MarketCreate() {
               )}
 
               <div className="marketCreateActions">
-                <button
-                  type="submit"
-                  className="marketCreateBtn"
-                  disabled={saving || !selectedSellable}
-                >
+                <button type="submit" className="marketCreateBtn" disabled={saving}>
                   {saving ? "Création..." : "Créer l’annonce"}
                 </button>
               </div>

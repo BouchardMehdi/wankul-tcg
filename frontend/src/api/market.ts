@@ -12,6 +12,19 @@ export type MarketPricePosition =
   | "ABOVE_MARKET"
   | "NOT_COMPARABLE";
 
+export type MarketPriceHistoryRange = "2H" | "7D" | "1M" | "6M" | "1Y";
+
+export type MarketPriceHistoryPoint = {
+  timestamp: string;
+  price: number;
+};
+
+export type MarketPriceHistoryResponse = {
+  cardId: number;
+  range: MarketPriceHistoryRange;
+  points: MarketPriceHistoryPoint[];
+};
+
 export type SellableCardRow = {
   cardId: number;
   cardKey: string;
@@ -132,7 +145,7 @@ export type GetListingsParams = {
   limit?: number;
 };
 
-function buildQuery(params: GetListingsParams = {}) {
+function buildQuery(params: Record<string, string | number | undefined | null>) {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
@@ -231,4 +244,16 @@ export async function getMyMarketSales(): Promise<MarketTransactionRow[]> {
   return apiFetch("/market/transactions/me/sales", {
     method: "GET",
   });
+}
+
+export async function getMarketCardPriceHistory(
+  cardId: number,
+  range: MarketPriceHistoryRange,
+): Promise<MarketPriceHistoryResponse> {
+  return apiFetch(
+    `/market/cards/${cardId}/price-history${buildQuery({ range })}`,
+    {
+      method: "GET",
+    },
+  );
 }

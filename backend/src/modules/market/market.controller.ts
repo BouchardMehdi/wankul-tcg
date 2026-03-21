@@ -18,6 +18,8 @@ import { QuickSellDto } from './dto/quick-sell.dto';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { BuyListingDto } from './dto/buy-listing.dto';
 import { ListMarketListingsQueryDto } from './dto/list-market-listings-query.dto';
+import { GetMarketPriceHistoryDto } from './dto/get-market-price-history.dto';
+import { MarketPriceHistoryService } from './market-price-history.service';
 
 type CurrentAuthUser = {
   sub?: number;
@@ -27,11 +29,24 @@ type CurrentAuthUser = {
 
 @Controller('market')
 export class MarketController {
-  constructor(private readonly marketService: MarketService) {}
+  constructor(
+    private readonly marketService: MarketService,
+    private readonly marketPriceHistoryService: MarketPriceHistoryService,
+  ) {}
 
   @Get('price/:cardId')
   async getMarketPrice(@Param('cardId', ParseIntPipe) cardId: number) {
     return this.marketService.getMarketPrice(cardId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('cards/:cardId/price-history')
+  async getCardPriceHistory(
+    @Param('cardId', ParseIntPipe) cardId: number,
+    @Query(new ValidationPipe({ transform: true, whitelist: true }))
+    query: GetMarketPriceHistoryDto,
+  ) {
+    return this.marketPriceHistoryService.getHistory(cardId, query);
   }
 
   @UseGuards(JwtAuthGuard)

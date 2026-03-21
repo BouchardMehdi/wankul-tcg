@@ -10,6 +10,7 @@ import { UserCard } from '../users/user-card.entity';
 import { UserEconomy } from '../economy/user-economy.entity';
 import { Card } from '../cards/card.entity';
 import { MarketPricingService } from './market-pricing.service';
+import { MarketPriceHistoryService } from './market-price-history.service';
 import {
   MARKET_KEEP_MIN_COPIES,
   QUICK_SELL_RATE,
@@ -55,6 +56,7 @@ export class MarketService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly marketPricingService: MarketPricingService,
+    private readonly marketPriceHistoryService: MarketPriceHistoryService,
 
     @InjectRepository(UserCard)
     private readonly userCardsRepository: Repository<UserCard>,
@@ -154,7 +156,7 @@ export class MarketService {
       Math.round(pricing.finalPrice * QUICK_SELL_RATE),
     );
 
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const userCardRepo = manager.getRepository(UserCard);
       const userEconomyRepo = manager.getRepository(UserEconomy);
       const cardRepo = manager.getRepository(Card);
@@ -219,21 +221,24 @@ export class MarketService {
       await userEconomyRepo.save(economy);
 
       return {
-        success: true,
-        cardId: card.id,
-        cardKey: card.key,
-        cardName: card.name,
-        rarity: card.rarity,
-        soldQuantity: quantity,
-        marketPrice: pricing.finalPrice,
-        quickSellRate: QUICK_SELL_RATE,
-        creditsEarned,
-        remainingQuantity: userCard.quantity,
-        keptQuantity: MARKET_KEEP_MIN_COPIES,
-        maxSellableQuantity,
-        newCreditsBalance: economy.credits,
-      };
+      success: true as const,
+      cardId: card.id,
+      cardKey: card.key,
+      cardName: card.name,
+      rarity: card.rarity,
+      soldQuantity: quantity,
+      marketPrice: pricing.finalPrice,
+      quickSellRate: QUICK_SELL_RATE,
+      creditsEarned,
+      remainingQuantity: userCard.quantity,
+      keptQuantity: MARKET_KEEP_MIN_COPIES,
+      maxSellableQuantity,
+      newCreditsBalance: economy.credits,
+  };
     });
+
+    await this.snapshotCards([cardId], 'quick_sell');
+    return result;
   }
 
   async createListing(userId: number, input: CreateListingInput) {
@@ -280,7 +285,7 @@ export class MarketService {
       wantedCardMarketPriceSnapshot = wantedCardPricing.finalPrice;
     }
 
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const userCardRepo = manager.getRepository(UserCard);
       const listingRepo = manager.getRepository(MarketListing);
 
@@ -362,6 +367,15 @@ export class MarketService {
         },
       };
     });
+
+    await this.snapshotCards(
+      [normalized.cardId, normalized.wantedCardId].filter(
+        (value): value is number => typeof value === 'number',
+      ),
+      'listing_created',
+    );
+
+    return result;
   }
 
   async getActiveListings(query: ListMarketListingsQueryDto) {
@@ -427,7 +441,7 @@ export class MarketService {
   }
 
   async cancelListing(userId: number, listingId: number) {
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const listingRepo = manager.getRepository(MarketListing);
       const userCardRepo = manager.getRepository(UserCard);
 
@@ -483,11 +497,28 @@ export class MarketService {
       return {
         success: true,
         listingId: listing.id,
+        cardId: listing.card.id,
+        wantedCardId: listing.wantedCard?.id ?? null,
         status: listing.status,
         unlockedQuantity,
         closedAt: listing.closedAt,
       };
     });
+
+    await this.snapshotCards(
+      [result.cardId, result.wantedCardId].filter(
+        (value): value is number => typeof value === 'number',
+      ),
+      'listing_cancelled',
+    );
+
+    return {
+      success: true,
+      listingId: result.listingId,
+      status: result.status,
+      unlockedQuantity: result.unlockedQuantity,
+      closedAt: result.closedAt,
+    };
   }
 
   async buyListing(userId: number, listingId: number, dto: BuyListingDto) {
@@ -495,7 +526,7 @@ export class MarketService {
       throw new BadRequestException('Quantity must be at least 1.');
     }
 
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const listingRepo = manager.getRepository(MarketListing);
       const userCardRepo = manager.getRepository(UserCard);
       const userEconomyRepo = manager.getRepository(UserEconomy);
@@ -694,8 +725,8 @@ export class MarketService {
         listing.offerType === MarketOfferType.CREDITS_ONLY
           ? MarketTransactionType.CREDITS_SALE
           : listing.offerType === MarketOfferType.CARD_ONLY
-          ? MarketTransactionType.CARD_TRADE
-          : MarketTransactionType.CARD_AND_CREDITS_TRADE;
+            ? MarketTransactionType.CARD_TRADE
+            : MarketTransactionType.CARD_AND_CREDITS_TRADE;
 
       const transaction = transactionRepo.create({
         listing,
@@ -722,6 +753,10 @@ export class MarketService {
 
       return {
         success: true,
+        snapshotCardIds: [
+          listing.card.id,
+          buyerOfferedCard?.id ?? null,
+        ].filter((value): value is number => typeof value === 'number'),
         listing: {
           id: listing.id,
           status: listing.status,
@@ -759,10 +794,20 @@ export class MarketService {
           : null,
       };
     });
+
+    await this.snapshotCards(result.snapshotCardIds, 'listing_bought');
+
+    return {
+      success: result.success,
+      listing: result.listing,
+      settlement: result.settlement,
+      transaction: result.transaction,
+      balances: result.balances,
+    };
   }
 
   async claimTransactionReward(userId: number, transactionId: number) {
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const transactionRepo = manager.getRepository(MarketTransaction);
       const userEconomyRepo = manager.getRepository(UserEconomy);
       const userCardRepo = manager.getRepository(UserCard);
@@ -845,6 +890,10 @@ export class MarketService {
 
       return {
         success: true,
+        snapshotCardIds: [
+          transaction.card.id,
+          transaction.buyerOfferedCard?.id ?? null,
+        ].filter((value): value is number => typeof value === 'number'),
         transactionId: transaction.id,
         claimedAt: transaction.sellerRewardClaimedAt,
         rewards: {
@@ -858,6 +907,16 @@ export class MarketService {
         },
       };
     });
+
+    await this.snapshotCards(result.snapshotCardIds, 'reward_claimed');
+
+    return {
+      success: result.success,
+      transactionId: result.transactionId,
+      claimedAt: result.claimedAt,
+      rewards: result.rewards,
+      balances: result.balances,
+    };
   }
 
   async getMyTransactions(userId: number) {
@@ -1215,5 +1274,22 @@ export class MarketService {
         : transaction.buyerOfferedCardQuantity,
       createdAt: transaction.createdAt,
     };
+  }
+
+  private async snapshotCards(cardIds: number[], sourceLabel: string) {
+    const uniqueCardIds = Array.from(new Set(cardIds)).filter(
+      (value) => Number.isInteger(value) && value > 0,
+    );
+
+    await Promise.all(
+      uniqueCardIds.map(async (cardId) => {
+        const pricing = await this.marketPricingService.getMarketPrice(cardId);
+        await this.marketPriceHistoryService.recordSnapshot(
+          cardId,
+          pricing.finalPrice,
+          sourceLabel,
+        );
+      }),
+    );
   }
 }

@@ -4,6 +4,7 @@ import "../styles.css";
 import "../styles/Collection.css";
 
 import AppNavbar from "../components/AppNavbar";
+import MarketPriceChart from "../components/MarketPriceChart";
 
 import { fetchAllCards, type CardDto } from "../api/cards";
 import { fetchOwnedCollection, type OwnedCardRow } from "../api/collection";
@@ -943,6 +944,12 @@ export default function Collection() {
                     <strong>{quickSellUnitPrice}</strong>
                   </div>
                 </div>
+
+                <MarketPriceChart
+                  cardId={quickSellModal.sellable.cardId}
+                  title="Historique du prix du marché"
+                  compact
+                />
 
                 <label className="collectionModal__field">
                   <span>Quantité à vendre</span>
