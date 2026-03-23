@@ -1,6 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
+type SendBugReportInput = {
+  reportId: number;
+  username: string;
+  email: string;
+  category: string;
+  page: string;
+  feature: string;
+  priority: string;
+  description: string;
+  reproductionSteps?: string;
+  currentUrl?: string;
+  browserInfo?: string;
+  screenshotUrl?: string;
+  reportedAt: Date;
+};
+
 @Injectable()
 export class MailService {
   private transporter = nodemailer.createTransport({
@@ -46,6 +62,46 @@ Voici ton code de réinitialisation : ${code}
 Il expire dans 15 minutes.
 
 Si tu n'es pas à l'origine de cette demande, tu peux ignorer cet email.`,
+    });
+  }
+
+  async sendBugReport(input: SendBugReportInput) {
+    const from = process.env.MAIL_FROM ?? 'no-reply@wankul.local';
+    const supportEmail =
+      process.env.SUPPORT_EMAIL ??
+      process.env.MAIL_TO ??
+      process.env.MAIL_FROM ??
+      'no-reply@wankul.local';
+
+    const lines = [
+      `Nouveau signalement Wankul`,
+      ``,
+      `Ticket #${input.reportId}`,
+      `Utilisateur : ${input.username}`,
+      `Email : ${input.email}`,
+      `Catégorie : ${input.category}`,
+      `Page : ${input.page}`,
+      `Fonction : ${input.feature}`,
+      `Priorité : ${input.priority}`,
+      `Date : ${input.reportedAt.toISOString()}`,
+      ``,
+      `Description :`,
+      input.description,
+      ``,
+      `Étapes pour reproduire :`,
+      input.reproductionSteps?.trim() || 'Non renseigné',
+      ``,
+      `URL : ${input.currentUrl?.trim() || 'Non renseignée'}`,
+      `Navigateur : ${input.browserInfo?.trim() || 'Non renseigné'}`,
+      `Capture : ${input.screenshotUrl?.trim() || 'Aucune'}`,
+    ];
+
+    await this.transporter.sendMail({
+      from,
+      to: supportEmail,
+      replyTo: input.email,
+      subject: `[Wankul] Ticket #${input.reportId} - ${input.priority} - ${input.page} - ${input.feature}`,
+      text: lines.join('\n'),
     });
   }
 }

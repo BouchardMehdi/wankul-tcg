@@ -12,6 +12,8 @@ import { AuthService } from './auth.service';
 import { User } from '../users/user.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { EconomyModule } from '../economy/economy.module';
+import { BugReport } from '../report/bug-report.entity';
+import { BugReportStatusHistory } from '../report/bug-report-status-history.entity';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { EconomyModule } from '../economy/economy.module';
     UsersModule,
     MailModule,
     EconomyModule,
+    TypeOrmModule.forFeature([User, BugReport, BugReportStatusHistory]),
 
     // ✅ enregistre passport
     PassportModule.register({ defaultStrategy: 'jwt' }),

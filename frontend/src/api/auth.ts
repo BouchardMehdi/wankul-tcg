@@ -34,6 +34,57 @@ export type ResetPasswordDto = {
   newPassword: string;
 };
 
+export type BugReportStatus =
+  | 'open'
+  | 'investigating'
+  | 'planned'
+  | 'fixed'
+  | 'closed'
+  | 'rejected';
+
+export type ReportBugDto = {
+  category: 'bug' | 'visual' | 'performance' | 'market' | 'opening' | 'collection' | 'auth' | 'other';
+  page: string;
+  feature: string;
+  priority: 'minor' | 'medium' | 'high' | 'blocking';
+  description: string;
+  reproductionSteps?: string;
+  currentUrl?: string;
+  browserInfo?: string;
+  screenshotDataUrl?: string;
+  screenshotFilename?: string;
+};
+
+export type BugReportHistoryItem = {
+  id: number;
+  fromStatus: string | null;
+  toStatus: BugReportStatus;
+  note: string | null;
+  changedBy: string;
+  changedAt: string;
+};
+
+export type BugReportListItem = {
+  id: number;
+  category: string;
+  page: string;
+  feature: string;
+  priority: string;
+  description: string;
+  reproductionSteps: string | null;
+  currentUrl: string | null;
+  browserInfo: string | null;
+  screenshotUrl: string | null;
+  status: BugReportStatus;
+  resolutionNote: string | null;
+  treatedAt: string | null;
+  fixedAt: string | null;
+  closedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  histories: BugReportHistoryItem[];
+};
+
 export async function login(dto: LoginDto) {
   return apiFetch<LoginResponse>('/auth/login', {
     method: 'POST',
@@ -79,5 +130,18 @@ export async function resetPassword(dto: ResetPasswordDto) {
     method: 'POST',
     body: dto,
     auth: false,
+  });
+}
+
+export async function reportBug(dto: ReportBugDto) {
+  return apiFetch<{ message?: string; reportId?: number }>('/auth/report-bug', {
+    method: 'POST',
+    body: dto,
+  });
+}
+
+export async function getMyBugReports() {
+  return apiFetch<{ items: BugReportListItem[] }>('/auth/my-bug-reports', {
+    method: 'GET',
   });
 }

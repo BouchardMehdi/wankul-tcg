@@ -139,6 +139,370 @@
   justify-content: flex-end;
 }
 
+.settingsSupportCard {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025)),
+    rgba(255,255,255,0.03);
+}
+
+.settingsSupportCard__top,
+.settingsReportsHistory__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settingsSupportCard__title {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.settingsSupportCard__desc {
+  margin-top: 6px;
+  color: rgba(255,255,255,0.72);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.settingsSupportToggle {
+  flex: 0 0 auto;
+}
+
+.settingsReportForm {
+  display: grid;
+  gap: 16px;
+}
+
+.settingsReportGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.settingsReportGrid--identity input {
+  opacity: 0.92;
+}
+
+.settingsReportField {
+  display: grid;
+  gap: 6px;
+}
+
+.settingsReportField label {
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.86);
+}
+
+.settingsReportField input,
+.settingsReportField select,
+.settingsReportField textarea {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(10, 16, 34, 0.92);
+  color: #fff;
+  padding: 12px 14px;
+  outline: none;
+  font: inherit;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+}
+
+.settingsReportField input,
+.settingsReportField select {
+  min-height: 46px;
+}
+
+.settingsReportField textarea {
+  min-height: 110px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.settingsReportField input:focus,
+.settingsReportField select:focus,
+.settingsReportField textarea:focus {
+  border-color: rgba(120, 190, 255, 0.85);
+  box-shadow:
+    0 0 0 3px rgba(120, 190, 255, 0.18),
+    0 10px 24px rgba(0, 0, 0, 0.16);
+}
+
+.settingsReportAttachment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+}
+
+.settingsAttachmentRemove {
+  border: 0;
+}
+
+.settingsReportFeedback {
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.settingsReportFeedback--success {
+  border: 1px solid rgba(86, 214, 144, 0.25);
+  background: rgba(86, 214, 144, 0.12);
+  color: #d9ffe9;
+}
+
+.settingsReportFeedback--error {
+  border: 1px solid rgba(255, 97, 123, 0.28);
+  background: rgba(255, 97, 123, 0.12);
+  color: #ffd9df;
+}
+
+.settingsReportActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settingsReportSubmit {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, #ff4d6d, #9b5cff);
+  box-shadow: 0 16px 40px rgba(255,77,109,0.20);
+}
+
+.settingsReportSubmit:hover {
+  filter: brightness(1.06);
+}
+
+.settingsReportsHistory {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.settingsReportsEmpty {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.74);
+}
+
+.settingsReportsList {
+  display: grid;
+  gap: 12px;
+}
+
+.settingsTicketCard {
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  overflow: hidden;
+}
+
+.settingsTicketCard__top {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+  padding: 16px 18px;
+}
+
+.settingsTicketCard__main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.settingsTicketCard__line1 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.settingsTicketCard__line2 {
+  margin-top: 8px;
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+}
+
+.settingsTicketCard__id {
+  font-weight: 900;
+  font-size: 15px;
+}
+
+.settingsTicketCard__toggle {
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.settingsTicketCard__body {
+  display: grid;
+  gap: 16px;
+  padding: 0 18px 18px;
+}
+
+.settingsTicketMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 14px;
+}
+
+.settingsTicketBlock {
+  display: grid;
+  gap: 8px;
+}
+
+.settingsTicketBlock__title {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.settingsTicketBlock__content {
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  line-height: 1.55;
+}
+
+.settingsTicketBlock__content--pre {
+  white-space: pre-wrap;
+}
+
+.settingsTicketScreenshotLink {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 10px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.settingsTimeline {
+  display: grid;
+  gap: 12px;
+}
+
+.settingsTimelineItem {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.settingsTimelineItem__dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff4d6d, #9b5cff);
+  box-shadow: 0 0 0 4px rgba(155, 92, 255, 0.12);
+}
+
+.settingsTimelineItem__content {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.settingsTimelineItem__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.settingsTimelineItem__date,
+.settingsTimelineItem__by {
+  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+}
+
+.settingsTimelineItem__note {
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.settingsStatusBadge,
+.settingsPriorityBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,0.08);
+  text-transform: uppercase;
+}
+
+.settingsStatusBadge.is-open {
+  background: rgba(255,255,255,0.08);
+}
+
+.settingsStatusBadge.is-investigating {
+  background: rgba(90, 170, 255, 0.18);
+}
+
+.settingsStatusBadge.is-planned {
+  background: rgba(180, 120, 255, 0.18);
+}
+
+.settingsStatusBadge.is-fixed {
+  background: rgba(86, 214, 144, 0.18);
+}
+
+.settingsStatusBadge.is-closed {
+  background: rgba(255,255,255,0.12);
+}
+
+.settingsStatusBadge.is-rejected {
+  background: rgba(255, 97, 123, 0.18);
+}
+
+.settingsPriorityBadge.is-minor {
+  background: rgba(255,255,255,0.08);
+}
+
+.settingsPriorityBadge.is-medium {
+  background: rgba(255, 204, 102, 0.18);
+}
+
+.settingsPriorityBadge.is-high,
+.settingsPriorityBadge.is-blocking {
+  background: rgba(255, 97, 123, 0.18);
+}
+
 .settingsDangerZone {
   margin-top: 26px;
   padding-top: 20px;
@@ -208,6 +572,26 @@
   .settingsSelect {
     width: 100%;
     min-width: 0;
+  }
+
+  .settingsSupportCard__top,
+  .settingsReportsHistory__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settingsReportGrid,
+  .settingsTicketMetaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .settingsReportActions {
+    justify-content: stretch;
+  }
+
+  .settingsReportSubmit,
+  .settingsSupportToggle {
+    width: 100%;
   }
 
   .settingsFooter {
