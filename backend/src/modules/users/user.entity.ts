@@ -17,7 +17,6 @@ export class User {
   @CreateDateColumn()
   createdAt!: Date;
 
-  // ✅ Email verification
   @Column({ default: false })
   emailVerified!: boolean;
 
@@ -26,4 +25,10 @@ export class User {
 
   @Column({ type: 'datetime', nullable: true })
   emailVerificationExpiresAt!: Date | null;
+
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  passwordResetCodeHash!: string | null;
+
+  @Column({ type: 'datetime', nullable: true })
+  passwordResetExpiresAt!: Date | null;
 }

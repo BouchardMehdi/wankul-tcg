@@ -31,8 +31,6 @@ export default function Login() {
       if (!token) throw new Error("Token manquant dans la réponse du serveur");
 
       setToken(token);
-
-      // ✅ redirection directe
       navigate("/menu", { replace: true });
     } catch (err: any) {
       setError(err?.message || "Erreur inconnue");
@@ -67,11 +65,21 @@ export default function Login() {
             />
           </div>
 
-          {error && <p className="error-text">{error}</p>}
+          <div className="auth-actions-row">
+            <button type="submit" className="btn-primary">
+              Se connecter
+            </button>
 
-          <button type="submit" className="btn-primary">
-            Se connecter
-          </button>
+            <button
+              type="button"
+              className="btn-link"
+              onClick={() => navigate("/forgot-password")}
+            >
+              Mot de passe oublié ?
+            </button>
+          </div>
+
+          {error && <p className="error-text">{error}</p>}
         </form>
 
         <p className="auth-link">

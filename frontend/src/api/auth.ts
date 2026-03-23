@@ -24,8 +24,17 @@ export type VerifyEmailDto = {
   code: string;
 };
 
+export type ForgotPasswordDto = {
+  identifier: string;
+};
+
+export type ResetPasswordDto = {
+  identifier: string;
+  code: string;
+  newPassword: string;
+};
+
 export async function login(dto: LoginDto) {
-  // ✅ doit correspondre à ton backend: POST /api/auth/login
   return apiFetch<LoginResponse>('/auth/login', {
     method: 'POST',
     body: dto,
@@ -51,6 +60,22 @@ export async function verifyEmail(dto: VerifyEmailDto) {
 
 export async function resendVerification(dto: { username: string }) {
   return apiFetch<SimpleMessage>('/auth/resend-verification', {
+    method: 'POST',
+    body: dto,
+    auth: false,
+  });
+}
+
+export async function forgotPassword(dto: ForgotPasswordDto) {
+  return apiFetch<SimpleMessage>('/auth/forgot-password', {
+    method: 'POST',
+    body: dto,
+    auth: false,
+  });
+}
+
+export async function resetPassword(dto: ResetPasswordDto) {
+  return apiFetch<SimpleMessage>('/auth/reset-password', {
     method: 'POST',
     body: dto,
     auth: false,

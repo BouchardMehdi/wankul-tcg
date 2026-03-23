@@ -5,6 +5,7 @@ import { useAuth } from "./auth/AuthContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import Menu from "./pages/Menu";
 import Collection from "./pages/Collection";
 import Booster from "./pages/Booster";
@@ -45,6 +46,12 @@ export default function App() {
         path="/register"
         element={
           isAuthenticated ? <Navigate to="/menu" replace /> : <Register />
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          isAuthenticated ? <Navigate to="/menu" replace /> : <ForgotPassword />
         }
       />
 
@@ -115,9 +122,7 @@ export default function App() {
 
       <Route
         path="*"
-        element={
-          <Navigate to={isAuthenticated ? "/menu" : "/"} replace />
-        }
+        element={<Navigate to={isAuthenticated ? "/menu" : "/"} replace />}
       />
     </Routes>
   );
