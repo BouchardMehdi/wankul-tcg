@@ -227,6 +227,7 @@ const STATUS_LABELS: Record<BugReportStatus, string> = {
 };
 
 const MAX_SCREENSHOT_SIZE = 4 * 1024 * 1024;
+const PLAYER_REPORTS_PAGE_SIZE = 5;
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -277,11 +278,19 @@ export default function Settings() {
   const [historyError, setHistoryError] = useState("");
   const [reportHistory, setReportHistory] = useState<BugReportListItem[]>([]);
   const [expandedReportId, setExpandedReportId] = useState<number | null>(null);
+  const [reportStatusFilter, setReportStatusFilter] = useState<string>("");
+  const [historyPagination, setHistoryPagination] = useState({
+    page: 1,
+    pageSize: PLAYER_REPORTS_PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
 
   useEffect(() => subscribeAppSettings(() => setSettings(readAppSettings())), []);
 
   useEffect(() => {
-    loadBugReports().catch(() => {});
+    loadBugReports(1, reportStatusFilter).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const enabledCount = useMemo(
@@ -306,15 +315,26 @@ export default function Settings() {
   const currentUsername = user?.username ?? me?.username ?? "";
   const currentEmail = user?.email ?? me?.email ?? "";
 
-  async function loadBugReports() {
+  async function loadBugReports(nextPage = historyPagination.page, nextStatus = reportStatusFilter) {
     setHistoryLoading(true);
     setHistoryError("");
     try {
-      const res = await getMyBugReports();
+      const res = await getMyBugReports({
+        status: nextStatus || undefined,
+        page: nextPage,
+        pageSize: PLAYER_REPORTS_PAGE_SIZE,
+      });
+
       setReportHistory(res.items ?? []);
-      if ((res.items ?? []).length > 0 && expandedReportId == null) {
-        setExpandedReportId(res.items[0].id);
-      }
+      setHistoryPagination(
+        res.pagination ?? {
+          page: 1,
+          pageSize: PLAYER_REPORTS_PAGE_SIZE,
+          total: 0,
+          totalPages: 1,
+        },
+      );
+      setExpandedReportId(null);
     } catch (err: any) {
       setHistoryError(err?.message || "Impossible de charger l'historique.");
     } finally {
@@ -410,12 +430,21 @@ export default function Settings() {
       setReportFeature("Paramètres");
       setReportPriority("medium");
 
-      await loadBugReports();
+      await loadBugReports(1, reportStatusFilter);
     } catch (err: any) {
       setReportError(err?.message || "Impossible d'envoyer le signalement.");
     } finally {
       setReportSubmitting(false);
     }
+  }
+
+  function handlePlayerStatusFilterChange(value: string) {
+    setReportStatusFilter(value);
+    loadBugReports(1, value).catch(() => {});
+  }
+
+  function goToHistoryPage(nextPage: number) {
+    loadBugReports(nextPage, reportStatusFilter).catch(() => {});
   }
 
   function renderRow(row: SettingRow) {
@@ -680,18 +709,36 @@ export default function Settings() {
                       <div>
                         <div className="settingsSupportCard__title">Historique de tes signalements</div>
                         <div className="settingsSupportCard__desc">
-                          Tu peux suivre ici l’état de traitement de tes tickets.
+                          Les reports corrigés et rejetés sont masqués par défaut pour garder un affichage plus lisible.
                         </div>
                       </div>
 
                       <button
                         type="button"
                         className="btn settingsSupportToggle"
-                        onClick={() => loadBugReports()}
+                        onClick={() => loadBugReports(historyPagination.page, reportStatusFilter)}
                         disabled={historyLoading}
                       >
                         {historyLoading ? "Actualisation..." : "Actualiser"}
                       </button>
+                    </div>
+
+                    <div className="settingsPlayerFiltersBar">
+                      <label className="settingsReportField">
+                        <label>Filtrer par statut</label>
+                        <select
+                          value={reportStatusFilter}
+                          onChange={(e) => handlePlayerStatusFilterChange(e.target.value)}
+                        >
+                          <option value="">Actifs et utiles</option>
+                          <option value="open">Ouvert</option>
+                          <option value="investigating">En analyse</option>
+                          <option value="planned">Planifié</option>
+                          <option value="closed">Clos</option>
+                          <option value="fixed">Corrigé</option>
+                          <option value="rejected">Rejeté</option>
+                        </select>
+                      </label>
                     </div>
 
                     {historyError ? (
@@ -702,7 +749,7 @@ export default function Settings() {
 
                     {!historyLoading && reportHistory.length === 0 ? (
                       <div className="settingsReportsEmpty">
-                        Aucun signalement pour le moment.
+                        Aucun signalement pour ce filtre.
                       </div>
                     ) : null}
 
@@ -828,6 +875,37 @@ export default function Settings() {
                           </div>
                         );
                       })}
+                    </div>
+
+                    <div className="settingsPlayerPagination">
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => goToHistoryPage(Math.max(1, historyPagination.page - 1))}
+                        disabled={historyLoading || historyPagination.page <= 1}
+                      >
+                        Précédent
+                      </button>
+
+                      <div className="settingsPlayerPagination__info">
+                        Page <b>{historyPagination.page}</b> / <b>{historyPagination.totalPages}</b>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() =>
+                          goToHistoryPage(
+                            Math.min(historyPagination.totalPages, historyPagination.page + 1),
+                          )
+                        }
+                        disabled={
+                          historyLoading ||
+                          historyPagination.page >= historyPagination.totalPages
+                        }
+                      >
+                        Suivant
+                      </button>
                     </div>
                   </div>
                 </div>

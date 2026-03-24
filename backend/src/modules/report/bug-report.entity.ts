@@ -73,11 +73,23 @@ export class BugReport {
   @Column({ type: 'datetime', nullable: true })
   treatedAt!: Date | null;
 
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  treatedBy!: string | null;
+
   @Column({ type: 'datetime', nullable: true })
   fixedAt!: Date | null;
 
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  fixedBy!: string | null;
+
   @Column({ type: 'datetime', nullable: true })
   closedAt!: Date | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  closedBy!: string | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  lastStatusChangedBy!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

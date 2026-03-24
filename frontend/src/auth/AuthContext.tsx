@@ -7,17 +7,38 @@ import React, {
 } from "react";
 import { getMe, getWallet, type MeResponse } from "../api/me";
 
+type DecodedPlayerToken = {
+  sub?: number;
+  username?: string;
+  role?: "player" | "admin";
+  scope?: "player";
+  exp?: number;
+};
+
+type DecodedAdminToken = {
+  sub?: number;
+  username?: string;
+  role?: "admin";
+  scope?: "admin";
+  exp?: number;
+};
+
 export type AuthState = {
   token: string | null;
+  adminToken: string | null;
 
   isAuthenticated: boolean;
+  isAdminAuthenticated: boolean;
   isLoading: boolean;
 
   user: MeResponse | null;
   me: MeResponse | null;
   credits: number | null;
+  role: "player" | "admin";
 
   setToken: (t: string | null) => void;
+  setAdminToken: (t: string | null) => void;
+  clearAdminSession: () => void;
   refreshAuth: () => Promise<void>;
   refreshMe: () => Promise<void>;
   refreshWallet: () => Promise<void>;
@@ -26,16 +47,40 @@ export type AuthState = {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+function decodeJwt<T>(token: string | null): T | null {
+  if (!token) return null;
+
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return null;
+    return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))) as T;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() =>
     localStorage.getItem("token")
+  );
+  const [adminToken, setAdminTokenState] = useState<string | null>(() =>
+    localStorage.getItem("admin_token")
   );
 
   const [me, setMe] = useState<MeResponse | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  /* ---------------- TOKEN MANAGEMENT ---------------- */
+  const decodedPlayer = decodeJwt<DecodedPlayerToken>(token);
+  const decodedAdmin = decodeJwt<DecodedAdminToken>(adminToken);
+
+  const role: "player" | "admin" =
+    decodedPlayer?.role === "admin" ? "admin" : "player";
+
+  const isAdminAuthenticated =
+    !!adminToken &&
+    decodedAdmin?.scope === "admin" &&
+    decodedAdmin?.role === "admin";
 
   const setToken = (t: string | null) => {
     setTokenState(t);
@@ -43,13 +88,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     else localStorage.removeItem("token");
   };
 
+  const setAdminToken = (t: string | null) => {
+    setAdminTokenState(t);
+    if (t) localStorage.setItem("admin_token", t);
+    else localStorage.removeItem("admin_token");
+  };
+
+  const clearAdminSession = () => {
+    setAdminToken(null);
+  };
+
   const logout = () => {
     setToken(null);
+    setAdminToken(null);
     setMe(null);
     setCredits(null);
   };
-
-  /* ---------------- DATA REFRESH ---------------- */
 
   const refreshMe = async () => {
     if (!token) return;
@@ -78,25 +132,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  /* ---------------- INIT ON MOUNT ---------------- */
-
   useEffect(() => {
     refreshAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
-
-  /* ---------------- AUTO REFRESH WALLET ---------------- */
 
   useEffect(() => {
     if (!token) return;
 
     const id = window.setInterval(() => {
       refreshWallet().catch(() => {});
-    }, 5000); // refresh toutes les 5s (moins agressif que 2s)
+    }, 5000);
 
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  useEffect(() => {
+    if (!adminToken) return;
+
+    const decoded = decodeJwt<DecodedAdminToken>(adminToken);
+    const now = Math.floor(Date.now() / 1000);
+
+    if (!decoded?.exp || decoded.exp <= now) {
+      setAdminToken(null);
+    }
+  }, [adminToken]);
 
   const isAuthenticated = !!token;
   const user = me;
@@ -104,18 +165,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       token,
+      adminToken,
       isAuthenticated,
+      isAdminAuthenticated,
       isLoading,
       user,
       me,
       credits,
+      role,
       setToken,
+      setAdminToken,
+      clearAdminSession,
       refreshAuth,
       refreshMe,
       refreshWallet,
       logout,
     }),
-    [token, isAuthenticated, isLoading, user, me, credits]
+    [
+      token,
+      adminToken,
+      isAuthenticated,
+      isAdminAuthenticated,
+      isLoading,
+      user,
+      me,
+      credits,
+      role,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

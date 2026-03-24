@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import "../styles/Nav.css";
 import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
+import { useAuth } from "../auth/AuthContext";
 
 type NavPage =
   | "menu"
@@ -10,10 +11,11 @@ type NavPage =
   | "collection"
   | "market"
   | "settings"
-  | "opening";
+  | "opening"
+  | "admin";
 
 type NavItem = {
-  key: "menu" | "booster" | "collection" | "market" | "settings";
+  key: "menu" | "booster" | "collection" | "market" | "settings" | "admin";
   label: string;
   mobileLabel: string;
   to: string;
@@ -147,6 +149,31 @@ const NAV_ITEMS: NavItem[] = [
       </svg>
     ),
   },
+  {
+    key: "admin",
+    label: "Administration",
+    mobileLabel: "Admin",
+    to: "/admin",
+    icon: (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M12 3.5 19 6.25v5.25c0 4.25-2.65 7.43-7 9-4.35-1.57-7-4.75-7-9V6.25Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M9.5 12.25 11.25 14 14.75 10.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
 ];
 
 type AppNavbarProps = {
@@ -156,9 +183,17 @@ type AppNavbarProps = {
 
 export default function AppNavbar({
   currentPage,
-  visibleItems = ["menu", "booster", "collection", "market", "settings"],
+  visibleItems,
 }: AppNavbarProps) {
-  const links = NAV_ITEMS.filter((item) => visibleItems.includes(item.key));
+  const { role } = useAuth();
+
+  const defaultVisibleItems: Array<NavItem["key"]> =
+    role === "admin"
+      ? ["menu", "booster", "collection", "market", "settings", "admin"]
+      : ["menu", "booster", "collection", "market", "settings"];
+
+  const allowedItems = visibleItems ?? defaultVisibleItems;
+  const links = NAV_ITEMS.filter((item) => allowedItems.includes(item.key));
 
   return (
     <header className="topbar">

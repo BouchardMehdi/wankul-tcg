@@ -1,5 +1,32 @@
 import { apiFetch } from './http';
 
+function getApiBase() {
+  return (import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api').replace(/\/$/, '');
+}
+
+async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const adminToken = localStorage.getItem('admin_token');
+  const url = `${getApiBase()}${path}`;
+
+  const res = await fetch(url, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : {};
+
+  if (!res.ok) {
+    throw new Error(data?.message || 'Request failed');
+  }
+
+  return data as T;
+}
+
 export type LoginDto = {
   username: string;
   password: string;
@@ -43,7 +70,15 @@ export type BugReportStatus =
   | 'rejected';
 
 export type ReportBugDto = {
-  category: 'bug' | 'visual' | 'performance' | 'market' | 'opening' | 'collection' | 'auth' | 'other';
+  category:
+    | 'bug'
+    | 'visual'
+    | 'performance'
+    | 'market'
+    | 'opening'
+    | 'collection'
+    | 'auth'
+    | 'other';
   page: string;
   feature: string;
   priority: 'minor' | 'medium' | 'high' | 'blocking';
@@ -66,6 +101,9 @@ export type BugReportHistoryItem = {
 
 export type BugReportListItem = {
   id: number;
+  userId?: number;
+  usernameSnapshot?: string;
+  emailSnapshot?: string;
   category: string;
   page: string;
   feature: string;
@@ -78,11 +116,47 @@ export type BugReportListItem = {
   status: BugReportStatus;
   resolutionNote: string | null;
   treatedAt: string | null;
+  treatedBy: string | null;
   fixedAt: string | null;
+  fixedBy: string | null;
   closedAt: string | null;
+  closedBy: string | null;
+  lastStatusChangedBy: string | null;
   createdAt: string;
   updatedAt: string;
   histories: BugReportHistoryItem[];
+};
+
+export type PlayerBugReportsResponse = {
+  items: BugReportListItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+  filters: {
+    status: string | null;
+  };
+  availableStatuses: Array<{
+    value: string;
+    label: string;
+  }>;
+};
+
+export type AdminTicketsResponse = {
+  items: BugReportListItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+  filters: {
+    status: string | null;
+    handledBy: string | null;
+  };
+  adminUsers: string[];
 };
 
 export async function login(dto: LoginDto) {
@@ -140,8 +214,67 @@ export async function reportBug(dto: ReportBugDto) {
   });
 }
 
-export async function getMyBugReports() {
-  return apiFetch<{ items: BugReportListItem[] }>('/auth/my-bug-reports', {
-    method: 'GET',
+export async function getMyBugReports(params?: {
+  status?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const search = new URLSearchParams();
+
+  if (params?.status) search.set('status', params.status);
+  if (params?.page) search.set('page', String(params.page));
+  if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+
+  const query = search.toString();
+
+  return apiFetch<PlayerBugReportsResponse>(
+    `/auth/my-bug-reports${query ? `?${query}` : ''}`,
+    {
+      method: 'GET',
+    },
+  );
+}
+
+export async function adminLogin(adminPassword: string) {
+  return apiFetch<{ admin_access_token: string }>('/admin/session/login', {
+    method: 'POST',
+    body: { adminPassword },
   });
+}
+
+export async function getAdminTickets(params?: {
+  status?: string;
+  handledBy?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const search = new URLSearchParams();
+
+  if (params?.status) search.set('status', params.status);
+  if (params?.handledBy) search.set('handledBy', params.handledBy);
+  if (params?.page) search.set('page', String(params.page));
+  if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+
+  const query = search.toString();
+
+  return adminFetch<AdminTicketsResponse>(
+    `/admin/tickets${query ? `?${query}` : ''}`,
+    {
+      method: 'GET',
+    },
+  );
+}
+
+export async function updateAdminTicketStatus(
+  id: number,
+  status: BugReportStatus,
+  note?: string,
+) {
+  return adminFetch<{ message?: string; item: BugReportListItem }>(
+    `/admin/tickets/${id}/status`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ status, note }),
+    },
+  );
 }

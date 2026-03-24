@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -23,7 +23,6 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ReportBugDto } from '../report/dto/report-bug.dto';
 import { BugReport, BugReportStatus } from '../report/bug-report.entity';
 import { BugReportStatusHistory } from '../report/bug-report-status-history.entity';
-import { UpdateBugReportStatusDto } from '../report/dto/update-bug-report-status.dto';
 
 function generate6DigitCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -39,6 +38,13 @@ function sanitizeFilename(filename: string) {
 
 const SIGNUP_BONUS = 1500;
 const CODE_EXPIRATION_MINUTES = 15;
+const PLAYER_REPORT_PAGE_SIZE = 5;
+const PLAYER_DEFAULT_VISIBLE_STATUSES: BugReportStatus[] = [
+  'open',
+  'investigating',
+  'planned',
+  'closed',
+];
 
 @Injectable()
 export class AuthService {
@@ -141,8 +147,12 @@ export class AuthService {
       status: report.status,
       resolutionNote: report.resolutionNote,
       treatedAt: report.treatedAt,
+      treatedBy: report.treatedBy,
       fixedAt: report.fixedAt,
+      fixedBy: report.fixedBy,
       closedAt: report.closedAt,
+      closedBy: report.closedBy,
+      lastStatusChangedBy: report.lastStatusChangedBy,
       createdAt: report.createdAt,
       updatedAt: report.updatedAt,
       histories: (report.histories ?? [])
@@ -184,6 +194,8 @@ export class AuthService {
       emailVerificationCodeHash,
       emailVerificationExpiresAt,
       emailVerified: false,
+      role: 'player',
+      adminPasswordHash: null,
     });
 
     await this.usersRepo.save(user);
@@ -277,8 +289,8 @@ export class AuthService {
     }
 
     const code = generate6DigitCode();
-    (user as any).passwordResetCodeHash = await bcrypt.hash(code, 10);
-    (user as any).passwordResetExpiresAt = addMinutes(new Date(), CODE_EXPIRATION_MINUTES);
+    user.passwordResetCodeHash = await bcrypt.hash(code, 10);
+    user.passwordResetExpiresAt = addMinutes(new Date(), CODE_EXPIRATION_MINUTES);
 
     await this.usersRepo.save(user);
 
@@ -298,20 +310,20 @@ export class AuthService {
     const user = await this.findUserByUsernameOrEmail(identifier);
     if (!user) throw new BadRequestException('Invalid reset request');
 
-    if (!(user as any).passwordResetCodeHash || !(user as any).passwordResetExpiresAt) {
+    if (!user.passwordResetCodeHash || !user.passwordResetExpiresAt) {
       throw new BadRequestException('No password reset request found');
     }
 
-    if ((user as any).passwordResetExpiresAt.getTime() < Date.now()) {
+    if (user.passwordResetExpiresAt.getTime() < Date.now()) {
       throw new BadRequestException('Password reset code expired');
     }
 
-    const isValid = await bcrypt.compare(code, (user as any).passwordResetCodeHash);
+    const isValid = await bcrypt.compare(code, user.passwordResetCodeHash);
     if (!isValid) throw new BadRequestException('Invalid reset code');
 
     user.passwordHash = await bcrypt.hash(newPassword, 10);
-    (user as any).passwordResetCodeHash = null;
-    (user as any).passwordResetExpiresAt = null;
+    user.passwordResetCodeHash = null;
+    user.passwordResetExpiresAt = null;
 
     await this.usersRepo.save(user);
 
@@ -343,8 +355,12 @@ export class AuthService {
       status: 'open',
       resolutionNote: null,
       treatedAt: null,
+      treatedBy: null,
       fixedAt: null,
+      fixedBy: null,
       closedAt: null,
+      closedBy: null,
+      lastStatusChangedBy: null,
     });
 
     const saved = await this.bugReportsRepo.save(report);
@@ -354,24 +370,28 @@ export class AuthService {
       fromStatus: null,
       toStatus: 'open',
       note: 'Ticket créé',
-      changedBy: 'system',
+      changedBy: user.username,
     });
 
-    await this.mail.sendBugReport({
-      reportId: saved.id,
-      username: user.username,
-      email: user.email,
-      category: saved.category,
-      page: saved.page,
-      feature: saved.feature,
-      priority: saved.priority,
-      description: saved.description,
-      reproductionSteps: saved.reproductionSteps ?? undefined,
-      currentUrl: saved.currentUrl ?? undefined,
-      browserInfo: saved.browserInfo ?? undefined,
-      screenshotUrl: saved.screenshotUrl ?? undefined,
-      reportedAt: saved.createdAt,
-    });
+    try {
+      await this.mail.sendBugReport({
+        reportId: saved.id,
+        username: user.username,
+        email: user.email,
+        category: saved.category,
+        page: saved.page,
+        feature: saved.feature,
+        priority: saved.priority,
+        description: saved.description,
+        reproductionSteps: saved.reproductionSteps ?? undefined,
+        currentUrl: saved.currentUrl ?? undefined,
+        browserInfo: saved.browserInfo ?? undefined,
+        screenshotUrl: saved.screenshotUrl ?? undefined,
+        reportedAt: saved.createdAt,
+      });
+    } catch (error) {
+      console.error('Failed to send bug report email', error);
+    }
 
     return {
       message: 'Merci, ton signalement a bien été envoyé.',
@@ -379,86 +399,66 @@ export class AuthService {
     };
   }
 
-  async getMyBugReports(userId: number) {
-    const reports = await this.bugReportsRepo.find({
-      where: { userId },
+  async getMyBugReports(
+    userId: number,
+    params?: {
+      status?: string;
+      page?: number;
+      pageSize?: number;
+    },
+  ) {
+    const rawStatus = (params?.status ?? '').trim();
+    const page = Math.max(1, Number(params?.page ?? 1) || 1);
+    const pageSize = Math.min(
+      PLAYER_REPORT_PAGE_SIZE,
+      Math.max(1, Number(params?.pageSize ?? PLAYER_REPORT_PAGE_SIZE) || PLAYER_REPORT_PAGE_SIZE),
+    );
+
+    const allowedStatuses: BugReportStatus[] = [
+      'open',
+      'investigating',
+      'planned',
+      'fixed',
+      'closed',
+      'rejected',
+    ];
+
+    const statuses: BugReportStatus[] =
+      rawStatus && allowedStatuses.includes(rawStatus as BugReportStatus)
+        ? [rawStatus as BugReportStatus]
+        : PLAYER_DEFAULT_VISIBLE_STATUSES;
+
+    const [reports, total] = await this.bugReportsRepo.findAndCount({
+      where: {
+        userId,
+        status: In(statuses),
+      },
       relations: ['histories'],
-      order: { createdAt: 'DESC', histories: { changedAt: 'DESC' } as any },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     });
 
     return {
       items: reports.map((report) => this.formatBugReport(report)),
-    };
-  }
-
-  async updateBugReportStatus(
-    reportId: number,
-    adminKey: string | undefined,
-    dto: UpdateBugReportStatusDto,
-  ) {
-    const expectedKey = this.config.get<string>('SUPPORT_ADMIN_KEY');
-
-    if (!expectedKey || adminKey !== expectedKey) {
-      throw new ForbiddenException('Invalid admin key');
-    }
-
-    const report = await this.bugReportsRepo.findOne({
-      where: { id: reportId },
-      relations: ['histories'],
-    });
-
-    if (!report) {
-      throw new NotFoundException('Bug report not found');
-    }
-
-    const previousStatus = report.status;
-    const nextStatus = dto.status;
-    const note = dto.note?.trim() || null;
-    const changedBy = dto.changedBy?.trim() || 'support';
-    const now = new Date();
-
-    report.status = nextStatus;
-    report.resolutionNote = note;
-
-    if ((nextStatus === 'investigating' || nextStatus === 'planned') && !report.treatedAt) {
-      report.treatedAt = now;
-    }
-
-    if (nextStatus === 'fixed') {
-      if (!report.treatedAt) report.treatedAt = now;
-      report.fixedAt = now;
-    }
-
-    if (nextStatus === 'closed' || nextStatus === 'rejected') {
-      if (!report.treatedAt) report.treatedAt = now;
-      report.closedAt = now;
-    }
-
-    if (nextStatus === 'open') {
-      report.closedAt = null;
-      report.fixedAt = null;
-    }
-
-    const saved = await this.bugReportsRepo.save(report);
-
-    await this.appendBugReportHistory({
-      reportId: saved.id,
-      fromStatus: previousStatus,
-      toStatus: nextStatus,
-      note,
-      changedBy,
-    });
-
-    const refreshed = await this.bugReportsRepo.findOne({
-      where: { id: saved.id },
-      relations: ['histories'],
-    });
-
-    if (!refreshed) throw new NotFoundException('Bug report not found after update');
-
-    return {
-      message: 'Bug report status updated.',
-      item: this.formatBugReport(refreshed),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+      filters: {
+        status: rawStatus || null,
+      },
+      availableStatuses: [
+        { value: '', label: 'Actifs et utiles' },
+        { value: 'open', label: 'Ouvert' },
+        { value: 'investigating', label: 'En analyse' },
+        { value: 'planned', label: 'Planifié' },
+        { value: 'closed', label: 'Clos' },
+        { value: 'fixed', label: 'Corrigé' },
+        { value: 'rejected', label: 'Rejeté' },
+      ],
     };
   }
 
@@ -476,10 +476,13 @@ export class AuthService {
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) throw new ForbiddenException('Invalid credentials');
 
-    const secret = this.config.get<string>('JWT_SECRET');
-    if (!secret) throw new Error('JWT_SECRET missing');
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      role: user.role,
+      scope: 'player',
+    };
 
-    const payload = { sub: user.id, username: user.username };
     const access_token = await this.jwt.signAsync(payload);
 
     return { access_token };

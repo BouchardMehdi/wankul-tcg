@@ -1,15 +1,6 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Headers,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
+
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -17,7 +8,6 @@ import { ResendCodeDto } from './dto/resend-code.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ReportBugDto } from '../report/dto/report-bug.dto';
-import { UpdateBugReportStatusDto } from '../report/dto/update-bug-report-status.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './current-user.decorator';
 
@@ -66,16 +56,16 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('my-bug-reports')
-  async getMyBugReports(@CurrentUser() currentUser: { id: number; username: string }) {
-    return this.auth.getMyBugReports(currentUser.id);
-  }
-
-  @Patch('admin/bug-reports/:id/status')
-  async updateBugReportStatus(
-    @Param('id', ParseIntPipe) id: number,
-    @Headers('x-support-admin-key') adminKey: string | undefined,
-    @Body() dto: UpdateBugReportStatusDto,
+  async getMyBugReports(
+    @CurrentUser() currentUser: { id: number; username: string },
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
   ) {
-    return this.auth.updateBugReportStatus(id, adminKey, dto);
+    return this.auth.getMyBugReports(currentUser.id, {
+      status,
+      page: Number(page ?? 1),
+      pageSize: Number(pageSize ?? 5),
+    });
   }
 }

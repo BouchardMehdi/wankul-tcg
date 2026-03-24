@@ -15,6 +15,7 @@ import { EconomyModule } from './modules/economy/economy.module';
 import { MailModule } from './modules/mail/mail.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { MarketModule } from './modules/market/market.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { MarketModule } from './modules/market/market.module';
     MailModule,
     StatsModule,
     MarketModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

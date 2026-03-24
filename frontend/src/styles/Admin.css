@@ -1,0 +1,379 @@
+.adminPage {
+  padding-top: 24px;
+  padding-bottom: calc(40px + 110px + env(safe-area-inset-bottom, 0px));
+}
+
+.adminPanel {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.adminUnlockPanel {
+  max-width: 560px;
+}
+
+.adminPanel .panel-inner {
+  padding: 28px 32px 32px;
+}
+
+.adminHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.adminHeaderActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.adminUnlockForm,
+.adminEditGrid {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.adminFiltersBar {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 220px) auto;
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+
+.adminFiltersActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.adminField {
+  display: grid;
+  gap: 6px;
+}
+
+.adminField span {
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.86);
+}
+
+.adminField input,
+.adminField select,
+.adminField textarea {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(10, 16, 34, 0.92);
+  color: #fff;
+  padding: 12px 14px;
+  outline: none;
+  font: inherit;
+}
+
+.adminField textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.adminField--full {
+  grid-column: 1 / -1;
+}
+
+.adminPrimaryBtn {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, #ff4d6d, #9b5cff);
+}
+
+.adminDangerBtn {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, #ff6b6b, #d93636);
+}
+
+.adminError {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 97, 123, 0.28);
+  background: rgba(255, 97, 123, 0.12);
+  color: #ffd9df;
+  font-weight: 700;
+}
+
+.adminStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.adminStatCard {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+}
+
+.adminStatCard__value {
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.adminStatCard__label {
+  margin-top: 4px;
+  color: rgba(255,255,255,0.72);
+  font-size: 14px;
+}
+
+.adminTicketsList {
+  display: grid;
+  gap: 12px;
+}
+
+.adminTicketCard {
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  overflow: hidden;
+}
+
+.adminTicketCard__top {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 16px 18px;
+  cursor: pointer;
+}
+
+.adminTicketCard__main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.adminTicketCard__line1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.adminTicketCard__line2 {
+  margin-top: 8px;
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+}
+
+.adminTicketCard__id {
+  font-weight: 900;
+}
+
+.adminTicketCard__toggle {
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.adminTicketCard__body {
+  display: grid;
+  gap: 16px;
+  padding: 0 18px 18px;
+}
+
+.adminTicketMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 14px;
+}
+
+.adminTicketBlock {
+  display: grid;
+  gap: 8px;
+}
+
+.adminTicketBlock__title {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.adminTicketBlock__content {
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  line-height: 1.55;
+}
+
+.adminTicketBlock__content--pre {
+  white-space: pre-wrap;
+}
+
+.adminScreenshotLink {
+  display: inline-flex;
+  width: fit-content;
+  padding: 10px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.adminEditActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.adminTimeline {
+  display: grid;
+  gap: 12px;
+}
+
+.adminTimelineItem {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.adminTimelineItem__dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff4d6d, #9b5cff);
+}
+
+.adminTimelineItem__content {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.adminTimelineItem__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.adminTimelineItem__date,
+.adminTimelineItem__by {
+  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+}
+
+.adminTimelineItem__note {
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.adminStatusBadge,
+.adminPriorityBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,0.08);
+  text-transform: uppercase;
+}
+
+.adminStatusBadge.is-open { background: rgba(255,255,255,0.08); }
+.adminStatusBadge.is-investigating { background: rgba(90, 170, 255, 0.18); }
+.adminStatusBadge.is-planned { background: rgba(180, 120, 255, 0.18); }
+.adminStatusBadge.is-fixed { background: rgba(86, 214, 144, 0.18); }
+.adminStatusBadge.is-closed { background: rgba(255,255,255,0.12); }
+.adminStatusBadge.is-rejected { background: rgba(255, 97, 123, 0.18); }
+
+.adminPriorityBadge.is-minor { background: rgba(255,255,255,0.08); }
+.adminPriorityBadge.is-medium { background: rgba(255, 204, 102, 0.18); }
+.adminPriorityBadge.is-high,
+.adminPriorityBadge.is-blocking { background: rgba(255, 97, 123, 0.18); }
+
+.adminPagination {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.adminPagination__info {
+  color: rgba(255,255,255,0.8);
+  font-size: 14px;
+}
+
+.adminEmpty {
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.72);
+}
+
+@media (max-width: 760px) {
+  .adminPanel .panel-inner {
+    padding: 20px 16px 26px;
+  }
+
+  .adminHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adminHeaderActions {
+    flex-direction: column;
+  }
+
+  .adminHeaderActions .btn,
+  .adminEditActions .btn,
+  .adminFiltersActions .btn {
+    width: 100%;
+  }
+
+  .adminFiltersBar {
+    grid-template-columns: 1fr;
+  }
+
+  .adminFiltersActions {
+    flex-direction: column;
+  }
+
+  .adminTicketMetaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .adminPagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adminPagination .btn {
+    width: 100%;
+  }
+
+  .adminPagination__info {
+    text-align: center;
+  }
+}

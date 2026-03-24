@@ -290,6 +290,12 @@
   margin-top: 8px;
 }
 
+.settingsPlayerFiltersBar {
+  display: grid;
+  grid-template-columns: minmax(0, 260px);
+  gap: 14px;
+}
+
 .settingsReportsEmpty {
   padding: 16px;
   border-radius: 14px;
@@ -503,6 +509,19 @@
   background: rgba(255, 97, 123, 0.18);
 }
 
+.settingsPlayerPagination {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settingsPlayerPagination__info {
+  color: rgba(255,255,255,0.8);
+  font-size: 14px;
+}
+
 .settingsDangerZone {
   margin-top: 26px;
   padding-top: 20px;
@@ -585,6 +604,10 @@
     grid-template-columns: 1fr;
   }
 
+  .settingsPlayerFiltersBar {
+    grid-template-columns: 1fr;
+  }
+
   .settingsReportActions {
     justify-content: stretch;
   }
@@ -600,6 +623,19 @@
 
   .settingsFooter .btn {
     width: 100%;
+  }
+
+  .settingsPlayerPagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settingsPlayerPagination .btn {
+    width: 100%;
+  }
+
+  .settingsPlayerPagination__info {
+    text-align: center;
   }
 
   .settingsDangerZone {

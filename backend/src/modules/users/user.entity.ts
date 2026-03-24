@@ -1,5 +1,7 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
+export type UserRole = 'player' | 'admin';
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
@@ -31,4 +33,10 @@ export class User {
 
   @Column({ type: 'datetime', nullable: true })
   passwordResetExpiresAt!: Date | null;
+
+  @Column({ type: 'varchar', length: 16, default: 'player' })
+  role!: UserRole;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  adminPasswordHash!: string | null;
 }

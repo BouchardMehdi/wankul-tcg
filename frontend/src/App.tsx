@@ -14,12 +14,27 @@ import Settings from "./pages/Settings";
 import Market from "./pages/Market";
 import MarketCreate from "./pages/MarketCreate";
 import QuickSell from "./pages/QuickSell";
+import Admin from "./pages/Admin";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function AdminRoleRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, role } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (role !== "admin") {
+    return <Navigate to="/menu" replace />;
   }
 
   return <>{children}</>;
@@ -44,15 +59,11 @@ export default function App() {
       />
       <Route
         path="/register"
-        element={
-          isAuthenticated ? <Navigate to="/menu" replace /> : <Register />
-        }
+        element={isAuthenticated ? <Navigate to="/menu" replace /> : <Register />}
       />
       <Route
         path="/forgot-password"
-        element={
-          isAuthenticated ? <Navigate to="/menu" replace /> : <ForgotPassword />
-        }
+        element={isAuthenticated ? <Navigate to="/menu" replace /> : <ForgotPassword />}
       />
 
       <Route
@@ -117,6 +128,14 @@ export default function App() {
           <PrivateRoute>
             <QuickSell />
           </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <AdminRoleRoute>
+            <Admin />
+          </AdminRoleRoute>
         }
       />
 
