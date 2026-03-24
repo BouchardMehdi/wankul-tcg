@@ -156,41 +156,69 @@ function isRareOrBetter(card: any) {
   return isRareForFx(normalizeRarity(card?.rarity ?? ""));
 }
 
-const ECON_BASE: Record<string, number> = {
-  Terrain: 0,
-  Commune: 2,
-  "Peu commune": 4,
-  Rare: 10,
-  "Ultra Rare (U1)": 36,
-  "Ultra Rare (U2)": 56,
-  "Légendaire bronze": 120,
-  "Légendaire argent": 280,
-  "Légendaire dorée": 560,
-  "Booster Gold": 56,
-  "Gagnant ticket d'or": 10,
-  "Ticket d'or": 0,
+const MARKET_RARITY_BASE_VALUES: Record<string, number> = {
+  Terrain: 4,
+  Commune: 8,
+  "Peu commune": 14,
+  Rare: 32,
+
+  U1: 70,
+  U2: 110,
+  "Ultra Rare (U1)": 70,
+  "Ultra Rare (U2)": 110,
+
+  "Légendaire bronze": 180,
+  "Légendaire argent": 320,
+  "Légendaire or": 520,
+  "Légendaire dorée": 520,
+
+  "Booster Gold": 700,
+  "Ticket d'or": 1800,
+  "Gagnant ticket d'or": 4500,
+
+  "Carte spéciale": 220,
 };
 
-const ECON_NEW: Record<string, number> = {
-  Terrain: 10,
-  Commune: 12,
-  "Peu commune": 20,
-  Rare: 40,
-  "Ultra Rare (U1)": 140,
-  "Ultra Rare (U2)": 220,
-  "Légendaire bronze": 440,
-  "Légendaire argent": 1000,
-  "Légendaire dorée": 2800,
-  "Booster Gold": 220,
-  "Gagnant ticket d'or": 25,
-  "Ticket d'or": 0,
+const DEFAULT_MARKET_BASE_VALUE = 20;
+
+const ECON_RATES = {
+  duplicateFromMarket: 0.25,
+  newFromMarket: 1.35,
 };
+
+function normalizeEconomyRarity(rarity?: string | null) {
+  const raw = String(rarity ?? "").trim();
+
+  switch (raw) {
+    case "Ultra Rare (U1)":
+      return "U1";
+    case "Ultra Rare (U2)":
+      return "U2";
+    case "Légendaire dorée":
+      return "Légendaire dorée";
+    default:
+      return raw;
+  }
+}
+
+function getMarketBaseValueForRarity(rarity?: string | null) {
+  const key = normalizeEconomyRarity(rarity);
+  return MARKET_RARITY_BASE_VALUES[key] ?? DEFAULT_MARKET_BASE_VALUE;
+}
 
 function fallbackCardCredits(card: any, isNew: boolean) {
-  const rarity = String(card?.rarity ?? "");
-  const base = ECON_BASE[rarity] ?? 0;
-  const nw = ECON_NEW[rarity] ?? base;
-  return isNew ? nw : base;
+  const rarity = normalizeEconomyRarity(card?.rarity ?? "");
+
+  if (rarity === "Terrain") return isNew ? 6 : 0;
+  if (rarity === "Ticket d'or") return 0;
+
+  const marketBase = getMarketBaseValueForRarity(rarity);
+
+  if (isNew) {
+    return Math.max(0, Math.floor(marketBase * ECON_RATES.newFromMarket));
+  }
+
+  return Math.max(0, Math.floor(marketBase * ECON_RATES.duplicateFromMarket));
 }
 
 function extractCreditsTotal(result: any): number | null {
@@ -533,7 +561,7 @@ export default function Opening() {
       sum += typeof cc === "number" && Number.isFinite(cc) ? cc : 0;
     }
     return sum;
-  }, [cards, perCardCredits]);
+  }, [cards, perCardCredits, newCardIds]);
 
   const sortedBoosterSummaryCards = useMemo(() => {
     return [...cards].sort((a, b) => {
@@ -567,7 +595,7 @@ export default function Opening() {
       sum += typeof cc === "number" && Number.isFinite(cc) ? cc : 0;
     }
     return sum;
-  }, [creditsTotal, isDisplayMode, displayBoosters, cards, perCardCredits]);
+  }, [creditsTotal, isDisplayMode, displayBoosters, cards, perCardCredits, newCardIds]);
 
   const displaySummaryCards = useMemo(() => {
     if (!isDisplayMode) return [];
@@ -836,7 +864,7 @@ export default function Opening() {
 
   return (
     <div className="app-shell">
-      <AppNavbar currentPage="opening" visibleItems={["menu", "collection", "settings"]} />
+      <AppNavbar currentPage="opening" visibleItems={["menu","booster","collection", "market", "settings"]} />
 
       <div className={`container openingPage ${settings.disableHoloEffects ? "openingPage--noHolo" : ""}`}>
         <div className="openingHeader panel">

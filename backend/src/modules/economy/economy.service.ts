@@ -3,6 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEconomy } from './user-economy.entity';
 import { User } from '../users/user.entity';
+import {
+  DEFAULT_MARKET_BASE_VALUE,
+  MARKET_RARITY_BASE_VALUES,
+} from '../market/constants/market-rarity-values';
 
 export type OpenKind = 'booster' | 'display';
 
@@ -18,49 +22,31 @@ export type CreditBreakdown = {
 const ECON = {
   SIGNUP_BONUS: 1500,
 
-  cost: { booster: 180, display: 4200 },
+  cost: { booster: 200, display: 4800 },
 
   charges: {
     booster: { cap: 4, rechargeMinutes: 90 },
     display: { cap: 1, rechargeMinutes: 60 * 60 },
   },
 
-  baseByRarity: {
-    Terrain: 0,
-    Commune: 2,
-    'Peu commune': 4,
-    Rare: 10,
-    'Ultra Rare (U1)': 36,
-    'Ultra Rare (U2)': 56,
-    'Légendaire bronze': 120,
-    'Légendaire argent': 280,
-    'Légendaire dorée': 560,
-    'Booster Gold': 56,
-    "Gagnant ticket d'or": 10,
-    "Ticket d'or": 0,
-  } as Record<string, number>,
-
-  newBonusByRarity: {
-    Terrain: 10,
-    Commune: 12,
-    'Peu commune': 20,
-    Rare: 40,
-    'Ultra Rare (U1)': 140,
-    'Ultra Rare (U2)': 220,
-    'Légendaire bronze': 440,
-    'Légendaire argent': 1000,
-    'Légendaire dorée': 2800,
-    'Booster Gold': 220,
-    "Gagnant ticket d'or": 25,
-    "Ticket d'or": 0,
-  } as Record<string, number>,
-
-  multipliers: {
-    gtoBooster: 1.5,
-    goldDisplay: 1.25,
+  /**
+   * Logique économique post-market :
+   * - doublon = ~25% de la valeur marché
+   * - nouvelle carte = ~135% de la valeur marché
+   *
+   * Ça garde l’ouverture intéressante sans rendre le market inutile.
+   */
+  rates: {
+    duplicateFromMarket: 0.25,
+    newFromMarket: 1.35,
   },
 
-  jackpotTicketOr: 30000,
+  multipliers: {
+    gtoBooster: 1.35,
+    goldDisplay: 1.15,
+  },
+
+  jackpotTicketOr: 6000,
 };
 
 @Injectable()
@@ -113,6 +99,44 @@ export class EconomyService {
     } else {
       row.displayRechargeAt = now;
     }
+  }
+
+  private normalizeRarity(rarity: string): string {
+    switch (rarity) {
+      case 'Ultra Rare (U1)':
+        return 'U1';
+      case 'Ultra Rare (U2)':
+        return 'U2';
+      case 'Légendaire dorée':
+        return 'Légendaire dorée';
+      default:
+        return rarity;
+    }
+  }
+
+  private getMarketBaseValue(rarity: string): number {
+    const normalized = this.normalizeRarity(rarity);
+    return MARKET_RARITY_BASE_VALUES[normalized] ?? DEFAULT_MARKET_BASE_VALUE;
+  }
+
+  private getDuplicateCreditsForRarity(rarity: string): number {
+    const normalized = this.normalizeRarity(rarity);
+
+    if (normalized === 'Terrain') return 0;
+    if (normalized === "Ticket d'or") return 0;
+
+    const marketValue = this.getMarketBaseValue(normalized);
+    return Math.max(0, Math.floor(marketValue * ECON.rates.duplicateFromMarket));
+  }
+
+  private getNewCreditsForRarity(rarity: string): number {
+    const normalized = this.normalizeRarity(rarity);
+
+    if (normalized === 'Terrain') return 6;
+    if (normalized === "Ticket d'or") return 0;
+
+    const marketValue = this.getMarketBaseValue(normalized);
+    return Math.max(0, Math.floor(marketValue * ECON.rates.newFromMarket));
   }
 
   async ensure(userId: number): Promise<UserEconomy> {
@@ -186,18 +210,21 @@ export class EconomyService {
   }): CreditBreakdown {
     const { rarities, newCardRarities, gtoPresent, ticketOrPresent, ticketOrIsNew } = args;
 
-    let baseAll = 0;
-    for (const r of rarities) baseAll += ECON.baseByRarity[r] ?? 0;
-
-    let baseNew = 0;
-    let newValue = 0;
-    for (const r of newCardRarities) {
-      baseNew += ECON.baseByRarity[r] ?? 0;
-      newValue += ECON.newBonusByRarity[r] ?? 0;
+    let duplicateTotal = 0;
+    for (const rarity of rarities) {
+      duplicateTotal += this.getDuplicateCreditsForRarity(rarity);
     }
 
-    const base = baseAll - baseNew;
-    const newBonus = newValue;
+    let duplicatePartToRemoveForNewCards = 0;
+    let newCardsTotal = 0;
+
+    for (const rarity of newCardRarities) {
+      duplicatePartToRemoveForNewCards += this.getDuplicateCreditsForRarity(rarity);
+      newCardsTotal += this.getNewCreditsForRarity(rarity);
+    }
+
+    const base = Math.max(0, duplicateTotal - duplicatePartToRemoveForNewCards);
+    const newBonus = newCardsTotal;
 
     let subtotal = base + newBonus;
 
