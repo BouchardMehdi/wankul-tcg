@@ -9,32 +9,20 @@ import AppNavbar from "../components/AppNavbar";
 
 import { useAuth } from "../auth/AuthContext";
 import { getEconomyMe, type EconomySnapshot } from "../api/economy";
-import { openBooster, openDisplay, type SeasonName } from "../api/booster";
+import { openBooster, openDisplay } from "../api/booster";
 import { readAppSettings, subscribeAppSettings, writeLastNewCardIds } from "../utils/appSettings";
+import { getSeasonBoosterImage, getSeasonDisplayImage } from "../utils/seasonAssets";
 
-const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_BASE_RAW: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
+const API_BASE = API_BASE_RAW.replace(/\/api\/?$/, "");
 
 const CARD_BACK = new URL("../assets/wankul_back.webp", import.meta.url).href;
-
-const BOOSTER_IMG: Record<SeasonName, string> = {
-  Origins: new URL("../assets/boosters/booster_origin.png", import.meta.url).href,
-  Campus: new URL("../assets/boosters/booster_campus.png", import.meta.url).href,
-  Battle: new URL("../assets/boosters/booster_battle.png", import.meta.url).href,
-  Stellar: new URL("../assets/boosters/booster_stellar.png", import.meta.url).href,
-};
-
-const DISPLAY_IMG: Record<SeasonName, string> = {
-  Origins: new URL("../assets/boosters/display_origin.webp", import.meta.url).href,
-  Campus: new URL("../assets/boosters/display_campus.webp", import.meta.url).href,
-  Battle: new URL("../assets/boosters/display_battle.webp", import.meta.url).href,
-  Stellar: new URL("../assets/boosters/display_stellar.webp", import.meta.url).href,
-};
-
 const GOLD_BOOSTER_IMG = new URL("../assets/boosters/booster_gold.png", import.meta.url).href;
 
 type OpeningStatePayload = {
   kind: "booster" | "display";
-  season: SeasonName;
+  season: string;
+  seasonNumber?: number;
   result: any;
 };
 
@@ -161,21 +149,17 @@ const MARKET_RARITY_BASE_VALUES: Record<string, number> = {
   Commune: 8,
   "Peu commune": 14,
   Rare: 32,
-
   U1: 70,
   U2: 110,
   "Ultra Rare (U1)": 70,
   "Ultra Rare (U2)": 110,
-
   "Légendaire bronze": 180,
   "Légendaire argent": 320,
   "Légendaire or": 520,
   "Légendaire dorée": 520,
-
   "Booster Gold": 700,
   "Ticket d'or": 1800,
   "Gagnant ticket d'or": 4500,
-
   "Carte spéciale": 220,
 };
 
@@ -353,7 +337,17 @@ export default function Opening() {
   const velocityRef = useRef(0);
   const timeoutsRef = useRef<number[]>([]);
 
-  const season: SeasonName = state?.season ?? "Origins";
+  const season = state?.season ?? "Saison inconnue";
+  const stateSeasonNumber =
+    typeof state?.seasonNumber === "number" && Number.isFinite(state.seasonNumber)
+      ? state.seasonNumber
+      : null;
+  const resultSeasonNumber =
+    typeof state?.result?.seasonNumber === "number" && Number.isFinite(state.result.seasonNumber)
+      ? state.result.seasonNumber
+      : null;
+  const activeSeasonNumber = resultSeasonNumber ?? stateSeasonNumber ?? 1;
+
   const isDisplayMode = state?.kind === "display";
 
   const displayMeta = state?.result?.meta ?? null;
@@ -362,8 +356,8 @@ export default function Opening() {
   const currentDisplayBoosterIsGold =
     isDisplayMode && goldIndex !== null && displayBoosterIndex === goldIndex;
 
-  const defaultBoosterImg = BOOSTER_IMG[season];
-  const displayImg = DISPLAY_IMG[season];
+  const defaultBoosterImg = getSeasonBoosterImage(activeSeasonNumber);
+  const displayImg = getSeasonDisplayImage(activeSeasonNumber);
 
   const currentPackImg = currentDisplayBoosterIsGold ? GOLD_BOOSTER_IMG : defaultBoosterImg;
   const remainingPillImg = currentDisplayBoosterIsGold ? GOLD_BOOSTER_IMG : defaultBoosterImg;
@@ -442,9 +436,10 @@ export default function Opening() {
     setCreditsTotal(extractCreditsTotal(state.result));
     setNewCardIds(extractNewCardIds(state.result));
 
-    const flatCards = state.kind === "display"
-      ? normalizedBoosters.flatMap((b: any) => (Array.isArray(b) ? b : []))
-      : boosterCards;
+    const flatCards =
+      state.kind === "display"
+        ? normalizedBoosters.flatMap((b: any) => (Array.isArray(b) ? b : []))
+        : boosterCards;
     setPerCardCredits(extractPerCardCredits(state.result, flatCards));
 
     setOpeningLock(false);
@@ -465,7 +460,7 @@ export default function Opening() {
     } else {
       setPhase("idle");
     }
-  }, [state?.kind, state?.season, state?.result, navigate, skipAnimations]);
+  }, [state?.kind, state?.season, state?.seasonNumber, state?.result, navigate, skipAnimations]);
 
   useEffect(() => {
     (async () => {
@@ -601,9 +596,7 @@ export default function Opening() {
     if (!isDisplayMode) return [];
 
     const flat = displayBoosters.flatMap((b) => (Array.isArray(b) ? b : []));
-    const selected = dedupeCards(
-      flat.filter((c) => isCardMarkedNew(c) || isRareOrBetter(c))
-    );
+    const selected = dedupeCards(flat.filter((c) => isCardMarkedNew(c) || isRareOrBetter(c)));
 
     return selected.sort((a, b) => {
       const aNew = isCardMarkedNew(a);
@@ -640,12 +633,11 @@ export default function Opening() {
   }, [eco?.freeDisplayCharges, eco?.costs?.display]);
 
   const dragRot = useMemo(() => clamp(dragX * 0.06, -14, 14), [dragX]);
-  const rarityCls = rarityKey ? `rarity-${rarityKey}` : "";
-  const rareAppearCls = phase === "reveal" && isRare && !settings.disableHoloEffects ? "rare-appear" : "";
-  const surpriseCls = phase === "reveal" && isSurprise11 && !settings.disableHoloEffects ? "surprise-appear" : "";
 
   function beginRevealSequence(boosterCards: any[]) {
-    prepareBoosterCards(boosterCards);
+    setCards(Array.isArray(boosterCards) ? boosterCards : []);
+    setIndex(0);
+    clearMotionState();
     setPhase("opening");
 
     queueTimeout(() => {
@@ -709,7 +701,15 @@ export default function Opening() {
 
     queueTimeout(() => {
       setIndex((prev) => prev + 1);
-      clearMotionState();
+      setDragX(0);
+      setIsDragging(false);
+      setFlyOut(false);
+      setThrowX(0);
+      setThrowRot(0);
+      setThrowMs(280);
+      setAnimatingNext(false);
+      pointerIdRef.current = null;
+      velocityRef.current = 0;
     }, 280);
   }
 
@@ -787,7 +787,7 @@ export default function Opening() {
     clearQueuedTimeouts();
 
     try {
-      const res = await openBooster(season);
+      const res = await openBooster(activeSeasonNumber);
 
       await refreshWallet();
       try {
@@ -799,7 +799,12 @@ export default function Opening() {
 
       navigate("/opening", {
         replace: true,
-        state: { kind: "booster", season, result: res },
+        state: {
+          kind: "booster",
+          season: res?.season ?? season,
+          seasonNumber: res?.seasonNumber ?? activeSeasonNumber,
+          result: res,
+        },
       });
     } finally {
       setOpeningLock(false);
@@ -813,7 +818,7 @@ export default function Opening() {
     clearQueuedTimeouts();
 
     try {
-      const res = await openDisplay(season);
+      const res = await openDisplay(activeSeasonNumber);
 
       await refreshWallet();
       try {
@@ -825,7 +830,12 @@ export default function Opening() {
 
       navigate("/opening", {
         replace: true,
-        state: { kind: "display", season, result: res },
+        state: {
+          kind: "display",
+          season: res?.season ?? season,
+          seasonNumber: res?.seasonNumber ?? activeSeasonNumber,
+          result: res,
+        },
       });
     } finally {
       setOpeningLock(false);
@@ -841,7 +851,7 @@ export default function Opening() {
     }
 
     const nextIndex = displayBoosterIndex + 1;
-    if (nextIndex >= displayBoosterCount) {
+    if (nextIndex >= displayBoosters.length) {
       setPhase("display-final-summary");
       return;
     }
@@ -862,9 +872,13 @@ export default function Opening() {
   const idleVisualImg =
     isDisplayMode && !displayStarted ? displayImg : currentPackImg;
 
+  const rarityCls = normalizeRarity(current?.rarity ?? "")
+    ? `rarity-${normalizeRarity(current?.rarity ?? "")}`
+    : "";
+
   return (
     <div className="app-shell">
-      <AppNavbar currentPage="opening" visibleItems={["menu","booster","collection", "market", "settings"]} />
+      <AppNavbar currentPage="opening" visibleItems={["menu", "booster", "collection", "market", "settings"]} />
 
       <div className={`container openingPage ${settings.disableHoloEffects ? "openingPage--noHolo" : ""}`}>
         <div className="openingHeader panel">
@@ -876,7 +890,7 @@ export default function Opening() {
             <div className="muted">
               {isDisplayMode ? (
                 <>
-                  Booster <b>{Math.min(displayBoosterIndex + 1, displayBoosterCount || 0)}</b> / <b>{displayBoosterCount || 0}</b>
+                  Booster <b>{Math.min(displayBoosterIndex + 1, displayBoosters.length || 0)}</b> / <b>{displayBoosters.length || 0}</b>
                   {(phase === "reveal" || phase === "summary") && total > 0 ? (
                     <>
                       {" "}• Carte <b>{Math.min(index + 1, total)}</b> / <b>{total}</b>
@@ -976,9 +990,7 @@ export default function Opening() {
                 <img className="displayIntro__booster displayIntro__booster--5" src={defaultBoosterImg} alt="" />
               </div>
 
-              <div className="displayIntro__text">
-                Les boosters sortent de la display…
-              </div>
+              <div className="displayIntro__text">Les boosters sortent de la display…</div>
             </div>
           )}
 
@@ -987,9 +999,14 @@ export default function Opening() {
               <div className="revealTop">
                 <div className="muted">
                   Saison : <b>{season}</b>
+                  {typeof activeSeasonNumber === "number" ? (
+                    <>
+                      {" "}• <b>S{activeSeasonNumber}</b>
+                    </>
+                  ) : null}
                   {isDisplayMode ? (
                     <>
-                      {" "}• Booster <b>{displayBoosterIndex + 1}</b> / <b>{displayBoosterCount}</b>
+                      {" "}• Booster <b>{displayBoosterIndex + 1}</b> / <b>{displayBoosters.length}</b>
                       {currentDisplayBoosterIsGold ? (
                         <>
                           {" "}• <b>Booster Gold</b>
@@ -1021,8 +1038,8 @@ export default function Opening() {
                     settings.disableHoloEffects ? "" : rarityCls,
                     isRare && !settings.disableHoloEffects ? "is-rare" : "",
                     isCurrentNew ? "is-new" : "",
-                    rareAppearCls,
-                    surpriseCls,
+                    phase === "reveal" && isRare && !settings.disableHoloEffects ? "rare-appear" : "",
+                    phase === "reveal" && isSurprise11 && !settings.disableHoloEffects ? "surprise-appear" : "",
                     flyOut ? "fly-out" : "",
                     isDragging ? "is-dragging" : "",
                   ].join(" ")}
@@ -1064,12 +1081,8 @@ export default function Opening() {
           {phase === "summary" && (
             <div className="summaryZone">
               <div className="summaryTitle">
-                <span>
-                  Résumé {isDisplayMode ? `du booster ${displayBoosterIndex + 1}` : ""}
-                </span>
-                <span className="summaryCreditsPill">
-                  Gain total : +{currentBoosterCreditsTotal} crédits
-                </span>
+                <span>Résumé {isDisplayMode ? `du booster ${displayBoosterIndex + 1}` : ""}</span>
+                <span className="summaryCreditsPill">Gain total : +{currentBoosterCreditsTotal} crédits</span>
               </div>
 
               <div className="summaryGrid">

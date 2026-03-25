@@ -81,7 +81,7 @@
 
 .boosterSeasonCard__top {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
 }
@@ -89,6 +89,27 @@
 .boosterSeasonCard__name {
   font-weight: 950;
   font-size: 18px;
+}
+
+.boosterSeasonCard__meta {
+  margin-top: 4px;
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.boosterSeasonCard__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: linear-gradient(135deg, rgba(255, 77, 109, 0.22), rgba(155, 92, 255, 0.22));
 }
 
 .boosterSeasonCard__packs {
@@ -181,6 +202,23 @@
 .boosterPack__visual.is-disabled:hover .boosterPack__img {
   transform: none;
   filter: none;
+}
+
+.boosterEmpty {
+  margin-top: 16px;
+  padding: 18px;
+}
+
+.boosterEmpty__title {
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.boosterEmpty__text {
+  margin-top: 6px;
+  color: var(--text2);
+  line-height: 1.55;
+  font-weight: 700;
 }
 
 /* =========================
@@ -379,7 +417,6 @@
     flex-direction: column;
   }
 }
-
 
 /* =========================================
    PWA / MOBILE

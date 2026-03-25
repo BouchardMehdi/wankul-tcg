@@ -9,22 +9,21 @@ import AppNavbar from "../components/AppNavbar";
 
 import { useAuth } from "../auth/AuthContext";
 import { getEconomyMe, formatCooldown, type EconomySnapshot } from "../api/economy";
-import { openBooster, openDisplay, type SeasonName } from "../api/booster";
+import {
+  getBoosterSeasons,
+  openBooster,
+  openDisplay,
+  type BoosterSeasonInfo,
+} from "../api/booster";
 import { readAppSettings, subscribeAppSettings } from "../utils/appSettings";
+import {
+  getSeasonBoosterImage,
+  getSeasonDisplayImage,
+  hasSeasonBoosterImage,
+  hasSeasonDisplayImage,
+} from "../utils/seasonAssets";
 
-const originsBooster = new URL("../assets/boosters/booster_origin.png", import.meta.url).href;
-const campusBooster = new URL("../assets/boosters/booster_campus.png", import.meta.url).href;
-const battleBooster = new URL("../assets/boosters/booster_battle.png", import.meta.url).href;
-const stellarBooster = new URL("../assets/boosters/booster_stellar.png", import.meta.url).href;
-
-const originsDisplay = new URL("../assets/boosters/display_origin.webp", import.meta.url).href;
-const campusDisplay = new URL("../assets/boosters/display_campus.webp", import.meta.url).href;
-const battleDisplay = new URL("../assets/boosters/display_battle.webp", import.meta.url).href;
-const stellarDisplay = new URL("../assets/boosters/display_stellar.webp", import.meta.url).href;
-
-type SeasonCard = {
-  id: SeasonName;
-  label: string;
+type SeasonCard = BoosterSeasonInfo & {
   boosterImg: string;
   displayImg: string;
 };
@@ -41,18 +40,11 @@ type ConfirmModalState =
   | {
       open: true;
       kind: "booster" | "display";
-      season: SeasonName;
+      season: SeasonCard;
       price: number;
       title: string;
       description: string;
     };
-
-const SEASONS: SeasonCard[] = [
-  { id: "Origins", label: "Origins", boosterImg: originsBooster, displayImg: originsDisplay },
-  { id: "Campus", label: "Campus", boosterImg: campusBooster, displayImg: campusDisplay },
-  { id: "Battle", label: "Battle", boosterImg: battleBooster, displayImg: battleDisplay },
-  { id: "Stellar", label: "Stellar", boosterImg: stellarBooster, displayImg: stellarDisplay },
-];
 
 const CLOSED_MODAL: ConfirmModalState = {
   open: false,
@@ -63,32 +55,55 @@ const CLOSED_MODAL: ConfirmModalState = {
   description: "",
 };
 
+function formatSeasonMeta(season: BoosterSeasonInfo) {
+  return `${season.cardCount} cartes • Saison ${season.seasonNumber}`;
+}
+
 export default function Booster() {
   const navigate = useNavigate();
   const { credits, refreshWallet } = useAuth();
 
   const [eco, setEco] = useState<EconomySnapshot | null>(null);
+  const [seasons, setSeasons] = useState<SeasonCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [confirmModal, setConfirmModal] = useState<ConfirmModalState>(CLOSED_MODAL);
   const [settings, setSettings] = useState(() => readAppSettings());
 
-  async function loadEconomy() {
+  async function loadPageData() {
     setLoading(true);
     setError("");
+
     try {
-      const snap = await getEconomyMe();
+      const [snap, seasonsRes] = await Promise.all([getEconomyMe(), getBoosterSeasons()]);
+
       setEco(snap);
+
+      const openableSeasons = (seasonsRes ?? [])
+        .filter((item) => item.isOpenable)
+        .sort((a, b) => a.seasonNumber - b.seasonNumber)
+        .map((item) => ({
+          ...item,
+          boosterImg: getSeasonBoosterImage(item.seasonNumber),
+          displayImg: getSeasonDisplayImage(item.seasonNumber),
+        }))
+        .filter(
+          (item) =>
+            hasSeasonBoosterImage(item.seasonNumber) &&
+            hasSeasonDisplayImage(item.seasonNumber)
+        );
+
+      setSeasons(openableSeasons);
     } catch (e: any) {
-      setError(e?.message || "Impossible de charger l'économie.");
+      setError(e?.message || "Impossible de charger les saisons et l'économie.");
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    void loadEconomy();
+    void loadPageData();
   }, []);
 
   useEffect(() => subscribeAppSettings(() => setSettings(readAppSettings())), []);
@@ -136,7 +151,7 @@ export default function Booster() {
     return `Ouvrir Display • ${eco.costs.display} crédits`;
   }
 
-  function askOpenBooster(season: SeasonName) {
+  function askOpenBooster(season: SeasonCard) {
     if (!eco || busyKey || boosterDisabled) return;
 
     if (eco.freeBoosterCharges > 0 || !settings.confirmPurchases) {
@@ -149,12 +164,12 @@ export default function Booster() {
       kind: "booster",
       season,
       price: eco.costs.booster,
-      title: `Confirmer l'ouverture du booster ${season}`,
+      title: `Confirmer l'ouverture du booster ${season.label}`,
       description: `Cette ouverture te coûtera ${eco.costs.booster} crédits. Aucun débit ne sera effectué tant que tu n’as pas confirmé.`,
     });
   }
 
-  function askOpenDisplay(season: SeasonName) {
+  function askOpenDisplay(season: SeasonCard) {
     if (!eco || busyKey || displayDisabled) return;
 
     if (eco.freeDisplayCharges > 0 || !settings.confirmPurchases) {
@@ -167,27 +182,32 @@ export default function Booster() {
       kind: "display",
       season,
       price: eco.costs.display,
-      title: `Confirmer l'ouverture de la display ${season}`,
+      title: `Confirmer l'ouverture de la display ${season.label}`,
       description: `Cette ouverture te coûtera ${eco.costs.display} crédits. Aucun débit ne sera effectué tant que tu n’as pas confirmé.`,
     });
   }
 
-  async function onOpenBooster(season: SeasonName) {
+  async function onOpenBooster(season: SeasonCard) {
     if (!eco || busyKey || boosterDisabled) return;
 
-    const key = `booster:${season}`;
+    const key = `booster:${season.seasonNumber}`;
     setBusyKey(key);
     setError("");
 
     try {
-      const res = await openBooster(season);
+      const res = await openBooster(season.seasonNumber);
       setConfirmModal(CLOSED_MODAL);
 
       await refreshWallet();
-      await loadEconomy();
+      await loadPageData();
 
       navigate("/opening", {
-        state: { kind: "booster", season, result: res },
+        state: {
+          kind: "booster",
+          season: res?.season ?? season.label,
+          seasonNumber: res?.seasonNumber ?? season.seasonNumber,
+          result: res,
+        },
       });
     } catch (e: any) {
       setError(e?.message || "Ouverture impossible.");
@@ -196,22 +216,27 @@ export default function Booster() {
     }
   }
 
-  async function onOpenDisplay(season: SeasonName) {
+  async function onOpenDisplay(season: SeasonCard) {
     if (!eco || busyKey || displayDisabled) return;
 
-    const key = `display:${season}`;
+    const key = `display:${season.seasonNumber}`;
     setBusyKey(key);
     setError("");
 
     try {
-      const res = await openDisplay(season);
+      const res = await openDisplay(season.seasonNumber);
       setConfirmModal(CLOSED_MODAL);
 
       await refreshWallet();
-      await loadEconomy();
+      await loadPageData();
 
       navigate("/opening", {
-        state: { kind: "display", season, result: res },
+        state: {
+          kind: "display",
+          season: res?.season ?? season.label,
+          seasonNumber: res?.seasonNumber ?? season.seasonNumber,
+          result: res,
+        },
       });
     } catch (e: any) {
       setError(e?.message || "Ouverture impossible.");
@@ -254,7 +279,8 @@ export default function Booster() {
             <div className="boosterHero__left">
               <h1 className="boosterHero__title">Boosters</h1>
               <p className="boosterHero__subtitle">
-                Choisis une saison et ouvre soit un booster, soit une display.
+                Les saisons disponibles sont détectées automatiquement depuis la base et les visuels sont chargés
+                automatiquement depuis les dossiers <b>season-X</b>.
               </p>
             </div>
 
@@ -277,90 +303,97 @@ export default function Booster() {
             </div>
           ) : null}
 
-          <div className="boosterGrid">
-            {SEASONS.map((s) => (
-              <div key={s.id} className="panel boosterSeasonCard">
-                <div className="boosterSeasonCard__top">
-                  <div className="boosterSeasonCard__name">{s.label}</div>
-                </div>
-
-                <div className="boosterSeasonCard__packs">
-                  <div className="boosterPack">
-                    <div
-                      className={[
-                        "boosterPack__visual",
-                        boosterDisabled ? "is-disabled" : "",
-                      ].join(" ")}
-                      role="button"
-                      tabIndex={boosterDisabled ? -1 : 0}
-                      aria-disabled={boosterDisabled}
-                      onClick={() => {
-                        if (!boosterDisabled) askOpenBooster(s.id);
-                      }}
-                      onKeyDown={(e) => {
-                        if (boosterDisabled) return;
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          askOpenBooster(s.id);
-                        }
-                      }}
-                    >
-                      <img
-                        className="boosterPack__img"
-                        src={s.boosterImg}
-                        alt={`Booster ${s.label}`}
-                      />
-                    </div>
-
-                    <button
-                      className="btn btn--primary w-full"
-                      disabled={boosterDisabled}
-                      onClick={() => askOpenBooster(s.id)}
-                    >
-                      {busyKey === `booster:${s.id}` ? "Ouverture..." : boosterBtnLabel()}
-                    </button>
-                  </div>
-
-                  <div className="boosterPack">
-                    <div
-                      className={[
-                        "boosterPack__visual",
-                        "boosterPack__visual--display",
-                        displayDisabled ? "is-disabled" : "",
-                      ].join(" ")}
-                      role="button"
-                      tabIndex={displayDisabled ? -1 : 0}
-                      aria-disabled={displayDisabled}
-                      onClick={() => {
-                        if (!displayDisabled) askOpenDisplay(s.id);
-                      }}
-                      onKeyDown={(e) => {
-                        if (displayDisabled) return;
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          askOpenDisplay(s.id);
-                        }
-                      }}
-                    >
-                      <img
-                        className="boosterPack__img boosterPack__img--display"
-                        src={s.displayImg}
-                        alt={`Display ${s.label}`}
-                      />
-                    </div>
-
-                    <button
-                      className="btn btn--ghost w-full"
-                      disabled={displayDisabled}
-                      onClick={() => askOpenDisplay(s.id)}
-                    >
-                      {busyKey === `display:${s.id}` ? "Ouverture..." : displayBtnLabel()}
-                    </button>
-                  </div>
-                </div>
+          {seasons.length === 0 ? (
+            <div className="panel boosterEmpty">
+              <div className="boosterEmpty__title">Aucune saison affichable</div>
+              <div className="boosterEmpty__text">
+                Vérifie le seed des cartes, les raretés requises, les terrains, et la présence d’un visuel
+                <b> booster.* </b>et <b>display.*</b> dans <b>src/assets/boosters/season-X/</b>.
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="boosterGrid">
+              {seasons.map((s) => (
+                <div key={s.seasonNumber} className="panel boosterSeasonCard">
+                  <div className="boosterSeasonCard__top">
+                    <div>
+                      <div className="boosterSeasonCard__name">{s.label}</div>
+                      <div className="boosterSeasonCard__meta">{formatSeasonMeta(s)}</div>
+                    </div>
+                    <div className="boosterSeasonCard__badge">S{s.seasonNumber}</div>
+                  </div>
+
+                  <div className="boosterSeasonCard__packs">
+                    <div className="boosterPack">
+                      <div
+                        className={["boosterPack__visual", boosterDisabled ? "is-disabled" : ""].join(" ")}
+                        role="button"
+                        tabIndex={boosterDisabled ? -1 : 0}
+                        aria-disabled={boosterDisabled}
+                        onClick={() => {
+                          if (!boosterDisabled) askOpenBooster(s);
+                        }}
+                        onKeyDown={(e) => {
+                          if (boosterDisabled) return;
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            askOpenBooster(s);
+                          }
+                        }}
+                      >
+                        <img className="boosterPack__img" src={s.boosterImg} alt={`Booster ${s.label}`} />
+                      </div>
+
+                      <button
+                        className="btn btn--primary w-full"
+                        disabled={boosterDisabled}
+                        onClick={() => askOpenBooster(s)}
+                      >
+                        {busyKey === `booster:${s.seasonNumber}` ? "Ouverture..." : boosterBtnLabel()}
+                      </button>
+                    </div>
+
+                    <div className="boosterPack">
+                      <div
+                        className={[
+                          "boosterPack__visual",
+                          "boosterPack__visual--display",
+                          displayDisabled ? "is-disabled" : "",
+                        ].join(" ")}
+                        role="button"
+                        tabIndex={displayDisabled ? -1 : 0}
+                        aria-disabled={displayDisabled}
+                        onClick={() => {
+                          if (!displayDisabled) askOpenDisplay(s);
+                        }}
+                        onKeyDown={(e) => {
+                          if (displayDisabled) return;
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            askOpenDisplay(s);
+                          }
+                        }}
+                      >
+                        <img
+                          className="boosterPack__img boosterPack__img--display"
+                          src={s.displayImg}
+                          alt={`Display ${s.label}`}
+                        />
+                      </div>
+
+                      <button
+                        className="btn btn--ghost w-full"
+                        disabled={displayDisabled}
+                        onClick={() => askOpenDisplay(s)}
+                      >
+                        {busyKey === `display:${s.seasonNumber}` ? "Ouverture..." : displayBtnLabel()}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -376,16 +409,11 @@ export default function Booster() {
         >
           <div className="confirmModal__backdrop" aria-hidden="true" />
 
-          <div
-            className="confirmModal__card"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="confirmModal__card" onClick={(e) => e.stopPropagation()}>
             <div className="confirmModal__glow" />
 
             <div className="confirmModal__header">
-              <div className="confirmModal__eyebrow">
-                Confirmation
-              </div>
+              <div className="confirmModal__eyebrow">Confirmation</div>
               <h2 id="confirm-modal-title" className="confirmModal__title">
                 {confirmModal.title}
               </h2>

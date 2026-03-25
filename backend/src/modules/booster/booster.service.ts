@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Card } from '../cards/card.entity';
@@ -11,8 +11,6 @@ import { BoosterOpening } from './booster-opening.entity';
 import { DisplayOpening } from './display-opening.entity';
 import { EconomyAnalyticsService } from '../economy/economy-analytics.service';
 
-type Season = 'Origins' | 'Campus' | 'Battle' | 'Stellar';
-
 type NewCardsMeta = {
   newCardIds: number[];
   newCardKeys: string[];
@@ -20,6 +18,29 @@ type NewCardsMeta = {
 
 type DisplayBoosterCard = Card & {
   isNew: boolean;
+};
+
+type SeasonCatalogItem = {
+  seasonNumber: number;
+  label: string;
+  season: string | null;
+  extension: string | null;
+  cardCount: number;
+  rarityCounts: Record<string, number>;
+  isOpenable: boolean;
+  missingRequirements: string[];
+};
+
+type LoadedPools = {
+  seasonNumber: number;
+  label: string;
+  season: string | null;
+  extension: string | null;
+  terrain: Card[];
+  byRarity: Map<string, Card[]>;
+  ticketOrCards: Card[];
+  goldCards: Card[];
+  gtoCards: Card[];
 };
 
 @Injectable()
@@ -51,6 +72,17 @@ export class BoosterService {
     { rarity: 'Légendaire dorée', weight: 0.08 },
   ];
   private readonly MAIN_TOTAL = 90;
+
+  private readonly REQUIRED_OPENING_RARITIES = [
+    'Commune',
+    'Peu commune',
+    'Rare',
+    'Ultra Rare (U1)',
+    'Ultra Rare (U2)',
+    'Légendaire bronze',
+    'Légendaire argent',
+    'Légendaire dorée',
+  ];
 
   private readonly CHANCE_TICKET_SLOT = 0.0417;
   private readonly CHANCE_TICKET_OR_AS_11TH = 0.001;
@@ -105,6 +137,11 @@ export class BoosterService {
       .trim();
   }
 
+  private normalizeSeasonNumber(value: unknown): number | null {
+    const num = Number(value);
+    return Number.isInteger(num) && num > 0 ? num : null;
+  }
+
   private cardTokens(card: Card): string[] {
     const fields = [
       (card as any).key,
@@ -143,11 +180,98 @@ export class BoosterService {
     return this.cardMatches(card, 'booster', 'gold');
   }
 
-  private isSeasonMatch(card: Card, season: Season) {
-    const wanted = this.normalizeText(season);
-    const seasonValue = this.normalizeText((card as any).season);
-    const extensionValue = this.normalizeText((card as any).extension);
-    return seasonValue === wanted || extensionValue === wanted;
+  private getSeasonLabelFromCards(cards: Card[], seasonNumber: number) {
+    const firstWithExtension = cards.find((c) => this.normalizeText((c as any).extension));
+    const firstWithSeason = cards.find((c) => this.normalizeText((c as any).season));
+
+    const extension = (firstWithExtension as any)?.extension ?? null;
+    const season = (firstWithSeason as any)?.season ?? null;
+
+    const label =
+      extension?.toString().trim() ||
+      season?.toString().trim() ||
+      `Saison ${seasonNumber}`;
+
+    return {
+      label,
+      extension: extension ? String(extension) : null,
+      season: season ? String(season) : null,
+    };
+  }
+
+  private buildSeasonCatalog(cards: Card[]): SeasonCatalogItem[] {
+    const grouped = new Map<number, Card[]>();
+
+    for (const card of cards) {
+      const seasonNumber = this.normalizeSeasonNumber((card as any).seasonNumber);
+      if (!seasonNumber) continue;
+
+      const arr = grouped.get(seasonNumber) ?? [];
+      arr.push(card);
+      grouped.set(seasonNumber, arr);
+    }
+
+    return Array.from(grouped.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([seasonNumber, seasonCards]) => {
+        const { label, extension, season } = this.getSeasonLabelFromCards(
+          seasonCards,
+          seasonNumber,
+        );
+
+        const rarityCounts: Record<string, number> = {};
+        for (const card of seasonCards) {
+          rarityCounts[card.rarity] = (rarityCounts[card.rarity] ?? 0) + 1;
+        }
+
+        const missingRequirements: string[] = [];
+        if ((rarityCounts['Terrain'] ?? 0) < 1) {
+          missingRequirements.push('Terrain');
+        }
+
+        for (const rarity of this.REQUIRED_OPENING_RARITIES) {
+          if ((rarityCounts[rarity] ?? 0) < 1) {
+            missingRequirements.push(rarity);
+          }
+        }
+
+        return {
+          seasonNumber,
+          label,
+          season,
+          extension,
+          cardCount: seasonCards.length,
+          rarityCounts,
+          isOpenable: missingRequirements.length === 0,
+          missingRequirements,
+        };
+      });
+  }
+
+  async getAvailableSeasons() {
+    const allCards = await this.cardRepo.find();
+    return this.buildSeasonCatalog(allCards).filter((item) => item.cardCount > 0);
+  }
+
+  private async getSeasonDefinitionOrThrow(seasonNumber: number) {
+    const allCards = await this.cardRepo.find();
+    const catalog = this.buildSeasonCatalog(allCards);
+    const seasonDef = catalog.find((item) => item.seasonNumber === seasonNumber);
+
+    if (!seasonDef) {
+      throw new NotFoundException(`Saison ${seasonNumber} introuvable.`);
+    }
+
+    if (!seasonDef.isOpenable) {
+      throw new BadRequestException(
+        `La saison ${seasonDef.label} n'est pas ouvrable. Eléments manquants: ${seasonDef.missingRequirements.join(', ')}`,
+      );
+    }
+
+    return {
+      seasonDef,
+      allCards,
+    };
   }
 
   private legendaryPickRarityProportional(): string {
@@ -180,10 +304,13 @@ export class BoosterService {
     );
   }
 
-  private async loadPools(season: Season) {
-    const allCards = await this.cardRepo.find();
+  private async loadPools(seasonNumber: number): Promise<LoadedPools> {
+    const { seasonDef, allCards } = await this.getSeasonDefinitionOrThrow(seasonNumber);
 
-    const seasonCards = allCards.filter((c) => this.isSeasonMatch(c, season));
+    const seasonCards = allCards.filter(
+      (c) => this.normalizeSeasonNumber((c as any).seasonNumber) === seasonNumber,
+    );
+
     const terrain = seasonCards.filter(
       (c) => this.normalizeText(c.rarity) === 'terrain',
     );
@@ -199,11 +326,17 @@ export class BoosterService {
     const goldCards = allCards.filter((c) => this.isGoldBoosterCard(c));
 
     const gtoSeason = allCards.filter(
-      (c) => this.isGtoCard(c) && this.isSeasonMatch(c, season),
+      (c) =>
+        this.isGtoCard(c) &&
+        this.normalizeSeasonNumber((c as any).seasonNumber) === seasonNumber,
     );
     const gtoGlobal = allCards.filter((c) => this.isGtoCard(c));
 
     return {
+      seasonNumber,
+      label: seasonDef.label,
+      season: seasonDef.season,
+      extension: seasonDef.extension,
       terrain,
       byRarity,
       ticketOrCards,
@@ -223,15 +356,16 @@ export class BoosterService {
   }
 
   private buildNormalBooster(args: {
-    season: Season;
-    pools: Awaited<ReturnType<BoosterService['loadPools']>>;
+    seasonLabel: string;
+    seasonNumber: number;
+    pools: LoadedPools;
     forceOneLegendaryInMain?: boolean;
   }): Card[] {
-    const { season, pools } = args;
+    const { seasonLabel, seasonNumber, pools } = args;
     const picked = new Set<number>();
     const out: Card[] = [];
 
-    const terrain = this.pickUnique(pools.terrain, picked, `Terrain:${season}`);
+    const terrain = this.pickUnique(pools.terrain, picked, `Terrain:${seasonLabel}`);
     out.push(terrain);
     picked.add(terrain.id);
 
@@ -250,12 +384,12 @@ export class BoosterService {
       if (rarity === 'Terrain') rarity = 'Commune';
 
       const pool = pools.byRarity.get(rarity) ?? [];
-      const card = this.pickUnique(pool, picked, `${season}:${rarity}`);
+      const card = this.pickUnique(pool, picked, `${seasonLabel}:${rarity}`);
       out.push(card);
       picked.add(card.id);
     }
 
-    if (season === 'Origins') {
+    if (seasonNumber === 1) {
       return out;
     }
 
@@ -273,10 +407,10 @@ export class BoosterService {
       } else {
         if (!pools.gtoCards.length) {
           throw new BadRequestException(
-            `Aucune carte "Gagnant ticket d'or" trouvée pour ${season}. Vérifie rarity/key/name/extension.`,
+            `Aucune carte "Gagnant ticket d'or" trouvée pour ${seasonLabel}. Vérifie rarity/key/name/extension.`,
           );
         }
-        const g = this.pickOne(pools.gtoCards, `GTO:${season}`);
+        const g = this.pickOne(pools.gtoCards, `GTO:${seasonLabel}`);
         out.push(g);
       }
     }
@@ -284,9 +418,7 @@ export class BoosterService {
     return out;
   }
 
-  private buildGoldBooster(
-    pools: Awaited<ReturnType<BoosterService['loadPools']>>,
-  ) {
+  private buildGoldBooster(pools: LoadedPools) {
     if (!pools.goldCards.length) {
       throw new BadRequestException('Aucune carte Booster Gold trouvée en base.');
     }
@@ -371,11 +503,15 @@ export class BoosterService {
     return { newCardIds, newCardKeys };
   }
 
-  async openBooster(userId: number, season: Season) {
+  async openBooster(userId: number, seasonNumber: number) {
     const payment = await this.economy.consumeOpen(userId, 'booster');
 
-    const pools = await this.loadPools(season);
-    const cards = this.buildNormalBooster({ season, pools });
+    const pools = await this.loadPools(seasonNumber);
+    const cards = this.buildNormalBooster({
+      seasonLabel: pools.label,
+      seasonNumber,
+      pools,
+    });
 
     const result = await this.dataSource.transaction(async (manager) => {
       const cardIds = cards.map((c) => c.id);
@@ -397,6 +533,8 @@ export class BoosterService {
         userId,
         cards,
         boosterCount: 1,
+        seasonNumber,
+        seasonLabel: pools.label,
       });
 
       const newIdsSet = new Set(newMeta.newCardIds);
@@ -404,7 +542,8 @@ export class BoosterService {
 
       return {
         payment,
-        season,
+        season: pools.label,
+        seasonNumber,
         cards: this.sortByRarityForDisplay(cards).map((c) => {
           const isFirstNew =
             newIdsSet.has(c.id) && !firstOccurrenceMarked.has(c.id);
@@ -436,10 +575,10 @@ export class BoosterService {
     return result;
   }
 
-  async openDisplay(userId: number, season: Season) {
+  async openDisplay(userId: number, seasonNumber: number) {
     const payment = await this.economy.consumeOpen(userId, 'display');
 
-    const pools = await this.loadPools(season);
+    const pools = await this.loadPools(seasonNumber);
 
     const hasGoldBooster = Math.random() < this.CHANCE_DISPLAY_HAS_GOLD;
     const goldIndex = hasGoldBooster ? this.randInt(this.DISPLAY_BOOSTERS) : -1;
@@ -458,7 +597,8 @@ export class BoosterService {
         const forceLegendary = i === forcedLegendaryIndex;
         boosters.push(
           this.buildNormalBooster({
-            season,
+            seasonLabel: pools.label,
+            seasonNumber,
             pools,
             forceOneLegendaryInMain: forceLegendary,
           }),
@@ -533,7 +673,8 @@ export class BoosterService {
 
       await this.displayOpeningRepoSaveSafe({
         userId,
-        season,
+        seasonNumber,
+        seasonLabel: pools.label,
         boosters,
         hasGoldBooster,
         forcedLegendaryIndex,
@@ -542,7 +683,8 @@ export class BoosterService {
 
       return {
         payment,
-        season,
+        season: pools.label,
+        seasonNumber,
         meta: {
           boosters: this.DISPLAY_BOOSTERS,
           hasGoldBooster,
@@ -573,11 +715,15 @@ export class BoosterService {
     userId: number;
     cards: Card[];
     boosterCount: number;
+    seasonNumber: number;
+    seasonLabel: string;
   }) {
     try {
       await this.boosterOpeningRepo.save({
         user: { id: args.userId } as any,
         openedAt: new Date() as any,
+        seasonNumber: args.seasonNumber,
+        seasonLabel: args.seasonLabel,
         boosterCount: args.boosterCount as any,
         cardIds: args.cards.map((c) => c.id) as any,
         resultJson: args.cards.map((c) => ({
@@ -595,7 +741,8 @@ export class BoosterService {
 
   private async displayOpeningRepoSaveSafe(args: {
     userId: number;
-    season: Season;
+    seasonNumber: number;
+    seasonLabel: string;
     boosters: Card[][];
     hasGoldBooster: boolean;
     forcedLegendaryIndex: number;
@@ -605,7 +752,9 @@ export class BoosterService {
       await this.displayOpeningRepo.save({
         user: { id: args.userId } as any,
         openedAt: new Date() as any,
-        season: args.season as any,
+        seasonNumber: args.seasonNumber,
+        season: args.seasonLabel,
+        boosterCount: this.DISPLAY_BOOSTERS,
         resultJson: {
           boosters: args.boosters.map((b) => b.map((c) => c.id)),
           hasGoldBooster: args.hasGoldBooster,

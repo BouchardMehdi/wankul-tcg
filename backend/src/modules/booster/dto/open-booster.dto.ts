@@ -1,7 +1,7 @@
-import { IsIn } from 'class-validator';
+import { IsInt, Min } from 'class-validator';
 
 export class OpenBoosterDto {
-  // on pilote le booster par "saison" (= extension) : Origins/Campus/Battle/Stellar
-  @IsIn(['Origins', 'Campus', 'Battle', 'Stellar'])
-  season: 'Origins' | 'Campus' | 'Battle' | 'Stellar';
+  @IsInt()
+  @Min(1)
+  seasonNumber!: number;
 }

@@ -1,6 +1,7 @@
-import { IsIn } from 'class-validator';
+import { IsInt, Min } from 'class-validator';
 
 export class OpenDisplayDto {
-  @IsIn(['Origins', 'Campus', 'Battle', 'Stellar'])
-  season: 'Origins' | 'Campus' | 'Battle' | 'Stellar';
+  @IsInt()
+  @Min(1)
+  seasonNumber!: number;
 }
