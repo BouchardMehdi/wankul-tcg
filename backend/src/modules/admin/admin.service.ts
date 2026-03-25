@@ -12,6 +12,7 @@ import { User } from '../users/user.entity';
 import { BugReport } from '../report/bug-report.entity';
 import { BugReportStatusHistory } from '../report/bug-report-status-history.entity';
 import { BugReportStatus } from '../report/bug-report.entity';
+import { EconomyAnalyticsService } from '../economy/economy-analytics.service';
 
 type GetAllTicketsParams = {
   status?: BugReportStatus | '';
@@ -28,6 +29,7 @@ export class AdminService {
     @InjectRepository(BugReportStatusHistory)
     private readonly historyRepo: Repository<BugReportStatusHistory>,
     private readonly jwt: JwtService,
+    private readonly economyAnalyticsService: EconomyAnalyticsService,
   ) {}
 
   private formatReport(report: BugReport) {
@@ -58,7 +60,10 @@ export class AdminService {
       updatedAt: report.updatedAt,
       histories: (report.histories ?? [])
         .slice()
-        .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
+        .sort(
+          (a, b) =>
+            new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime(),
+        )
         .map((history) => ({
           id: history.id,
           fromStatus: history.fromStatus,
@@ -175,7 +180,12 @@ export class AdminService {
     };
   }
 
-  async updateTicketStatus(reportId: number, adminUsername: string, status: string, note?: string) {
+  async updateTicketStatus(
+    reportId: number,
+    adminUsername: string,
+    status: string,
+    note?: string,
+  ) {
     const report = await this.reportsRepo.findOne({
       where: { id: reportId },
       relations: ['histories'],
@@ -243,5 +253,9 @@ export class AdminService {
       message: 'Ticket updated.',
       item: this.formatReport(refreshed),
     };
+  }
+
+  async getEconomyOverview(days = 7) {
+    return this.economyAnalyticsService.getOverview(days);
   }
 }

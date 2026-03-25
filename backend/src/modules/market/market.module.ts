@@ -1,30 +1,43 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { Card } from '../cards/card.entity';
-import { UserCard } from '../users/user-card.entity';
-import { UserEconomy } from '../economy/user-economy.entity';
 import { MarketController } from './market.controller';
-import { MarketPricingService } from './market-pricing.service';
 import { MarketService } from './market.service';
+import { MarketPricingService } from './market-pricing.service';
+import { MarketPriceHistoryService } from './market-price-history.service';
+
 import { MarketListing } from './market-listing.entity';
 import { MarketTransaction } from './market-transaction.entity';
 import { MarketPriceHistory } from './market-price-history.entity';
-import { MarketPriceHistoryService } from './market-price-history.service';
+
+import { UserCard } from '../users/user-card.entity';
+import { UserEconomy } from '../economy/user-economy.entity';
+import { Card } from '../cards/card.entity';
+
+import { EconomyAnalyticsModule } from '../economy/economy-analytics.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      Card,
       UserCard,
       UserEconomy,
+      Card,
       MarketListing,
       MarketTransaction,
       MarketPriceHistory,
     ]),
+    EconomyAnalyticsModule,
   ],
   controllers: [MarketController],
-  providers: [MarketPricingService, MarketPriceHistoryService, MarketService],
-  exports: [MarketPricingService, MarketPriceHistoryService, MarketService],
+  providers: [
+    MarketService,
+    MarketPricingService,
+    MarketPriceHistoryService,
+  ],
+  exports: [
+    MarketService,
+    MarketPricingService,
+    MarketPriceHistoryService,
+  ],
 })
 export class MarketModule {}

@@ -60,4 +60,10 @@ export class AdminController {
       dto.note,
     );
   }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Get('economy/overview')
+  async getEconomyOverview(@Query('days') days?: string) {
+    return this.adminService.getEconomyOverview(Number(days ?? 7) || 7);
+  }
 }

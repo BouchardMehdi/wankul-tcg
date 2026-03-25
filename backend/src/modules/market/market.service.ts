@@ -11,10 +11,7 @@ import { UserEconomy } from '../economy/user-economy.entity';
 import { Card } from '../cards/card.entity';
 import { MarketPricingService } from './market-pricing.service';
 import { MarketPriceHistoryService } from './market-price-history.service';
-import {
-  MARKET_KEEP_MIN_COPIES,
-  QUICK_SELL_RATE,
-} from './constants/market-rarity-values';
+import { MARKET_KEEP_MIN_COPIES } from './constants/market-rarity-values';
 import { MarketListing } from './market-listing.entity';
 import { MarketTransaction } from './market-transaction.entity';
 import { MarketListingStatus } from './market-listing-status.enum';
@@ -24,6 +21,7 @@ import { MarketListingMode } from './market-listing-mode.enum';
 import { MarketOfferType } from './market-offer-type.enum';
 import { BuyListingDto } from './dto/buy-listing.dto';
 import { MarketPricePosition } from './market-price-position.enum';
+import { EconomyAnalyticsService } from '../economy/economy-analytics.service';
 
 export interface QuickSellResult {
   success: true;
@@ -57,6 +55,7 @@ export class MarketService {
     private readonly dataSource: DataSource,
     private readonly marketPricingService: MarketPricingService,
     private readonly marketPriceHistoryService: MarketPriceHistoryService,
+    private readonly economyAnalyticsService: EconomyAnalyticsService,
 
     @InjectRepository(UserCard)
     private readonly userCardsRepository: Repository<UserCard>,
@@ -109,10 +108,7 @@ export class MarketService {
           userCard.card.id,
         );
 
-        const quickSellUnitPrice = Math.max(
-          1,
-          Math.round(pricing.finalPrice * QUICK_SELL_RATE),
-        );
+        const quickSellUnitPrice = pricing.quickSellUnitPrice;
 
         return {
           cardId: userCard.card.id,
@@ -151,10 +147,7 @@ export class MarketService {
     }
 
     const pricing = await this.marketPricingService.getMarketPrice(cardId);
-    const unitCreditsEarned = Math.max(
-      1,
-      Math.round(pricing.finalPrice * QUICK_SELL_RATE),
-    );
+    const unitCreditsEarned = pricing.quickSellUnitPrice;
 
     const result = await this.dataSource.transaction(async (manager) => {
       const userCardRepo = manager.getRepository(UserCard);
@@ -221,23 +214,25 @@ export class MarketService {
       await userEconomyRepo.save(economy);
 
       return {
-      success: true as const,
-      cardId: card.id,
-      cardKey: card.key,
-      cardName: card.name,
-      rarity: card.rarity,
-      soldQuantity: quantity,
-      marketPrice: pricing.finalPrice,
-      quickSellRate: QUICK_SELL_RATE,
-      creditsEarned,
-      remainingQuantity: userCard.quantity,
-      keptQuantity: MARKET_KEEP_MIN_COPIES,
-      maxSellableQuantity,
-      newCreditsBalance: economy.credits,
-  };
+        success: true as const,
+        cardId: card.id,
+        cardKey: card.key,
+        cardName: card.name,
+        rarity: card.rarity,
+        soldQuantity: quantity,
+        marketPrice: pricing.finalPrice,
+        quickSellRate: pricing.quickSellRate,
+        creditsEarned,
+        remainingQuantity: userCard.quantity,
+        keptQuantity: MARKET_KEEP_MIN_COPIES,
+        maxSellableQuantity,
+        newCreditsBalance: economy.credits,
+      };
     });
 
+    await this.economyAnalyticsService.addQuickSell(result.creditsEarned);
     await this.snapshotCards([cardId], 'quick_sell');
+
     return result;
   }
 
@@ -553,7 +548,10 @@ export class MarketService {
         throw new BadRequestException('You cannot buy your own listing.');
       }
 
-      const purchaseQuantity = this.resolvePurchaseQuantity(listing, dto.quantity);
+      const purchaseQuantity = this.resolvePurchaseQuantity(
+        listing,
+        dto.quantity,
+      );
 
       const requiredCredits = this.computeRequiredCredits(
         listing,
@@ -753,10 +751,9 @@ export class MarketService {
 
       return {
         success: true,
-        snapshotCardIds: [
-          listing.card.id,
-          buyerOfferedCard?.id ?? null,
-        ].filter((value): value is number => typeof value === 'number'),
+        snapshotCardIds: [listing.card.id, buyerOfferedCard?.id ?? null].filter(
+          (value): value is number => typeof value === 'number',
+        ),
         listing: {
           id: listing.id,
           status: listing.status,
@@ -881,7 +878,8 @@ export class MarketService {
           });
         }
 
-        sellerRewardCardInventory.quantity += transaction.buyerOfferedCardQuantity;
+        sellerRewardCardInventory.quantity +=
+          transaction.buyerOfferedCardQuantity;
         await userCardRepo.save(sellerRewardCardInventory);
       }
 
@@ -908,6 +906,10 @@ export class MarketService {
       };
     });
 
+    if (result.rewards.credits > 0) {
+      await this.economyAnalyticsService.addMarketVolume(result.rewards.credits);
+    }
+
     await this.snapshotCards(result.snapshotCardIds, 'reward_claimed');
 
     return {
@@ -922,13 +924,7 @@ export class MarketService {
   async getMyTransactions(userId: number) {
     const transactions = await this.marketTransactionRepository.find({
       where: [{ buyer: { id: userId } }, { seller: { id: userId } }],
-      relations: [
-        'listing',
-        'seller',
-        'buyer',
-        'card',
-        'buyerOfferedCard',
-      ],
+      relations: ['listing', 'seller', 'buyer', 'card', 'buyerOfferedCard'],
       order: { createdAt: 'DESC' },
     });
 
@@ -940,13 +936,7 @@ export class MarketService {
   async getMyPurchases(userId: number) {
     const transactions = await this.marketTransactionRepository.find({
       where: { buyer: { id: userId } },
-      relations: [
-        'listing',
-        'seller',
-        'buyer',
-        'card',
-        'buyerOfferedCard',
-      ],
+      relations: ['listing', 'seller', 'buyer', 'card', 'buyerOfferedCard'],
       order: { createdAt: 'DESC' },
     });
 
@@ -958,13 +948,7 @@ export class MarketService {
   async getMySales(userId: number) {
     const transactions = await this.marketTransactionRepository.find({
       where: { seller: { id: userId } },
-      relations: [
-        'listing',
-        'seller',
-        'buyer',
-        'card',
-        'buyerOfferedCard',
-      ],
+      relations: ['listing', 'seller', 'buyer', 'card', 'buyerOfferedCard'],
       order: { createdAt: 'DESC' },
     });
 
@@ -973,7 +957,9 @@ export class MarketService {
     );
   }
 
-  private normalizeCreateListingInput(input: CreateListingInput): CreateListingInput {
+  private normalizeCreateListingInput(
+    input: CreateListingInput,
+  ): CreateListingInput {
     const quantity = Number(input.quantity);
     const priceCredits = Number(input.priceCredits);
     const wantedCardId =

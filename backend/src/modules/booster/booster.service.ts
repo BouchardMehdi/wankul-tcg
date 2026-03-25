@@ -3,15 +3,23 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Card } from '../cards/card.entity';
 import { UsersService } from '../users/users.service';
-import { EconomyService, type CreditBreakdown } from '../economy/economy.service';
+import {
+  EconomyService,
+  type CreditBreakdown,
+} from '../economy/economy.service';
 import { BoosterOpening } from './booster-opening.entity';
 import { DisplayOpening } from './display-opening.entity';
+import { EconomyAnalyticsService } from '../economy/economy-analytics.service';
 
 type Season = 'Origins' | 'Campus' | 'Battle' | 'Stellar';
 
 type NewCardsMeta = {
   newCardIds: number[];
   newCardKeys: string[];
+};
+
+type DisplayBoosterCard = Card & {
+  isNew: boolean;
 };
 
 @Injectable()
@@ -28,6 +36,7 @@ export class BoosterService {
 
     private readonly users: UsersService,
     private readonly economy: EconomyService,
+    private readonly economyAnalyticsService: EconomyAnalyticsService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -64,12 +73,16 @@ export class BoosterService {
   }
 
   private pickOne<T>(arr: T[], label: string): T {
-    if (!arr.length) throw new BadRequestException(`Aucune carte trouvée pour: ${label}`);
+    if (!arr.length) {
+      throw new BadRequestException(`Aucune carte trouvée pour: ${label}`);
+    }
     return arr[this.randInt(arr.length)];
   }
 
   private pickUnique(pool: Card[], already: Set<number>, label: string): Card {
-    if (!pool.length) throw new BadRequestException(`Aucune carte trouvée pour: ${label}`);
+    if (!pool.length) {
+      throw new BadRequestException(`Aucune carte trouvée pour: ${label}`);
+    }
 
     if (pool.length <= already.size) return this.pickOne(pool, label);
 
@@ -162,14 +175,18 @@ export class BoosterService {
       ["Ticket d'or", 11],
     ]);
 
-    return [...cards].sort((a, b) => (order.get(a.rarity) ?? 999) - (order.get(b.rarity) ?? 999));
+    return [...cards].sort(
+      (a, b) => (order.get(a.rarity) ?? 999) - (order.get(b.rarity) ?? 999),
+    );
   }
 
   private async loadPools(season: Season) {
     const allCards = await this.cardRepo.find();
 
     const seasonCards = allCards.filter((c) => this.isSeasonMatch(c, season));
-    const terrain = seasonCards.filter((c) => this.normalizeText(c.rarity) === 'terrain');
+    const terrain = seasonCards.filter(
+      (c) => this.normalizeText(c.rarity) === 'terrain',
+    );
 
     const byRarity = new Map<string, Card[]>();
     for (const c of seasonCards) {
@@ -181,7 +198,9 @@ export class BoosterService {
     const ticketOrCards = allCards.filter((c) => this.isTicketOrCard(c));
     const goldCards = allCards.filter((c) => this.isGoldBoosterCard(c));
 
-    const gtoSeason = allCards.filter((c) => this.isGtoCard(c) && this.isSeasonMatch(c, season));
+    const gtoSeason = allCards.filter(
+      (c) => this.isGtoCard(c) && this.isSeasonMatch(c, season),
+    );
     const gtoGlobal = allCards.filter((c) => this.isGtoCard(c));
 
     return {
@@ -245,7 +264,9 @@ export class BoosterService {
 
       if (isTicketOr) {
         if (!pools.ticketOrCards.length) {
-          throw new BadRequestException(`Aucune carte "Ticket d'or" trouvée en base.`);
+          throw new BadRequestException(
+            `Aucune carte "Ticket d'or" trouvée en base.`,
+          );
         }
         const t = this.pickOne(pools.ticketOrCards, "Ticket d'or");
         out.push(t);
@@ -263,7 +284,9 @@ export class BoosterService {
     return out;
   }
 
-  private buildGoldBooster(pools: Awaited<ReturnType<BoosterService['loadPools']>>) {
+  private buildGoldBooster(
+    pools: Awaited<ReturnType<BoosterService['loadPools']>>,
+  ) {
     if (!pools.goldCards.length) {
       throw new BadRequestException('Aucune carte Booster Gold trouvée en base.');
     }
@@ -288,13 +311,11 @@ export class BoosterService {
     }
   }
 
-  private computeBoosterCreditsFromCards(args: {
+  private async computeBoosterCreditsFromCards(args: {
     cards: Card[];
     ownedBefore: Map<number, number>;
   }) {
-    const rarities = args.cards.map((c) => c.rarity);
-
-    const newCardRarities: string[] = [];
+    const newCardIds: number[] = [];
     const seen = new Set<number>();
 
     for (const c of args.cards) {
@@ -302,17 +323,19 @@ export class BoosterService {
       seen.add(c.id);
 
       const qty = args.ownedBefore.get(c.id) ?? 0;
-      if (qty === 0) newCardRarities.push(c.rarity);
+      if (qty === 0) newCardIds.push(c.id);
     }
 
     const ticketOrCard = args.cards.find((c) => this.isTicketOrCard(c));
     const gtoPresent = args.cards.some((c) => this.isGtoCard(c));
     const ticketOrPresent = Boolean(ticketOrCard);
-    const ticketOrIsNew = ticketOrCard ? (args.ownedBefore.get(ticketOrCard.id) ?? 0) === 0 : false;
+    const ticketOrIsNew = ticketOrCard
+      ? (args.ownedBefore.get(ticketOrCard.id) ?? 0) === 0
+      : false;
 
-    const breakdown = this.economy.computeBoosterCredits({
-      rarities,
-      newCardRarities,
+    const breakdown = await this.economy.computeBoosterCredits({
+      cards: args.cards.map((card) => ({ id: card.id, rarity: card.rarity })),
+      newCardIds,
       gtoPresent,
       ticketOrPresent,
       ticketOrIsNew,
@@ -326,7 +349,10 @@ export class BoosterService {
     };
   }
 
-  private computeNewCardsMeta(args: { cards: Card[]; ownedBefore: Map<number, number> }): NewCardsMeta {
+  private computeNewCardsMeta(args: {
+    cards: Card[];
+    ownedBefore: Map<number, number>;
+  }): NewCardsMeta {
     const newCardIds: number[] = [];
     const newCardKeys: string[] = [];
 
@@ -351,7 +377,7 @@ export class BoosterService {
     const pools = await this.loadPools(season);
     const cards = this.buildNormalBooster({ season, pools });
 
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const cardIds = cards.map((c) => c.id);
       const ownedBefore = await this.users.getOwnedMap(userId, cardIds);
 
@@ -359,10 +385,11 @@ export class BoosterService {
 
       await this.users.addCardsToUserBulk(userId, cardIds, manager);
 
-      const { breakdown, hasGTO, hasTicketOr, ticketOrIsNew } = this.computeBoosterCreditsFromCards({
-        cards,
-        ownedBefore,
-      });
+      const { breakdown, hasGTO, hasTicketOr, ticketOrIsNew } =
+        await this.computeBoosterCreditsFromCards({
+          cards,
+          ownedBefore,
+        });
 
       await this.economy.addCredits(userId, breakdown.total);
 
@@ -379,7 +406,8 @@ export class BoosterService {
         payment,
         season,
         cards: this.sortByRarityForDisplay(cards).map((c) => {
-          const isFirstNew = newIdsSet.has(c.id) && !firstOccurrenceMarked.has(c.id);
+          const isFirstNew =
+            newIdsSet.has(c.id) && !firstOccurrenceMarked.has(c.id);
           if (isFirstNew) firstOccurrenceMarked.add(c.id);
 
           return {
@@ -389,7 +417,8 @@ export class BoosterService {
         }),
         credits: breakdown,
         creditsEarnedTotal: breakdown.total,
-        ...newMeta,
+        newCardIds: newMeta.newCardIds,
+        newCardKeys: newMeta.newCardKeys,
         flags: {
           hasGTO,
           hasTicketOr,
@@ -397,6 +426,14 @@ export class BoosterService {
         },
       };
     });
+
+    await this.economyAnalyticsService.incrementBooster();
+    await this.economyAnalyticsService.addCreditsSpent(200);
+    await this.economyAnalyticsService.addOpeningReward(
+      result.creditsEarnedTotal,
+    );
+
+    return result;
   }
 
   async openDisplay(userId: number, season: Season) {
@@ -419,11 +456,17 @@ export class BoosterService {
         boosters.push(this.buildGoldBooster(pools));
       } else {
         const forceLegendary = i === forcedLegendaryIndex;
-        boosters.push(this.buildNormalBooster({ season, pools, forceOneLegendaryInMain: forceLegendary }));
+        boosters.push(
+          this.buildNormalBooster({
+            season,
+            pools,
+            forceOneLegendaryInMain: forceLegendary,
+          }),
+        );
       }
     }
 
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const allCards = boosters.flat();
       const allCardIds = allCards.map((c) => c.id);
 
@@ -436,10 +479,12 @@ export class BoosterService {
       const displayNewCardKeys: string[] = [];
       const markedNewOnce = new Set<number>();
 
-      const boostersWithFlags = boosters.map((boosterCards) => {
+      const boostersWithFlags: DisplayBoosterCard[][] = [];
+
+      for (const boosterCards of boosters) {
         const ownedBeforeThisBooster = this.cloneOwnedMap(simulatedOwned);
 
-        const { breakdown } = this.computeBoosterCreditsFromCards({
+        const { breakdown } = await this.computeBoosterCreditsFromCards({
           cards: boosterCards,
           ownedBefore: ownedBeforeThisBooster,
         });
@@ -447,35 +492,35 @@ export class BoosterService {
 
         const seenInsideBooster = new Set<number>();
 
-        const boosterWithFlags = this.sortByRarityForDisplay(boosterCards).map((c) => {
-          const qtyBeforeThisBooster = ownedBeforeThisBooster.get(c.id) ?? 0;
-          const firstTimeInThisBooster = !seenInsideBooster.has(c.id);
+        const boosterWithFlags: DisplayBoosterCard[] =
+          this.sortByRarityForDisplay(boosterCards).map((c) => {
+            const qtyBeforeThisBooster = ownedBeforeThisBooster.get(c.id) ?? 0;
+            const firstTimeInThisBooster = !seenInsideBooster.has(c.id);
 
-          if (firstTimeInThisBooster) {
-            seenInsideBooster.add(c.id);
-          }
+            if (firstTimeInThisBooster) {
+              seenInsideBooster.add(c.id);
+            }
 
-          const isActuallyNewForDisplay =
-            firstTimeInThisBooster &&
-            qtyBeforeThisBooster === 0 &&
-            !markedNewOnce.has(c.id);
+            const isActuallyNewForDisplay =
+              firstTimeInThisBooster &&
+              qtyBeforeThisBooster === 0 &&
+              !markedNewOnce.has(c.id);
 
-          if (isActuallyNewForDisplay) {
-            markedNewOnce.add(c.id);
-            displayNewCardIds.push(c.id);
-            if ((c as any).key) displayNewCardKeys.push((c as any).key);
-          }
+            if (isActuallyNewForDisplay) {
+              markedNewOnce.add(c.id);
+              displayNewCardIds.push(c.id);
+              if ((c as any).key) displayNewCardKeys.push((c as any).key);
+            }
 
-          return {
-            ...c,
-            isNew: isActuallyNewForDisplay,
-          };
-        });
+            return {
+              ...c,
+              isNew: isActuallyNewForDisplay,
+            };
+          });
 
         this.applyCardsToOwnedMap(simulatedOwned, boosterCards);
-
-        return boosterWithFlags;
-      });
+        boostersWithFlags.push(boosterWithFlags);
+      }
 
       await this.users.addCardsToUserBulk(userId, allCardIds, manager);
 
@@ -514,9 +559,21 @@ export class BoosterService {
         newCardKeys: displayNewCardKeys,
       };
     });
+
+    await this.economyAnalyticsService.incrementDisplay();
+    await this.economyAnalyticsService.addCreditsSpent(4800);
+    await this.economyAnalyticsService.addOpeningReward(
+      result.creditsEarnedTotal,
+    );
+
+    return result;
   }
 
-  private async boosterOpeningRepoSaveSafe(args: { userId: number; cards: Card[]; boosterCount: number }) {
+  private async boosterOpeningRepoSaveSafe(args: {
+    userId: number;
+    cards: Card[];
+    boosterCount: number;
+  }) {
     try {
       await this.boosterOpeningRepo.save({
         user: { id: args.userId } as any,

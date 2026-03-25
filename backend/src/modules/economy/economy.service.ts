@@ -3,10 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEconomy } from './user-economy.entity';
 import { User } from '../users/user.entity';
-import {
-  DEFAULT_MARKET_BASE_VALUE,
-  MARKET_RARITY_BASE_VALUES,
-} from '../market/constants/market-rarity-values';
+import { MarketPricingService } from '../market/market-pricing.service';
 
 export type OpenKind = 'booster' | 'display';
 
@@ -29,18 +26,6 @@ const ECON = {
     display: { cap: 1, rechargeMinutes: 60 * 60 },
   },
 
-  /**
-   * Logique économique post-market :
-   * - doublon = ~25% de la valeur marché
-   * - nouvelle carte = ~135% de la valeur marché
-   *
-   * Ça garde l’ouverture intéressante sans rendre le market inutile.
-   */
-  rates: {
-    duplicateFromMarket: 0.25,
-    newFromMarket: 1.35,
-  },
-
   multipliers: {
     gtoBooster: 1.35,
     goldDisplay: 1.15,
@@ -54,6 +39,7 @@ export class EconomyService {
   constructor(
     @InjectRepository(UserEconomy)
     private readonly economyRepo: Repository<UserEconomy>,
+    private readonly marketPricingService: MarketPricingService,
   ) {}
 
   getCosts() {
@@ -99,44 +85,6 @@ export class EconomyService {
     } else {
       row.displayRechargeAt = now;
     }
-  }
-
-  private normalizeRarity(rarity: string): string {
-    switch (rarity) {
-      case 'Ultra Rare (U1)':
-        return 'U1';
-      case 'Ultra Rare (U2)':
-        return 'U2';
-      case 'Légendaire dorée':
-        return 'Légendaire dorée';
-      default:
-        return rarity;
-    }
-  }
-
-  private getMarketBaseValue(rarity: string): number {
-    const normalized = this.normalizeRarity(rarity);
-    return MARKET_RARITY_BASE_VALUES[normalized] ?? DEFAULT_MARKET_BASE_VALUE;
-  }
-
-  private getDuplicateCreditsForRarity(rarity: string): number {
-    const normalized = this.normalizeRarity(rarity);
-
-    if (normalized === 'Terrain') return 0;
-    if (normalized === "Ticket d'or") return 0;
-
-    const marketValue = this.getMarketBaseValue(normalized);
-    return Math.max(0, Math.floor(marketValue * ECON.rates.duplicateFromMarket));
-  }
-
-  private getNewCreditsForRarity(rarity: string): number {
-    const normalized = this.normalizeRarity(rarity);
-
-    if (normalized === 'Terrain') return 6;
-    if (normalized === "Ticket d'or") return 0;
-
-    const marketValue = this.getMarketBaseValue(normalized);
-    return Math.max(0, Math.floor(marketValue * ECON.rates.newFromMarket));
   }
 
   async ensure(userId: number): Promise<UserEconomy> {
@@ -201,26 +149,36 @@ export class EconomyService {
     return { kind, usedFree: false, cost };
   }
 
-  computeBoosterCredits(args: {
-    rarities: string[];
-    newCardRarities: string[];
+  async computeBoosterCredits(args: {
+    cards: Array<{ id: number; rarity: string }>;
+    newCardIds: number[];
     gtoPresent: boolean;
     ticketOrPresent: boolean;
     ticketOrIsNew: boolean;
-  }): CreditBreakdown {
-    const { rarities, newCardRarities, gtoPresent, ticketOrPresent, ticketOrIsNew } = args;
+  }): Promise<CreditBreakdown> {
+    const { cards, newCardIds, gtoPresent, ticketOrPresent, ticketOrIsNew } = args;
+
+    const uniqueCardIds = Array.from(new Set(cards.map((card) => card.id)));
+    const pricingEntries = await Promise.all(
+      uniqueCardIds.map(async (cardId) => [cardId, await this.marketPricingService.getRewardQuote(cardId)] as const),
+    );
+    const pricingByCardId = new Map(pricingEntries);
 
     let duplicateTotal = 0;
-    for (const rarity of rarities) {
-      duplicateTotal += this.getDuplicateCreditsForRarity(rarity);
+    for (const card of cards) {
+      const quote = pricingByCardId.get(card.id);
+      if (!quote) continue;
+      duplicateTotal += quote.duplicateRewardValue;
     }
 
     let duplicatePartToRemoveForNewCards = 0;
     let newCardsTotal = 0;
 
-    for (const rarity of newCardRarities) {
-      duplicatePartToRemoveForNewCards += this.getDuplicateCreditsForRarity(rarity);
-      newCardsTotal += this.getNewCreditsForRarity(rarity);
+    for (const cardId of Array.from(new Set(newCardIds))) {
+      const quote = pricingByCardId.get(cardId);
+      if (!quote) continue;
+      duplicatePartToRemoveForNewCards += quote.duplicateRewardValue;
+      newCardsTotal += quote.newRewardValue;
     }
 
     const base = Math.max(0, duplicateTotal - duplicatePartToRemoveForNewCards);
