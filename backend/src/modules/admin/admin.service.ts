@@ -60,10 +60,7 @@ export class AdminService {
       updatedAt: report.updatedAt,
       histories: (report.histories ?? [])
         .slice()
-        .sort(
-          (a, b) =>
-            new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime(),
-        )
+        .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
         .map((history) => ({
           id: history.id,
           fromStatus: history.fromStatus,

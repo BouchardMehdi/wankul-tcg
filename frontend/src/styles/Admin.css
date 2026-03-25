@@ -4,7 +4,7 @@
 }
 
 .adminPanel {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -30,11 +30,58 @@
   flex-wrap: wrap;
 }
 
+.adminTabs {
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px;
+  margin-bottom: 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.adminTabBtn {
+  border: 0;
+  color: rgba(255, 255, 255, 0.82);
+  background: transparent;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.adminTabBtn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.adminTabBtn.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(255, 77, 109, 0.28), rgba(155, 92, 255, 0.28));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .adminUnlockForm,
 .adminEditGrid {
   display: grid;
   gap: 14px;
   margin-top: 16px;
+}
+
+.adminToolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.adminToolbar__left {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .adminFiltersBar {
@@ -54,6 +101,10 @@
 .adminField {
   display: grid;
   gap: 6px;
+}
+
+.adminField--compact {
+  min-width: 150px;
 }
 
 .adminField span {
@@ -113,11 +164,29 @@
   margin-bottom: 18px;
 }
 
+.adminStats--dashboard {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
 .adminStatCard {
   padding: 16px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03);
+}
+
+.adminStatCard--accent {
+  background: linear-gradient(135deg, rgba(255, 77, 109, 0.16), rgba(155, 92, 255, 0.14));
+}
+
+.adminStatCard.is-positive {
+  border-color: rgba(86, 214, 144, 0.26);
+  background: rgba(86, 214, 144, 0.08);
+}
+
+.adminStatCard.is-negative {
+  border-color: rgba(255, 97, 123, 0.26);
+  background: rgba(255, 97, 123, 0.08);
 }
 
 .adminStatCard__value {
@@ -129,6 +198,214 @@
   margin-top: 4px;
   color: rgba(255,255,255,0.72);
   font-size: 14px;
+}
+
+.adminDashboard {
+  display: grid;
+  gap: 18px;
+}
+
+.adminDashboardGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
+  gap: 16px;
+}
+
+.adminDashboardPanel {
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  padding: 18px;
+}
+
+.adminDashboardPanel--full {
+  width: 100%;
+}
+
+.adminDashboardPanel__head {
+  margin-bottom: 16px;
+}
+
+.adminDashboardPanel__head h3 {
+  margin: 0 0 4px;
+}
+
+.adminBarChart {
+  display: grid;
+  gap: 12px;
+}
+
+.adminBarChartRow {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.adminBarChartRow__label {
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.74);
+}
+
+.adminBarChartRow__bars {
+  display: grid;
+  gap: 8px;
+}
+
+.adminBarChartRow__bar {
+  min-height: 30px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.adminBarChartRow__bar.is-earned {
+  background: linear-gradient(135deg, rgba(86, 214, 144, 0.92), rgba(42, 171, 99, 0.92));
+}
+
+.adminBarChartRow__bar.is-spent {
+  background: linear-gradient(135deg, rgba(255, 204, 102, 0.92), rgba(255, 163, 26, 0.92));
+}
+
+.adminBarChartRow__bar.is-market {
+  background: linear-gradient(135deg, rgba(90, 170, 255, 0.92), rgba(62, 109, 255, 0.92));
+}
+
+.adminChartLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 14px;
+  color: rgba(255,255,255,0.76);
+  font-size: 13px;
+}
+
+.adminChartLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adminChartLegend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.adminChartLegend i.is-earned {
+  background: rgba(86, 214, 144, 0.92);
+}
+
+.adminChartLegend i.is-spent {
+  background: rgba(255, 204, 102, 0.92);
+}
+
+.adminChartLegend i.is-market {
+  background: rgba(90, 170, 255, 0.92);
+}
+
+.adminKpiList {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.adminKpiRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.adminKpiRow span {
+  color: rgba(255,255,255,0.76);
+}
+
+.adminKpiRow strong {
+  font-size: 15px;
+}
+
+.adminInsightCards {
+  display: grid;
+  gap: 12px;
+}
+
+.adminInsightCard {
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.adminInsightCard.is-warning {
+  border-color: rgba(255, 204, 102, 0.22);
+  background: rgba(255, 204, 102, 0.08);
+}
+
+.adminInsightCard.is-good {
+  border-color: rgba(86, 214, 144, 0.22);
+  background: rgba(86, 214, 144, 0.08);
+}
+
+.adminInsightCard__title {
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.72);
+}
+
+.adminInsightCard__value {
+  margin-top: 6px;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.adminInsightCard__text {
+  margin-top: 8px;
+  color: rgba(255,255,255,0.76);
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.adminDataTableWrap {
+  overflow-x: auto;
+}
+
+.adminDataTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.adminDataTable th,
+.adminDataTable td {
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 14px;
+}
+
+.adminDataTable th {
+  color: rgba(255,255,255,0.72);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.adminReports {
+  display: grid;
+  gap: 0;
 }
 
 .adminTicketsList {
@@ -332,6 +609,12 @@
   color: rgba(255,255,255,0.72);
 }
 
+@media (max-width: 980px) {
+  .adminDashboardGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 760px) {
   .adminPanel .panel-inner {
     padding: 20px 16px 26px;
@@ -342,6 +625,11 @@
     align-items: stretch;
   }
 
+  .adminHeaderActions,
+  .adminTabs {
+    width: 100%;
+  }
+
   .adminHeaderActions {
     flex-direction: column;
   }
@@ -350,6 +638,18 @@
   .adminEditActions .btn,
   .adminFiltersActions .btn {
     width: 100%;
+  }
+
+  .adminTabs {
+    display: grid;
+  }
+
+  .adminToolbar {
+    align-items: stretch;
+  }
+
+  .adminToolbar__left {
+    flex-direction: column;
   }
 
   .adminFiltersBar {
@@ -375,5 +675,13 @@
 
   .adminPagination__info {
     text-align: center;
+  }
+
+  .adminBarChartRow {
+    grid-template-columns: 1fr;
+  }
+
+  .adminBarChartRow__label {
+    margin-bottom: -2px;
   }
 }

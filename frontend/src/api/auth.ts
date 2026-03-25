@@ -159,6 +159,29 @@ export type AdminTicketsResponse = {
   adminUsers: string[];
 };
 
+export type EconomyDailyStatRow = {
+  id: number;
+  date: string;
+  boostersOpened: number;
+  displaysOpened: number;
+  creditsSpent: number;
+  creditsEarnedOpening: number;
+  creditsEarnedQuickSell: number;
+  creditsEarnedJackpot: number;
+  marketVolume: number;
+  createdAt: string;
+};
+
+export type AdminEconomyOverviewResponse = {
+  days: number;
+  rows: EconomyDailyStatRow[];
+  totals: {
+    creditsSpent: number;
+    creditsEarned: number;
+  };
+  inflation: number;
+};
+
 export async function login(dto: LoginDto) {
   return apiFetch<LoginResponse>('/auth/login', {
     method: 'POST',
@@ -275,6 +298,15 @@ export async function updateAdminTicketStatus(
     {
       method: 'PATCH',
       body: JSON.stringify({ status, note }),
+    },
+  );
+}
+
+export async function getAdminEconomyOverview(days = 7) {
+  return adminFetch<AdminEconomyOverviewResponse>(
+    `/admin/economy/overview?days=${days}`,
+    {
+      method: 'GET',
     },
   );
 }
