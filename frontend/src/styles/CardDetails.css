@@ -1,9 +1,8 @@
 .cardDetailsPage {
   width: 100%;
-  max-width: 1560px;
+  max-width: 1640px;
   margin: 0 auto;
-  padding: 16px;
-  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  padding: 24px 16px calc(110px + env(safe-area-inset-bottom, 0px));
 }
 
 .cardDetailsShell {
@@ -41,10 +40,19 @@
   grid-template-columns: 320px minmax(0, 1fr);
   gap: 24px;
   padding: 22px;
+  align-items: start;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.cardDetailsHero__mediaCol {
+  align-self: start;
+}
+
 .cardDetailsHero__media {
+  width: 100%;
+  max-width: 320px;
+  align-self: start;
+  justify-self: start;
   border-radius: 22px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -69,15 +77,6 @@
 
 .cardDetailsHero__content {
   min-width: 0;
-}
-
-.cardDetailsHero__eyebrow {
-  margin-bottom: 8px;
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.03em;
-  opacity: 0.72;
-  text-transform: uppercase;
 }
 
 .cardDetailsHero h1 {
@@ -148,7 +147,8 @@
   --chart-main: #a78bfa;
   --chart-main-rgb: 167, 139, 250;
   --chart-soft: rgba(167, 139, 250, 0.16);
-  padding: 22px;
+  padding: 24px 22px 22px;
+  scroll-margin-top: 92px;
 }
 
 .cardDetailsChartCard--up {
@@ -161,12 +161,6 @@
   --chart-main: #ff6b6b;
   --chart-main-rgb: 255, 107, 107;
   --chart-soft: rgba(255, 107, 107, 0.16);
-}
-
-.cardDetailsChartCard--flat {
-  --chart-main: #a78bfa;
-  --chart-main-rgb: 167, 139, 250;
-  --chart-soft: rgba(167, 139, 250, 0.16);
 }
 
 .cardDetailsChartCard__head {
@@ -241,14 +235,10 @@
 }
 
 .cardDetailsKpiCard--up strong,
-.cardDetailsKpiCard--up em {
-  color: #71f0a4;
-}
+.cardDetailsKpiCard--up em { color: #71f0a4; }
 
 .cardDetailsKpiCard--down strong,
-.cardDetailsKpiCard--down em {
-  color: #ff8f8f;
-}
+.cardDetailsKpiCard--down em { color: #ff8f8f; }
 
 .cardDetailsChartMeta {
   margin-top: 14px;
@@ -264,65 +254,48 @@
 
 .cardDetailsChartWrap {
   position: relative;
-  margin-top: 14px;
-  padding: 14px;
+  margin-top: 16px;
+  padding: 18px;
   border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01)),
-    rgba(9, 14, 25, 0.68);
+    rgba(9, 14, 25, 0.76);
   overflow: hidden;
+  min-height: 560px;
 }
 
 .cardDetailsChartWrap svg {
   display: block;
   width: 100%;
-  height: auto;
+  height: clamp(500px, 66vh, 680px);
 }
 
-.cardDetailsChartGrid {
-  stroke: rgba(255, 255, 255, 0.12);
-  stroke-width: 1;
-}
-
-.cardDetailsChartAxis {
-  stroke: rgba(255, 255, 255, 0.3);
-  stroke-width: 1.4;
-}
-
-.cardDetailsChartTick {
-  stroke: rgba(255, 255, 255, 0.24);
-  stroke-width: 1.2;
-}
+.cardDetailsChartGrid { stroke: rgba(255, 255, 255, 0.12); stroke-width: 1; }
+.cardDetailsChartAxis { stroke: rgba(255, 255, 255, 0.3); stroke-width: 1.4; }
+.cardDetailsChartTick { stroke: rgba(255, 255, 255, 0.24); stroke-width: 1.2; }
 
 .cardDetailsChartAxisLabel {
-  fill: rgba(240, 245, 255, 0.78);
-  font-size: 12px;
+  fill: rgba(240, 245, 255, 0.82);
+  font-size: 14px;
   font-weight: 900;
 }
 
-.cardDetailsChartAxisLabel--y {
-  text-anchor: end;
-}
-
-.cardDetailsChartAxisLabel--x {
-  text-transform: lowercase;
-}
+.cardDetailsChartAxisLabel--y { text-anchor: end; }
+.cardDetailsChartAxisLabel--x { text-transform: lowercase; }
 
 .cardDetailsChartAxisTitle {
-  fill: rgba(240, 245, 255, 0.88);
-  font-size: 15px;
+  fill: rgba(240, 245, 255, 0.9);
+  font-size: 18px;
   font-weight: 950;
 }
 
-.cardDetailsChartArea {
-  fill: rgba(var(--chart-main-rgb), 0.16);
-}
+.cardDetailsChartArea { fill: rgba(var(--chart-main-rgb), 0.16); }
 
 .cardDetailsChartLine {
   fill: none;
   stroke: var(--chart-main);
-  stroke-width: 4;
+  stroke-width: 6;
   stroke-linecap: round;
   stroke-linejoin: round;
   filter: drop-shadow(0 0 18px rgba(var(--chart-main-rgb), 0.2));
@@ -331,7 +304,7 @@
 .cardDetailsChartDot {
   fill: #ffffff;
   stroke: var(--chart-main);
-  stroke-width: 3;
+  stroke-width: 4;
 }
 
 .cardDetailsChartDotHit {
@@ -342,29 +315,37 @@
 .cardDetailsTooltip {
   position: absolute;
   z-index: 5;
-  min-width: 168px;
-  max-width: 240px;
+  min-width: 172px;
+  max-width: 248px;
   padding: 10px 12px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(12, 16, 28, 0.94);
+  background: rgba(12, 16, 28, 0.96);
   backdrop-filter: blur(10px);
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.36);
   pointer-events: none;
-  transform: translate(-50%, -100%);
 }
 
 .cardDetailsTooltip::after {
   content: "";
   position: absolute;
-  left: 50%;
-  bottom: -7px;
+  left: var(--tooltip-arrow-left, 50%);
   width: 12px;
   height: 12px;
   transform: translateX(-50%) rotate(45deg);
-  background: rgba(12, 16, 28, 0.94);
+  background: rgba(12, 16, 28, 0.96);
+}
+
+.cardDetailsTooltip--top::after {
+  bottom: -7px;
   border-right: 1px solid rgba(255, 255, 255, 0.12);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.cardDetailsTooltip--bottom::after {
+  top: -7px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .cardDetailsTooltip__date {
@@ -379,17 +360,9 @@
   font-weight: 950;
 }
 
-.cardDetailsTooltip--up .cardDetailsTooltip__price {
-  color: #71f0a4;
-}
-
-.cardDetailsTooltip--down .cardDetailsTooltip__price {
-  color: #ff8f8f;
-}
-
-.cardDetailsTooltip--flat .cardDetailsTooltip__price {
-  color: #d9cbff;
-}
+.cardDetailsTooltip--up .cardDetailsTooltip__price { color: #71f0a4; }
+.cardDetailsTooltip--down .cardDetailsTooltip__price { color: #ff8f8f; }
+.cardDetailsTooltip--flat .cardDetailsTooltip__price { color: #d9cbff; }
 
 .cardDetailsChartFooter {
   margin-top: 10px;
@@ -404,18 +377,13 @@
 }
 
 @media (max-width: 1200px) {
-  .cardDetailsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .cardDetailsKpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  .cardDetailsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cardDetailsKpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 860px) {
   .cardDetailsPage {
-    padding: 12px;
+    padding: 12px 12px calc(114px + env(safe-area-inset-bottom, 0px));
   }
 
   .cardDetailsTopbar,
@@ -426,37 +394,65 @@
 
   .cardDetailsHero {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .cardDetailsHero__mediaCol {
+    display: flex;
+    justify-content: center;
   }
 
   .cardDetailsHero__media {
-    max-width: 320px;
-    width: 100%;
+    width: min(320px, 100%);
+    max-width: min(320px, 100%);
     margin: 0 auto;
   }
 
-  .cardDetailsHero h1 {
-    font-size: 32px;
+  .cardDetailsHero h1 { font-size: 32px; }
+  .cardDetailsGrid,
+  .cardDetailsKpis { grid-template-columns: 1fr; }
+
+  .cardDetailsChartCard {
+    margin-bottom: 8px;
   }
 
-  .cardDetailsGrid,
-  .cardDetailsKpis {
-    grid-template-columns: 1fr;
+  .cardDetailsChartCard__head {
+    gap: 12px;
+  }
+
+  .cardDetailsRangeTabs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .cardDetailsRangeTab {
+    min-width: 0;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .cardDetailsChartMeta {
+    font-size: 12px;
   }
 
   .cardDetailsChartWrap {
-    padding: 8px;
+    padding: 10px 8px 14px;
+    min-height: 340px;
   }
 
-  .cardDetailsChartAxisTitle {
-    font-size: 13px;
+  .cardDetailsChartWrap svg {
+    height: clamp(280px, 38vh, 340px);
   }
 
-  .cardDetailsChartAxisLabel {
-    font-size: 11px;
-  }
+  .cardDetailsChartAxisTitle { font-size: 15px; }
+  .cardDetailsChartAxisLabel { font-size: 12px; }
+  .cardDetailsChartLine { stroke-width: 5; }
 
   .cardDetailsTooltip {
-    min-width: 150px;
-    max-width: 190px;
+    min-width: 144px;
+    max-width: min(180px, calc(100vw - 40px));
+    padding: 8px 10px;
   }
 }

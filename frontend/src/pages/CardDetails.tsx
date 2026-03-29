@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link, useParams } from "react-router-dom";
 
 import "../styles.css";
@@ -34,9 +40,15 @@ type SvgPoint = PricePoint & {
 };
 
 type TooltipState = {
-  x: number;
-  y: number;
   point: SvgPoint;
+  index: number;
+} | null;
+
+type TooltipPosition = {
+  left: number;
+  top: number;
+  placement: "top" | "bottom";
+  arrowLeft: number;
 } | null;
 
 function resolveImg(imageUrl?: string | null) {
@@ -47,13 +59,15 @@ function resolveImg(imageUrl?: string | null) {
   return `${API_BASE}/${url}`;
 }
 
-function formatSeason(card: CardDetailsDto | null) {
-  if (!card) return "—";
-  const seasonLabel = card.season ?? card.extension ?? "Hors série";
-  if (typeof card.seasonNumber === "number") {
-    return `${seasonLabel} • Saison ${card.seasonNumber}`;
-  }
-  return seasonLabel;
+function formatTooltipDateLabel(iso: string) {
+  const date = new Date(iso);
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
 function formatAxisDateLabel(iso: string, range: CardPriceHistoryRange) {
@@ -87,29 +101,6 @@ function formatAxisDateLabel(iso: string, range: CardPriceHistoryRange) {
   }).format(date);
 }
 
-function formatTooltipDateLabel(iso: string, range: CardPriceHistoryRange) {
-  const date = new Date(iso);
-  const locale = "fr-FR";
-
-  if (range === "24H") {
-    return new Intl.DateTimeFormat(locale, {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
-  }
-
-  return new Intl.DateTimeFormat(locale, {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
 function formatCredits(value: number) {
   return `${value.toLocaleString("fr-FR")} crédits`;
 }
@@ -127,9 +118,9 @@ function formatSignedPercent(value: number | null) {
 }
 
 function getTrendTone(delta: number) {
-  if (delta > 0) return "up";
-  if (delta < 0) return "down";
-  return "flat";
+  if (delta > 0) return "up" as const;
+  if (delta < 0) return "down" as const;
+  return "flat" as const;
 }
 
 function buildSmoothPath(points: Array<{ x: number; y: number }>) {
@@ -164,7 +155,7 @@ function getRarityZoomPadding(rarity?: string | null) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-  if (normalized.includes("legendaire") || normalized.includes("legendaire")) {
+  if (normalized.includes("legendaire")) {
     return { minRatio: 0.12, maxRatio: 0.12, minAbs: 120, maxAbs: 120 };
   }
 
@@ -211,10 +202,25 @@ function buildNiceTicks(minValue: number, maxValue: number, count = 5) {
   return { step, start, end, ticks };
 }
 
-function pickXAxisTicks(points: PricePoint[], range: CardPriceHistoryRange) {
+function pickXAxisTicks(
+  points: PricePoint[],
+  range: CardPriceHistoryRange,
+  isMobile: boolean,
+) {
   if (points.length <= 2) return points.map((_, index) => index);
 
-  const wanted = range === "24H" ? 6 : range === "7D" ? 7 : range === "30D" ? 6 : 6;
+  const wanted = isMobile
+    ? range === "24H"
+      ? 4
+      : range === "7D"
+        ? 4
+        : 4
+    : range === "24H"
+      ? 6
+      : range === "7D"
+        ? 7
+        : 6;
+
   const step = Math.max(1, Math.ceil((points.length - 1) / (wanted - 1)));
   const indexes: number[] = [];
 
@@ -229,7 +235,7 @@ function pickXAxisTicks(points: PricePoint[], range: CardPriceHistoryRange) {
   return Array.from(new Set(indexes));
 }
 
-export default function CardDetails() {
+function CardDetails() {
   const { id } = useParams<{ id: string }>();
   const cardId = Number(id);
 
@@ -242,6 +248,20 @@ export default function CardDetails() {
   const [historyError, setHistoryError] = useState("");
   const [points, setPoints] = useState<PricePoint[]>([]);
   const [tooltip, setTooltip] = useState<TooltipState>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<TooltipPosition>(null);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth <= 860 : false,
+  );
+
+  const chartWrapRef = useRef<HTMLDivElement | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 860);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     if (!Number.isInteger(cardId) || cardId < 1) {
@@ -291,6 +311,7 @@ export default function CardDetails() {
       setHistoryLoading(true);
       setHistoryError("");
       setTooltip(null);
+      setTooltipPosition(null);
 
       try {
         const res = await fetchCardPriceHistory(cardId, range);
@@ -314,12 +335,12 @@ export default function CardDetails() {
   const chart = useMemo(() => {
     if (!points.length) return null;
 
-    const width = 920;
-    const height = 420;
-    const paddingTop = 28;
-    const paddingRight = 28;
-    const paddingBottom = 62;
-    const paddingLeft = 92;
+    const width = 1120;
+    const height = isMobile ? 430 : 560;
+    const paddingTop = isMobile ? 22 : 34;
+    const paddingRight = isMobile ? 18 : 34;
+    const paddingBottom = isMobile ? 74 : 88;
+    const paddingLeft = isMobile ? 68 : 110;
 
     const rawMin = Math.min(...points.map((point) => point.price));
     const rawMax = Math.max(...points.map((point) => point.price));
@@ -338,11 +359,11 @@ export default function CardDetails() {
 
     if (displayMax <= displayMin) displayMax = displayMin + 10;
 
-    const yTicksMeta = buildNiceTicks(displayMin, displayMax, 5);
+    const yTicksMeta = buildNiceTicks(displayMin, displayMax, isMobile ? 4 : 5);
     displayMin = yTicksMeta.start;
     displayMax = yTicksMeta.end;
 
-    const xIndexes = pickXAxisTicks(points, range);
+    const xIndexes = pickXAxisTicks(points, range, isMobile);
     const innerWidth = width - paddingLeft - paddingRight;
     const innerHeight = height - paddingTop - paddingBottom;
     const ySpan = Math.max(1, displayMax - displayMin);
@@ -352,15 +373,13 @@ export default function CardDetails() {
         points.length === 1
           ? paddingLeft + innerWidth / 2
           : paddingLeft + (index / (points.length - 1)) * innerWidth;
-      const y =
-        paddingTop +
-        (1 - (point.price - displayMin) / ySpan) * innerHeight;
+      const y = paddingTop + (1 - (point.price - displayMin) / ySpan) * innerHeight;
 
       return {
         ...point,
         x: Number(x.toFixed(2)),
         y: Number(y.toFixed(2)),
-        label: formatTooltipDateLabel(point.timestamp, range),
+        label: formatTooltipDateLabel(point.timestamp),
       };
     });
 
@@ -406,7 +425,70 @@ export default function CardDetails() {
         `${last.x},${height - paddingBottom}`,
       ].join(" "),
     };
-  }, [card?.rarity, points, range]);
+  }, [card?.rarity, isMobile, points, range]);
+
+  useLayoutEffect(() => {
+    const wrapEl = chartWrapRef.current;
+    if (!wrapEl) return;
+
+    const update = () => {
+      if (!tooltip || !chart || !wrapEl) {
+        setTooltipPosition(null);
+        return;
+      }
+
+      const tooltipEl = tooltipRef.current;
+      const wrapWidth = wrapEl.clientWidth;
+      const wrapHeight = wrapEl.clientHeight;
+      const tooltipWidth = tooltipEl?.offsetWidth ?? 184;
+      const tooltipHeight = tooltipEl?.offsetHeight ?? 74;
+
+      const pointLeft = (tooltip.point.x / chart.width) * wrapWidth;
+      const pointTop = (tooltip.point.y / chart.height) * wrapHeight;
+
+      const sidePadding = isMobile ? 8 : 16;
+      const verticalGap = isMobile ? 16 : 14;
+      const topPreferred = pointTop - tooltipHeight - verticalGap;
+      const bottomPreferred = pointTop + verticalGap;
+      const placement: "top" | "bottom" =
+        topPreferred >= sidePadding || bottomPreferred + tooltipHeight > wrapHeight - sidePadding
+          ? "top"
+          : "bottom";
+
+      const unclampedLeft = pointLeft - tooltipWidth / 2;
+      const left = Math.min(
+        Math.max(sidePadding, unclampedLeft),
+        Math.max(sidePadding, wrapWidth - tooltipWidth - sidePadding),
+      );
+
+      let top = placement === "top" ? topPreferred : bottomPreferred;
+      top = Math.min(
+        Math.max(sidePadding, top),
+        Math.max(sidePadding, wrapHeight - tooltipHeight - sidePadding),
+      );
+
+      const arrowLeft = Math.min(
+        Math.max(18, pointLeft - left),
+        Math.max(18, tooltipWidth - 18),
+      );
+
+      setTooltipPosition({ left, top, placement, arrowLeft });
+    };
+
+    update();
+
+    const observer = new ResizeObserver(() => update());
+    observer.observe(wrapEl);
+    if (tooltipRef.current) observer.observe(tooltipRef.current);
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update);
+    };
+  }, [chart, isMobile, tooltip]);
 
   const imageSrc = resolveImg(card?.imageUrl);
   const chartTone = chart?.tone ?? "flat";
@@ -432,83 +514,29 @@ export default function CardDetails() {
           ) : (
             <>
               <div className="cardDetailsHero">
-                <div className="cardDetailsHero__media">
-                  {imageSrc ? (
-                    <img src={imageSrc} alt={card.name} />
-                  ) : (
-                    <div className="cardDetailsHero__placeholder">Aucune image</div>
-                  )}
+                <div className="cardDetailsHero__mediaCol">
+                  <div className="cardDetailsHero__media">
+                    {imageSrc ? (
+                      <img src={imageSrc} alt={card.name} />
+                    ) : (
+                      <div className="cardDetailsHero__placeholder">Aucune image</div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="cardDetailsHero__content">
-                  <div className="cardDetailsHero__eyebrow">
-                    {card.key} • {formatSeason(card)}
-                  </div>
                   <h1>{card.name}</h1>
-                  <p className="cardDetailsHero__subtitle">
-                    Fiche complète de la carte avec ses infos réelles, ton stock et
-                    l’évolution de sa valeur marché.
-                  </p>
-
                   <div className="cardDetailsBadges">
-                    <span className="cardDetailsBadge">{card.rarity}</span>
-                    <span className="cardDetailsBadge">{card.type ?? "Type inconnu"}</span>
                     <span className="cardDetailsBadge">Possédée : {ownedQuantity}</span>
                   </div>
 
                   <div className="cardDetailsGrid">
-                    <div>
-                      <span>Nom</span>
-                      <strong>{card.name}</strong>
-                    </div>
-                    <div>
-                      <span>Numéro</span>
-                      <strong>
-                        {typeof card.number === "number" ? `#${card.number}` : "—"}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Clé</span>
-                      <strong>{card.key}</strong>
-                    </div>
-                    <div>
-                      <span>Saison</span>
-                      <strong>{card.season ?? "—"}</strong>
-                    </div>
-                    <div>
-                      <span>seasonNumber</span>
-                      <strong>
-                        {typeof card.seasonNumber === "number" ? card.seasonNumber : "—"}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Extension</span>
-                      <strong>{card.extension ?? "—"}</strong>
-                    </div>
-                    <div>
-                      <span>Type</span>
-                      <strong>{card.type ?? "—"}</strong>
-                    </div>
-                    <div>
-                      <span>Gameplay type</span>
-                      <strong>{card.gameplayType ?? "—"}</strong>
-                    </div>
-                    <div>
-                      <span>Artiste</span>
-                      <strong>{card.artist ?? "—"}</strong>
-                    </div>
-                    <div>
-                      <span>Rareté</span>
-                      <strong>{card.rarity}</strong>
-                    </div>
-                    <div>
-                      <span>Édition spéciale</span>
-                      <strong>{card.specialEdition ? "Oui" : "Non"}</strong>
-                    </div>
-                    <div>
-                      <span>Copies possédées</span>
-                      <strong>{ownedQuantity}</strong>
-                    </div>
+                    <div><span>Nom</span><strong>{card.name}</strong></div>
+                    <div><span>Numéro</span><strong>{typeof card.number === "number" ? `#${card.number}` : "—"}</strong></div>
+                    <div><span>Saison</span><strong>{card.season ?? "—"}</strong></div>
+                    <div><span>Type</span><strong>{card.type ?? "—"}</strong></div>
+                    <div><span>Artiste</span><strong>{card.artist ?? "—"}</strong></div>
+                    <div><span>Rareté</span><strong>{card.rarity}</strong></div>
                   </div>
                 </div>
               </div>
@@ -521,14 +549,14 @@ export default function CardDetails() {
                   </div>
 
                   <div className="cardDetailsRangeTabs">
-                    {RANGES.map((item) => (
+                    {RANGES.map((tab) => (
                       <button
-                        key={item.value}
+                        key={tab.value}
                         type="button"
-                        className={`cardDetailsRangeTab ${range === item.value ? "is-active" : ""}`}
-                        onClick={() => setRange(item.value)}
+                        className={`cardDetailsRangeTab ${range === tab.value ? "is-active" : ""}`}
+                        onClick={() => setRange(tab.value)}
                       >
-                        {item.label}
+                        {tab.label}
                       </button>
                     ))}
                   </div>
@@ -537,29 +565,14 @@ export default function CardDetails() {
                 {historyLoading ? (
                   <div className="cardDetailsState">Chargement du graphique…</div>
                 ) : historyError ? (
-                  <div className="cardDetailsState cardDetailsState--error">
-                    {historyError}
-                  </div>
-                ) : !chart || chart.svgPoints.length === 0 ? (
-                  <div className="cardDetailsState">
-                    Aucun point d’historique disponible pour cette période.
-                  </div>
-                ) : (
+                  <div className="cardDetailsState cardDetailsState--error">{historyError}</div>
+                ) : chart ? (
                   <>
                     <div className="cardDetailsKpis">
-                      <div className="cardDetailsKpiCard">
-                        <span>Min réel</span>
-                        <strong>{formatCredits(chart.minPrice)}</strong>
-                      </div>
-                      <div className="cardDetailsKpiCard">
-                        <span>Max réel</span>
-                        <strong>{formatCredits(chart.maxPrice)}</strong>
-                      </div>
-                      <div className="cardDetailsKpiCard">
-                        <span>Dernière valeur</span>
-                        <strong>{formatCredits(chart.svgPoints[chart.svgPoints.length - 1].price)}</strong>
-                      </div>
-                      <div className={`cardDetailsKpiCard cardDetailsKpiCard--${chart.tone}`}>
+                      <div className="cardDetailsKpiCard"><span>Min réel</span><strong>{formatCredits(chart.minPrice)}</strong></div>
+                      <div className="cardDetailsKpiCard"><span>Max réel</span><strong>{formatCredits(chart.maxPrice)}</strong></div>
+                      <div className="cardDetailsKpiCard"><span>Dernière valeur</span><strong>{formatCredits(chart.svgPoints[chart.svgPoints.length - 1].price)}</strong></div>
+                      <div className={`cardDetailsKpiCard cardDetailsKpiCard--${chartTone}`}>
                         <span>Variation</span>
                         <strong>{formatSignedCredits(chart.delta)}</strong>
                         <em>{formatSignedPercent(chart.deltaPercent)}</em>
@@ -567,112 +580,77 @@ export default function CardDetails() {
                     </div>
 
                     <div className="cardDetailsChartMeta">
-                      <span>Période affichée : {RANGES.find((item) => item.value === range)?.label}</span>
-                      <span>
-                        Échelle : {formatCredits(chart.displayMin)} → {formatCredits(chart.displayMax)}
-                      </span>
+                      <span>Période affichée : {RANGES.find((item) => item.value === range)?.label ?? range}</span>
+                      <span>Échelle : {formatCredits(chart.displayMin)} → {formatCredits(chart.displayMax)}</span>
                     </div>
 
-                    <div className="cardDetailsChartWrap">
+                    <div className="cardDetailsChartWrap" ref={chartWrapRef}>
                       <svg
                         viewBox={`0 0 ${chart.width} ${chart.height}`}
                         role="img"
-                        aria-label="Historique du prix"
-                        onMouseLeave={() => setTooltip(null)}
+                        aria-label={`Historique du prix de ${card.name}`}
+                        preserveAspectRatio="none"
                       >
                         {chart.yTicks.map((tick) => (
-                          <g key={`y-${tick.value}`}>
-                            <line
-                              className="cardDetailsChartGrid"
-                              x1={chart.paddingLeft}
-                              y1={tick.y}
-                              x2={chart.width - chart.paddingRight}
-                              y2={tick.y}
-                            />
-                            <text
-                              className="cardDetailsChartAxisLabel cardDetailsChartAxisLabel--y"
-                              x={chart.paddingLeft - 14}
-                              y={tick.y + 5}
-                            >
-                              {tick.value.toLocaleString("fr-FR")}
-                            </text>
-                          </g>
+                          <line
+                            key={`grid-${tick.value}`}
+                            className="cardDetailsChartGrid"
+                            x1={chart.paddingLeft}
+                            y1={tick.y}
+                            x2={chart.width - chart.paddingRight}
+                            y2={tick.y}
+                          />
                         ))}
 
-                        <line
-                          className="cardDetailsChartAxis"
-                          x1={chart.paddingLeft}
-                          y1={chart.paddingTop}
-                          x2={chart.paddingLeft}
-                          y2={chart.height - chart.paddingBottom}
-                        />
-                        <line
-                          className="cardDetailsChartAxis"
-                          x1={chart.paddingLeft}
-                          y1={chart.height - chart.paddingBottom}
-                          x2={chart.width - chart.paddingRight}
-                          y2={chart.height - chart.paddingBottom}
-                        />
+                        <line className="cardDetailsChartAxis" x1={chart.paddingLeft} y1={chart.paddingTop} x2={chart.paddingLeft} y2={chart.height - chart.paddingBottom} />
+                        <line className="cardDetailsChartAxis" x1={chart.paddingLeft} y1={chart.height - chart.paddingBottom} x2={chart.width - chart.paddingRight} y2={chart.height - chart.paddingBottom} />
+
+                        {chart.yTicks.map((tick) => (
+                          <g key={`y-${tick.value}`}>
+                            <line className="cardDetailsChartTick" x1={chart.paddingLeft - 8} y1={tick.y} x2={chart.paddingLeft} y2={tick.y} />
+                            <text className="cardDetailsChartAxisLabel cardDetailsChartAxisLabel--y" x={chart.paddingLeft - 18} y={tick.y + 5}>{tick.value}</text>
+                          </g>
+                        ))}
 
                         {chart.xAxisTicks.map((tick) => (
                           <g key={`x-${tick.index}`}>
-                            <line
-                              className="cardDetailsChartTick"
-                              x1={tick.point.x}
-                              y1={chart.height - chart.paddingBottom}
-                              x2={tick.point.x}
-                              y2={chart.height - chart.paddingBottom + 8}
-                            />
-                            <text
-                              className="cardDetailsChartAxisLabel cardDetailsChartAxisLabel--x"
-                              x={tick.point.x}
-                              y={chart.height - chart.paddingBottom + 28}
-                              textAnchor="middle"
-                            >
-                              {tick.label}
-                            </text>
+                            <line className="cardDetailsChartTick" x1={tick.point.x} y1={chart.height - chart.paddingBottom} x2={tick.point.x} y2={chart.height - chart.paddingBottom + 10} />
+                            <text className="cardDetailsChartAxisLabel cardDetailsChartAxisLabel--x" x={tick.point.x} y={chart.height - chart.paddingBottom + 34} textAnchor="middle">{tick.label}</text>
                           </g>
                         ))}
 
-                        <text
-                          className="cardDetailsChartAxisTitle cardDetailsChartAxisTitle--y"
-                          x={26}
-                          y={chart.height / 2}
-                          transform={`rotate(-90, 26, ${chart.height / 2})`}
-                        >
-                          Prix du marché (crédits)
-                        </text>
-
-                        <text
-                          className="cardDetailsChartAxisTitle"
-                          x={chart.width / 2}
-                          y={chart.height - 12}
-                          textAnchor="middle"
-                        >
-                          Temps
-                        </text>
+                        <text className="cardDetailsChartAxisTitle" x={chart.width / 2} y={chart.height - 18} textAnchor="middle">Temps</text>
+                        <text className="cardDetailsChartAxisTitle" transform={`translate(28 ${chart.height / 2}) rotate(-90)`} textAnchor="middle">Prix du marché (crédits)</text>
 
                         <polygon className="cardDetailsChartArea" points={chart.area} />
                         <path className="cardDetailsChartLine" d={chart.path} />
 
-                        {chart.svgPoints.map((point) => (
-                          <g
-                            key={`${point.timestamp}-${point.x}`}
-                            onMouseEnter={() => setTooltip({ x: point.x, y: point.y, point })}
-                            onMouseMove={() => setTooltip({ x: point.x, y: point.y, point })}
-                          >
-                            <circle className="cardDetailsChartDotHit" cx={point.x} cy={point.y} r="14" />
-                            <circle className="cardDetailsChartDot" cx={point.x} cy={point.y} r="4.5" />
+                        {chart.svgPoints.map((point, index) => (
+                          <g key={`${point.timestamp}-${point.price}-${index}`}>
+                            <circle className="cardDetailsChartDot" cx={point.x} cy={point.y} r={isMobile ? 6 : 7} />
+                            <circle
+                              className="cardDetailsChartDotHit"
+                              cx={point.x}
+                              cy={point.y}
+                              r={isMobile ? 22 : 18}
+                              onMouseEnter={() => setTooltip({ point, index })}
+                              onMouseLeave={() => setTooltip(null)}
+                              onFocus={() => setTooltip({ point, index })}
+                              onBlur={() => setTooltip(null)}
+                              onTouchStart={() => setTooltip({ point, index })}
+                            />
                           </g>
                         ))}
                       </svg>
 
-                      {tooltip && (
+                      {tooltip && tooltipPosition && (
                         <div
-                          className={`cardDetailsTooltip cardDetailsTooltip--${chart.tone}`}
+                          ref={tooltipRef}
+                          className={`cardDetailsTooltip cardDetailsTooltip--${chartTone} cardDetailsTooltip--${tooltipPosition.placement}`}
                           style={{
-                            left: `clamp(16px, calc(${((tooltip.x / chart.width) * 100).toFixed(2)}% - 72px), calc(100% - 16px))`,
-                            top: `clamp(16px, calc(${((tooltip.y / chart.height) * 100).toFixed(2)}% - 78px), calc(100% - 16px))`,
+                            left: `${tooltipPosition.left}px`,
+                            top: `${tooltipPosition.top}px`,
+                            ["--tooltip-arrow-left" as any]: `${tooltipPosition.arrowLeft}px`,
                           }}
                         >
                           <div className="cardDetailsTooltip__date">{tooltip.point.label}</div>
@@ -686,6 +664,8 @@ export default function CardDetails() {
                       <span>{formatAxisDateLabel(chart.svgPoints[chart.svgPoints.length - 1].timestamp, range)}</span>
                     </div>
                   </>
+                ) : (
+                  <div className="cardDetailsState">Aucune donnée disponible.</div>
                 )}
               </div>
             </>
@@ -695,3 +675,5 @@ export default function CardDetails() {
     </div>
   );
 }
+
+export default CardDetails;

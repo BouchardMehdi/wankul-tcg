@@ -278,10 +278,6 @@ export default function Booster() {
           <section className="boosterHero">
             <div className="boosterHero__left">
               <h1 className="boosterHero__title">Boosters</h1>
-              <p className="boosterHero__subtitle">
-                Les saisons disponibles sont détectées automatiquement depuis la base et les visuels sont chargés
-                automatiquement depuis les dossiers <b>season-X</b>.
-              </p>
             </div>
 
             <div className="boosterHero__right">
