@@ -15,6 +15,7 @@ import Market from "./pages/Market";
 import MarketCreate from "./pages/MarketCreate";
 import QuickSell from "./pages/QuickSell";
 import Admin from "./pages/Admin";
+import CardDetails from "./pages/CardDetails";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -79,6 +80,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <Collection />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/collection/card/:id"
+        element={
+          <PrivateRoute>
+            <CardDetails />
           </PrivateRoute>
         }
       />

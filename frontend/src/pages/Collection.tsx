@@ -47,6 +47,30 @@ function uniqSorted(values: Array<string | null | undefined>) {
   ).sort((a, b) => a.localeCompare(b));
 }
 
+function uniqSeasonOptions(cards: any[]) {
+  return Array.from(
+    new Map(
+      cards
+        .map((card) => ({
+          label: (card.season ?? card.extension ?? "").trim(),
+          season: card.season ?? null,
+          extension: card.extension ?? null,
+          seasonNumber: card.seasonNumber ?? null,
+        }))
+        .filter((entry) => entry.label.length > 0)
+        .map((entry) => [entry.label, entry]),
+    ).values(),
+  )
+    .sort((a, b) => {
+      const rank =
+        seasonRank(a.season, a.extension, a.seasonNumber) -
+        seasonRank(b.season, b.extension, b.seasonNumber);
+      if (rank !== 0) return rank;
+      return a.label.localeCompare(b.label);
+    })
+    .map((entry) => entry.label);
+}
+
 function seasonRank(
   season?: string | null,
   extension?: string | null,
@@ -380,7 +404,7 @@ export default function Collection() {
   }, [allCards, ownedMap, sellableMap]);
 
   const options = useMemo(() => {
-    const seasons = uniqSorted(merged.map((c) => c.season ?? c.extension ?? ""));
+    const seasons = uniqSeasonOptions(merged);
     const rarities = uniqSorted(merged.map((c) => c.rarity));
     const types = uniqSorted(merged.map((c) => c.type ?? ""));
     const artists = uniqSorted(merged.map((c) => c.artist ?? ""));
@@ -850,6 +874,14 @@ export default function Collection() {
                             </span>
                           )}
                         </div>
+
+                        {!selectForMarket && !quickSellMode && (
+                          <div className="cardTile__actions">
+                            <Link className="btn btn-secondary cardTile__detailsBtn" to={`/collection/card/${c.id}`}>
+                              Voir plus
+                            </Link>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

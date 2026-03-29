@@ -1222,3 +1222,17 @@
     width: 100%;
   }
 }
+
+.cardTile__actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,0.06);
+}
+
+.cardTile__detailsBtn {
+  width: 100%;
+}

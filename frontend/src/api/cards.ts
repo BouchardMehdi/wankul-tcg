@@ -25,7 +25,7 @@ export type CardsListResponse = {
 };
 
 /**
- * ✅ GET /cards?page=1&limit=2000 (PUBLIC)
+ * GET /cards?page=1&limit=2000 (PUBLIC)
  * IMPORTANT: auth:false -> évite Authorization -> évite preflight OPTIONS -> évite Erreur CORS
  */
 export async function fetchCardsPage(page = 1, limit = 2000) {
@@ -36,7 +36,7 @@ export async function fetchCardsPage(page = 1, limit = 2000) {
 }
 
 /**
- * ✅ Récupère TOUTES les cartes en paginant si nécessaire
+ * Récupère TOUTES les cartes en paginant si nécessaire
  */
 export async function fetchAllCards(): Promise<CardDto[]> {
   const LIMIT = 2000;

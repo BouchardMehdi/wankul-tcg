@@ -12,10 +12,8 @@ export class CardsService {
   async list(query: ListCardsQueryDto) {
     const page = query.page ?? 1;
 
-    // ✅ clamp hard (sécurité)
     const limitRaw = query.limit ?? 50;
     const limit = Math.max(1, Math.min(2000, limitRaw));
-
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -30,7 +28,6 @@ export class CardsService {
       if (query.specialEdition === 'false') where.specialEdition = false;
     }
 
-    // search multi-champs (name/key/artist)
     let whereOr: any = where;
     if (query.q && query.q.trim().length) {
       const q = `%${query.q.trim()}%`;
@@ -55,6 +52,12 @@ export class CardsService {
       pages: Math.ceil(total / limit),
       items,
     };
+  }
+
+  async findByIdOrFail(id: number) {
+    const card = await this.repo.findOne({ where: { id } });
+    if (!card) throw new NotFoundException('Card not found');
+    return card;
   }
 
   async findByKeyOrFail(input: string) {
