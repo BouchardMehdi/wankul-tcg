@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AppNavbar from "../components/AppNavbar";
 import "../styles.css";
-import "../styles/Menu.css";
+import "../styles/Dashboard.css";
 import "../styles/Admin.css";
 import { useAuth } from "../auth/AuthContext";
 import {

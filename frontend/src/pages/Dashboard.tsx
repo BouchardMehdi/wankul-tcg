@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles.css";
-import "../styles/Menu.css";
+import "../styles/Dashboard.css";
 
 import AppNavbar from "../components/AppNavbar";
 
@@ -175,7 +175,7 @@ function SeasonBars({ seasons }: { seasons: SeasonProgress[] }) {
   );
 }
 
-export default function Menu() {
+export default function Dashboard() {
   const navigate = useNavigate();
 
   const [me, setMe] = useState<MeResponse | null>(null);
@@ -215,7 +215,7 @@ export default function Menu() {
 
         if (statsRes.status === "fulfilled") setStats(statsRes.value);
       } catch (e: any) {
-        setError(e?.message || "Impossible de charger le menu.");
+        setError(e?.message || "Impossible de charger le dashboard.");
       } finally {
         setLoading(false);
       }
@@ -315,7 +315,7 @@ export default function Menu() {
   if (loading) {
     return (
       <div className="app-shell">
-        <AppNavbar currentPage="menu" />
+        <AppNavbar currentPage="dashboard" />
         <div className="container">
           <div className="panel">
             <div className="panel-inner">
@@ -330,7 +330,7 @@ export default function Menu() {
   if (error) {
     return (
       <div className="app-shell">
-        <AppNavbar currentPage="menu" />
+        <AppNavbar currentPage="dashboard" />
         <div className="container">
           <div className="panel">
             <div className="panel-inner">
@@ -349,7 +349,7 @@ export default function Menu() {
 
   return (
     <div className="app-shell">
-      <AppNavbar currentPage="menu" />
+      <AppNavbar currentPage="dashboard" />
 
       <section className="container menuSection menuSection--hero">
         <div className="welcome">

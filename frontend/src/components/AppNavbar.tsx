@@ -6,7 +6,7 @@ import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
 import { useAuth } from "../auth/AuthContext";
 
 type NavPage =
-  | "menu"
+  | "dashboard"
   | "booster"
   | "collection"
   | "market"
@@ -15,7 +15,7 @@ type NavPage =
   | "admin";
 
 type NavItem = {
-  key: "menu" | "booster" | "collection" | "market" | "settings" | "admin";
+  key: "dashboard" | "booster" | "collection" | "market" | "settings" | "admin";
   label: string;
   mobileLabel: string;
   to: string;
@@ -24,10 +24,10 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   {
-    key: "menu",
-    label: "Menu",
+    key: "dashboard",
+    label: "Home",
     mobileLabel: "Home",
-    to: "/menu",
+    to: "/dashboard",
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
@@ -199,8 +199,8 @@ export default function AppNavbar({
 
   const defaultVisibleItems: Array<NavItem["key"]> =
     role === "admin"
-      ? ["menu", "booster", "collection", "market", "settings", "admin"]
-      : ["menu", "booster", "collection", "market", "settings"];
+      ? ["dashboard", "booster", "collection", "market", "settings", "admin"]
+      : ["dashboard", "booster", "collection", "market", "settings"];
 
   const allowedItems = visibleItems ?? defaultVisibleItems;
   const links = NAV_ITEMS.filter((item) => allowedItems.includes(item.key));
@@ -208,7 +208,7 @@ export default function AppNavbar({
   return (
     <header className="topbar">
       <div className="container topbar__inner">
-        <Link to="/menu" className="topbar__brand" aria-label="Wankul">
+        <Link to="/" className="topbar__brand" aria-label="Accueil Wankul TCG">
           <img src={wankulLogo} className="topbar__logo" alt="Wankul" />
         </Link>
 
@@ -225,7 +225,7 @@ export default function AppNavbar({
                 key={item.key}
                 className={`topbar__link ${isActive ? "is-active" : ""}`}
                 data-navkey={item.key}
-                data-center={item.key === "menu" ? "true" : "false"}
+                data-center={item.key === "dashboard" ? "true" : "false"}
                 to={item.to}
                 aria-label={item.label}
                 aria-current={isActive ? "page" : undefined}

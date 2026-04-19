@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import "../styles.css";
-import "../styles/Menu.css";
+import "../styles/Dashboard.css";
 import "../styles/Settings.css";
 
 import AppNavbar from "../components/AppNavbar";
@@ -175,7 +175,7 @@ const PAGE_OPTIONS = [
   "Home",
   "Login",
   "Register",
-  "Menu",
+  "Dashboard",
   "Booster",
   "Opening",
   "Collection",

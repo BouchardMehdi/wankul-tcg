@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import "../styles.css";
-import "../styles/Menu.css";
+import "../styles/Dashboard.css";
 import "../styles/Booster.css";
 
 import AppNavbar from "../components/AppNavbar";

@@ -222,7 +222,7 @@
     order: 2;
   }
 
-  .topbar__link[data-navkey="menu"] {
+  .topbar__link[data-navkey="dashboard"] {
     order: 3;
   }
 

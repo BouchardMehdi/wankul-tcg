@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import "../styles.css";
-import "../styles/Menu.css";
+import "../styles/Dashboard.css";
 import "../styles/Opening.css";
 
 import AppNavbar from "../components/AppNavbar";
@@ -872,7 +872,7 @@ export default function Opening() {
 
   return (
     <div className="app-shell">
-      <AppNavbar currentPage="opening" visibleItems={["menu", "booster", "collection", "market", "settings"]} />
+      <AppNavbar currentPage="opening" visibleItems={["dashboard", "booster", "collection", "market", "settings"]} />
 
       <div className={`container openingPage ${settings.disableHoloEffects ? "openingPage--noHolo" : ""}`}>
         <div className="openingHeader panel">

@@ -6,7 +6,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
-import Menu from "./pages/Menu";
+import Dashboard from "./pages/Dashboard";
 import Collection from "./pages/Collection";
 import Booster from "./pages/Booster";
 import Opening from "./pages/Opening";
@@ -35,7 +35,7 @@ function AdminRoleRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (role !== "admin") {
-    return <Navigate to="/menu" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
@@ -52,26 +52,30 @@ export default function App() {
     <Routes>
       <Route
         path="/"
-        element={isAuthenticated ? <Navigate to="/menu" replace /> : <Home />}
+        element={<Home />}
       />
       <Route
         path="/login"
-        element={isAuthenticated ? <Navigate to="/menu" replace /> : <Login />}
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
       />
       <Route
         path="/register"
-        element={isAuthenticated ? <Navigate to="/menu" replace /> : <Register />}
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />}
       />
       <Route
         path="/forgot-password"
-        element={isAuthenticated ? <Navigate to="/menu" replace /> : <ForgotPassword />}
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ForgotPassword />}
       />
 
       <Route
         path="/menu"
+        element={<Navigate to="/dashboard" replace />}
+      />
+      <Route
+        path="/dashboard"
         element={
           <PrivateRoute>
-            <Menu />
+            <Dashboard />
           </PrivateRoute>
         }
       />
@@ -150,7 +154,7 @@ export default function App() {
 
       <Route
         path="*"
-        element={<Navigate to={isAuthenticated ? "/menu" : "/"} replace />}
+        element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />}
       />
     </Routes>
   );
