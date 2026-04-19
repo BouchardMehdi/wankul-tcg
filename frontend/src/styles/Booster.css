@@ -1,5 +1,5 @@
 .boosterPage {
-  padding: 18px 0 42px;
+  padding: 18px 0 calc(42px + var(--mobile-nav-offset));
 }
 
 .boosterHero {
@@ -60,6 +60,7 @@
   margin-top: 6px;
   font-size: 12px;
   font-weight: 800;
+  line-height: 1.45;
 }
 
 .boosterGrid {
@@ -424,7 +425,7 @@
 
 @media (max-width: 860px) {
   .boosterPage {
-    padding: 12px 0 calc(108px + env(safe-area-inset-bottom));
+    padding: 12px 0 calc(12px + var(--mobile-nav-offset));
   }
 
   .boosterHero {
@@ -480,5 +481,22 @@
 
   .confirmModal {
     padding: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .boosterPack__visual,
+  .boosterPack__visual--display {
+    min-height: 260px;
+  }
+
+  .boosterPack__img {
+    width: min(58vw, 190px);
+    max-height: 240px;
+  }
+
+  .boosterPack__img--display {
+    width: min(78vw, 250px);
+    max-height: 200px;
   }
 }

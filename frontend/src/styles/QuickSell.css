@@ -1,7 +1,7 @@
 .quickSellPage {
   width: min(1400px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 18px 0 calc(42px + 110px + env(safe-area-inset-bottom, 0px));
+  padding: 18px 0 calc(42px + var(--mobile-nav-offset));
 }
 
 .quickSellHero {
@@ -286,7 +286,7 @@
 
 @media (max-width: 860px) {
   .quickSellPage {
-    padding: 12px 0 calc(108px + env(safe-area-inset-bottom));
+    padding: 12px 0 calc(12px + var(--mobile-nav-offset));
   }
 
   .quickSellHero {

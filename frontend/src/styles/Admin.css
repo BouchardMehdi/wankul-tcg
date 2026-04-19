@@ -1,6 +1,6 @@
 .adminPage {
   padding-top: 24px;
-  padding-bottom: calc(40px + 110px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(40px + var(--mobile-nav-offset));
 }
 
 .adminPanel {

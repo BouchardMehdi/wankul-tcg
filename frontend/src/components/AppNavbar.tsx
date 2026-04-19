@@ -31,18 +31,11 @@ const NAV_ITEMS: NavItem[] = [
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
-          d="M4.75 10.25 12 4.5l7.25 5.75v8A1.75 1.75 0 0 1 17.5 20h-11A1.75 1.75 0 0 1 4.75 18.25z"
+          d="M5 5.75h5.25V11H5zM13.75 5.75H19V11h-5.25zM5 13H10.25V18.25H5zM13.75 13H19V18.25h-5.25z"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
           strokeLinejoin="round"
-        />
-        <path
-          d="M9.25 20v-5.25A1.25 1.25 0 0 1 10.5 13.5h3a1.25 1.25 0 0 1 1.25 1.25V20"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
         />
       </svg>
     ),
@@ -55,17 +48,25 @@ const NAV_ITEMS: NavItem[] = [
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
-          d="M7.5 3.5h9a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"
+          d="M8 3.75h8l3 3.5v9.5A2.25 2.25 0 0 1 16.75 19h-9.5A2.25 2.25 0 0 1 5 16.75v-9.5z"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
+          strokeLinejoin="round"
         />
         <path
-          d="M9.5 7.5h5M9.5 11h5M9.5 14.5h3.5"
+          d="M8.4 7.5h7.2"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
           strokeLinecap="round"
+        />
+        <path
+          d="m12 9.4.78 1.58 1.74.26-1.26 1.22.3 1.74L12 13.4l-1.56.8.3-1.74-1.26-1.22 1.74-.26z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
         />
       </svg>
     ),
@@ -78,13 +79,21 @@ const NAV_ITEMS: NavItem[] = [
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
-          d="M7 4.75A1.75 1.75 0 0 1 8.75 3h7.5A1.75 1.75 0 0 1 18 4.75v10.5A1.75 1.75 0 0 1 16.25 17h-7.5A1.75 1.75 0 0 1 7 15.25z"
+          d="M8.5 4.25h8a2 2 0 0 1 2 2v11.5a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2V6.25a2 2 0 0 1 2-2Z"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
+          strokeLinejoin="round"
         />
         <path
-          d="M5.5 7.5v10.75A1.75 1.75 0 0 0 7.25 20h8.25"
+          d="M9.5 7.75h6M9.5 11h6M9.5 14.25h4.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        <path
+          d="M4.5 7.25v10A2 2 0 0 0 6.5 19.25H15"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
@@ -101,7 +110,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
-          d="M5.5 8.25 7.1 4.75h9.8l1.6 3.5"
+          d="M4.75 8.5 6.4 5h11.2l1.65 3.5"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
@@ -109,14 +118,14 @@ const NAV_ITEMS: NavItem[] = [
           strokeLinejoin="round"
         />
         <path
-          d="M6 8.25h12a1.5 1.5 0 0 1 1.5 1.5v7.5A2.75 2.75 0 0 1 16.75 20h-9.5A2.75 2.75 0 0 1 4.5 17.25v-7.5A1.5 1.5 0 0 1 6 8.25Z"
+          d="M5.25 8.5h13.5a1.25 1.25 0 0 1 1.25 1.25v6.5A3 3 0 0 1 17 19.25H7a3 3 0 0 1-3-3v-6.5A1.25 1.25 0 0 1 5.25 8.5Z"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
           strokeLinejoin="round"
         />
         <path
-          d="M9 12h6"
+          d="M9 12.25h6M12 10v4.5"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
@@ -133,16 +142,17 @@ const NAV_ITEMS: NavItem[] = [
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path
-          d="M12 8.25A3.75 3.75 0 1 0 12 15.75A3.75 3.75 0 1 0 12 8.25Z"
+          d="M6 6.5h12M6 12h12M6 17.5h12"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
+          strokeLinecap="round"
         />
         <path
-          d="M19.3 13.5a1.2 1.2 0 0 0 .24 1.32l.05.05a1.5 1.5 0 0 1 0 2.12l-.84.84a1.5 1.5 0 0 1-2.12 0l-.05-.05a1.2 1.2 0 0 0-1.32-.24a1.2 1.2 0 0 0-.73 1.1V19a1.5 1.5 0 0 1-1.5 1.5h-1.2a1.5 1.5 0 0 1-1.5-1.5v-.08a1.2 1.2 0 0 0-.73-1.1a1.2 1.2 0 0 0-1.32.24l-.05.05a1.5 1.5 0 0 1-2.12 0l-.84-.84a1.5 1.5 0 0 1 0-2.12l.05-.05a1.2 1.2 0 0 0 .24-1.32a1.2 1.2 0 0 0-1.1-.73H5A1.5 1.5 0 0 1 3.5 11.85v-1.2A1.5 1.5 0 0 1 5 9.15h.08a1.2 1.2 0 0 0 1.1-.73a1.2 1.2 0 0 0-.24-1.32l-.05-.05a1.5 1.5 0 0 1 0-2.12l.84-.84a1.5 1.5 0 0 1 2.12 0l.05.05a1.2 1.2 0 0 0 1.32.24a1.2 1.2 0 0 0 .73-1.1V5A1.5 1.5 0 0 1 12.35 3.5h1.2A1.5 1.5 0 0 1 15.05 5v.08a1.2 1.2 0 0 0 .73 1.1a1.2 1.2 0 0 0 1.32-.24l.05-.05a1.5 1.5 0 0 1 2.12 0l.84.84a1.5 1.5 0 0 1 0 2.12l-.05.05a1.2 1.2 0 0 0-.24 1.32a1.2 1.2 0 0 0 1.1.73H21a1.5 1.5 0 0 1 1.5 1.5v1.2A1.5 1.5 0 0 1 21 14.55h-.08a1.2 1.2 0 0 0-1.1.73Z"
+          d="M9 6.5a1.5 1.5 0 1 0 0 .01M15 12a1.5 1.5 0 1 0 0 .01M11 17.5a1.5 1.5 0 1 0 0 .01"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.4"
+          strokeWidth="1.8"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -202,7 +212,11 @@ export default function AppNavbar({
           <img src={wankulLogo} className="topbar__logo" alt="Wankul" />
         </Link>
 
-        <nav className="topbar__nav" aria-label="Navigation principale">
+        <nav
+          className="topbar__nav"
+          aria-label="Navigation principale"
+          data-count={links.length}
+        >
           {links.map((item) => {
             const isActive = item.key === currentPage;
 

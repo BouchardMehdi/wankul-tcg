@@ -7,6 +7,13 @@
 ========================= */
 
 :root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --mobile-nav-height: 88px;
+  --mobile-nav-offset: calc(var(--mobile-nav-height) + 20px + var(--safe-bottom));
+
   /* Typography */
   --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   --text: rgba(240, 245, 255, 0.96);
@@ -54,10 +61,17 @@
 /* Reset */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+html {
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 body {
+  min-height: 100dvh;
   margin: 0;
   font-family: var(--font);
   color: var(--text);
+  overflow-x: hidden;
 
   /* ✅ Fix background qui se répète */
   background:
@@ -73,12 +87,20 @@ body {
 
 /* ✅ important pour que ça couvre toute l'app */
 #root {
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 a { color: inherit; text-decoration: none; }
-button, input, select { font: inherit; }
+button, input, select, textarea { font: inherit; }
+button, input, select, textarea { min-width: 0; }
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
 img { max-width: 100%; display: block; }
+
+.app-shell {
+  min-height: 100dvh;
+}
 
 /* Layout helpers */
 .container {
@@ -162,3 +184,13 @@ img { max-width: 100%; display: block; }
 .rounded-3xl { border-radius: 28px; }
 .border { border: 1px solid var(--border); }
 .shadow-sm { box-shadow: var(--shadow-sm); }
+
+@media (max-width: 860px) {
+  body {
+    background-attachment: scroll;
+  }
+
+  .container {
+    padding: 0 12px;
+  }
+}

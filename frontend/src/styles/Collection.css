@@ -7,7 +7,7 @@
   max-width: 1560px;
   margin: 0 auto;
   padding: 16px;
-  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(16px + var(--mobile-nav-offset));
 }
 
 .collectionShell {
@@ -347,6 +347,13 @@
 }
 
 @media (max-width: 520px) {
+  .cardsGrid--standard,
+  .cardsGrid--large {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 380px) {
   .cardsGrid--standard,
   .cardsGrid--compact,
   .cardsGrid--large {
@@ -1120,6 +1127,7 @@
 @media (max-width: 860px) {
   .collectionPage {
     padding: 12px;
+    padding-bottom: calc(12px + var(--mobile-nav-offset));
   }
 
   .collectionHeader {
@@ -1220,6 +1228,60 @@
 
   .collectionModal__actions .btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .collectionTopBar,
+  .collectionBottomBar {
+    padding: 12px;
+  }
+
+  .collectionTopBar {
+    align-items: stretch;
+  }
+
+  .collectionTopBar .small {
+    width: 100%;
+  }
+
+  .pager {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .pagerJump {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .pageInput {
+    flex: 1 1 120px;
+    width: auto;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .cardTile__imgWrap,
+  .cardsGrid--noHolo .cardTile__imgWrap {
+    transform: translateY(0) !important;
+    transition:
+      filter 160ms cubic-bezier(.2,.8,.2,1),
+      box-shadow 180ms cubic-bezier(.2,.8,.2,1),
+      border-color 180ms cubic-bezier(.2,.8,.2,1);
+  }
+
+  .cardTile:hover .cardTile__imgWrap,
+  .cardTile--selectMode.cardTile--sellable:hover .cardTile__imgWrap,
+  .cardsGrid--noHolo .cardTile:hover .cardTile__imgWrap {
+    transform: translateY(0) !important;
+    filter: none;
+  }
+
+  .cardTile:hover .cardTile__img,
+  .cardTile__img {
+    transform: scale(1.01);
   }
 }
 

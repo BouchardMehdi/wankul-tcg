@@ -388,12 +388,6 @@ export default function Opening() {
     velocityRef.current = 0;
   }
 
-  function prepareBoosterCards(boosterCards: any[]) {
-    setCards(Array.isArray(boosterCards) ? boosterCards : []);
-    setIndex(0);
-    clearMotionState();
-  }
-
   function isCardMarkedNew(card: any) {
     const id = card?.id ?? card?.cardId ?? null;
     return Boolean(card?.isNew) || (id != null && newCardIds.has(id));

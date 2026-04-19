@@ -1,4 +1,4 @@
-.openingPage { padding: 18px 0 42px; }
+.openingPage { padding: 18px 0 calc(42px + var(--mobile-nav-offset)); }
 
 .openingHeader {
   margin-top: 16px;
@@ -961,7 +961,7 @@
 
 @media (max-width: 860px) {
   .openingPage {
-    padding: 12px 0 calc(108px + env(safe-area-inset-bottom));
+    padding: 12px 0 calc(12px + var(--mobile-nav-offset));
   }
 
   .openingHeader {
