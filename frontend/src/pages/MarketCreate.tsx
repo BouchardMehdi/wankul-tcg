@@ -14,6 +14,12 @@ import {
   type MarketOfferType,
   type SellableCardRow,
 } from "../api/market";
+import {
+  playActionDeniedSound,
+  playSoundEffect,
+  playUiErrorSound,
+  primeSound,
+} from "../utils/sound";
 
 type FormState = {
   cardId: string;
@@ -142,6 +148,7 @@ export default function MarketCreate() {
           }));
         }
       } catch (e: any) {
+        playUiErrorSound();
         setError(e?.message || "Impossible de charger le formulaire de vente.");
       } finally {
         setLoading(false);
@@ -236,6 +243,7 @@ export default function MarketCreate() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    void primeSound();
 
     const cardId = Number(form.cardId);
     const quantity = Number(form.quantity);
@@ -244,16 +252,19 @@ export default function MarketCreate() {
     const wantedCardQuantity = Number(form.wantedCardQuantity || 0);
 
     if (!cardId || !selectedSellable) {
+      playActionDeniedSound();
       setError("Choisis une carte vendable.");
       return;
     }
 
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > maxQuantity) {
+      playActionDeniedSound();
       setError(`La quantité doit être comprise entre 1 et ${maxQuantity}.`);
       return;
     }
 
     if (form.offerType !== "CREDITS_ONLY" && !wantedCardId) {
+      playActionDeniedSound();
       setError("Choisis une carte demandée.");
       return;
     }
@@ -275,6 +286,7 @@ export default function MarketCreate() {
       });
 
       setSuccess("Annonce créée avec succès.");
+      playSoundEffect("market.sell");
       const refreshed = await getMySellableCards();
       setSellableCards(refreshed ?? []);
 
@@ -285,6 +297,7 @@ export default function MarketCreate() {
         priceCredits: String(updatedSelected?.marketPrice ?? prev.priceCredits),
       }));
     } catch (e: any) {
+      playUiErrorSound();
       setError(e?.message || "Impossible de créer l’annonce.");
     } finally {
       setSaving(false);

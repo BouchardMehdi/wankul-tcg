@@ -1,6 +1,7 @@
 export type CollectionLayout = "standard" | "compact" | "large";
 
 export type AppSettings = {
+  soundEffects: boolean;
   skipOpeningAnimations: boolean;
   autoFlipCards: boolean;
   fastReveal: boolean;
@@ -31,6 +32,7 @@ const APP_SETTINGS_KEY = "wankul_app_settings";
 const LAST_NEW_CARD_IDS_KEY = "wankul_last_new_card_ids";
 
 export const APP_SETTINGS_DEFAULTS: AppSettings = {
+  soundEffects: true,
   skipOpeningAnimations: false,
   autoFlipCards: false,
   fastReveal: false,
@@ -59,6 +61,11 @@ function normalizeLayout(value: unknown): CollectionLayout {
 
 function migrateSettings(raw: Partial<AppSettings> | null | undefined): AppSettings {
   const base = { ...APP_SETTINGS_DEFAULTS, ...(raw ?? {}) };
+
+  base.soundEffects =
+    typeof base.soundEffects === "boolean"
+      ? base.soundEffects
+      : APP_SETTINGS_DEFAULTS.soundEffects;
 
   if (!("collectionLayout" in (raw ?? {})) && typeof raw?.compactCollectionGrid === "boolean") {
     base.collectionLayout = raw.compactCollectionGrid ? "compact" : "standard";

@@ -8,6 +8,7 @@ import wankilLogo from "../assets/Wankil_Studio_Logo.png";
 import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
 import lainkImg from "../assets/wankul_laink.png";
 import terracidImg from "../assets/wankul_terra.png";
+import { playActionDeniedSound, playSoundEffect, primeSound } from "../utils/sound";
 import {
   getSeasonBoosterImage,
 } from "../utils/seasonAssets";
@@ -149,6 +150,7 @@ export default function Home() {
     const handleInstalled = () => {
       setIsInstalled(true);
       setInstallPrompt(null);
+      playSoundEffect("pwa.installed");
       setInstallMessage("Wankul TCG est installee. Tu peux maintenant l'ouvrir comme une vraie app.");
     };
 
@@ -166,6 +168,8 @@ export default function Home() {
   }, []);
 
   async function handleInstallClick() {
+    void primeSound();
+
     if (isInstalled) {
       return;
     }
@@ -178,6 +182,7 @@ export default function Home() {
       if (outcome === "accepted") {
         setInstallMessage("Installation lancee. L'app sera accessible depuis ton ecran d'accueil.");
       } else {
+        playActionDeniedSound();
         setInstallMessage("Tu peux relancer l'installation quand tu veux depuis ce bouton.");
       }
 
@@ -194,6 +199,7 @@ export default function Home() {
     setInstallMessage(
       "L'installation apparait seulement quand le navigateur la propose. Chrome ou Edge sont les plus fiables.",
     );
+    playActionDeniedSound();
   }
 
   return (

@@ -16,6 +16,12 @@ import {
   subscribeAppSettings,
 } from "../utils/appSettings";
 import { saveMarketCreateSelectedCardId } from "../utils/marketCreateSelection";
+import {
+  playActionDeniedSound,
+  playSoundEffect,
+  playUiErrorSound,
+  primeSound,
+} from "../utils/sound";
 
 import { Fancybox } from "@fancyapps/ui";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
@@ -365,6 +371,7 @@ export default function Collection() {
       setOwnedRows(Array.isArray(ownedRes) ? ownedRes : []);
       setSellableRows(Array.isArray(sellableRes) ? sellableRes : []);
     } catch (e: any) {
+      playUiErrorSound();
       setError(e?.message || "Impossible de charger la collection.");
     } finally {
       setLoading(false);
@@ -517,11 +524,13 @@ export default function Collection() {
 
   async function confirmQuickSell() {
     if (!quickSellModal.card || !quickSellModal.sellable) return;
+    void primeSound();
 
     const qty = Number(quickSellModal.quantity);
     const max = quickSellModal.sellable.sellableQuantity;
 
     if (!Number.isInteger(qty) || qty < 1 || qty > max) {
+      playActionDeniedSound();
       setQuickSellModal((prev) => ({
         ...prev,
         error: `La quantité doit être comprise entre 1 et ${max}.`,
@@ -537,6 +546,7 @@ export default function Collection() {
       }));
 
       await quickSellCard(quickSellModal.sellable.cardId, qty);
+      playSoundEffect("market.sell");
 
       const totalCredits = quickSellModal.sellable.quickSellUnitPrice * qty;
       closeQuickSellModal();
@@ -545,6 +555,7 @@ export default function Collection() {
       );
       await load();
     } catch (e: any) {
+      playUiErrorSound();
       setQuickSellModal((prev) => ({
         ...prev,
         submitting: false,

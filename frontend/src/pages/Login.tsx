@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "../styles.css";
 import "../styles/Login.css";
 import { useAuth } from "../auth/AuthContext";
 import { apiFetch } from "../api/http";
+import { playSoundEffect, playUiErrorSound, primeSound } from "../utils/sound";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    void primeSound();
 
     try {
       const data = await apiFetch<{
@@ -31,8 +33,10 @@ export default function Login() {
       if (!token) throw new Error("Token manquant dans la réponse du serveur");
 
       setToken(token);
+      playSoundEffect("auth.login-success");
       navigate("/dashboard", { replace: true });
     } catch (err: any) {
+      playUiErrorSound();
       setError(err?.message || "Erreur inconnue");
     }
   };
@@ -40,6 +44,10 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <Link to="/" className="auth-backLink">
+          Retour a l'accueil
+        </Link>
+
         <h1>Connexion</h1>
 
         <form onSubmit={handleLogin} className="auth-form">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "../styles.css";
 import "../styles/Register.css";
 import { apiFetch } from "../api/http";
@@ -53,6 +53,10 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <Link to="/" className="auth-backLink">
+          Retour a l'accueil
+        </Link>
+
         {step === "register" ? (
           <>
             <h1>Inscription</h1>

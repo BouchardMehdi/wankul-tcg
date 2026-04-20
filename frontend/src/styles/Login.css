@@ -16,6 +16,28 @@
   padding: 18px;
 }
 
+.auth-backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 900;
+  color: rgba(240, 245, 255, 0.78);
+  text-decoration: none;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.auth-backLink::before {
+  content: "←";
+  font-size: 14px;
+}
+
+.auth-backLink:hover {
+  color: rgba(240, 245, 255, 0.96);
+  transform: translateX(-1px);
+}
+
 .auth-card h1 {
   margin: 0 0 14px 0;
   font-size: 30px;
@@ -143,5 +165,9 @@
 
   .auth-card h1 {
     font-size: 26px;
+  }
+
+  .auth-backLink {
+    margin-bottom: 12px;
   }
 }

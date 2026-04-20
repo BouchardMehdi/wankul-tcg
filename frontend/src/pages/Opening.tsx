@@ -11,6 +11,7 @@ import { useAuth } from "../auth/AuthContext";
 import { getEconomyMe, type EconomySnapshot } from "../api/economy";
 import { openBooster, openDisplay } from "../api/booster";
 import { readAppSettings, subscribeAppSettings, writeLastNewCardIds } from "../utils/appSettings";
+import { playOpeningRevealSound, playSoundEffect, primeSound } from "../utils/sound";
 import { getSeasonBoosterImage, getSeasonDisplayImage } from "../utils/seasonAssets";
 
 const API_BASE_RAW: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
@@ -336,6 +337,7 @@ export default function Opening() {
   const lastMoveTRef = useRef(0);
   const velocityRef = useRef(0);
   const timeoutsRef = useRef<number[]>([]);
+  const revealedSoundKeyRef = useRef("");
 
   const season = state?.season ?? "Saison inconnue";
   const stateSeasonNumber =
@@ -511,6 +513,22 @@ export default function Opening() {
   const isCurrentNew = isCardMarkedNew(current);
 
   useEffect(() => {
+    if (phase !== "reveal" || !current) return;
+
+    const revealKey = `${displayBoosterIndex}:${index}:${currentId}:${rarityKey}:${isSurprise11 ? "11" : "std"}`;
+    if (revealedSoundKeyRef.current === revealKey) return;
+
+    revealedSoundKeyRef.current = revealKey;
+    playOpeningRevealSound({ rarityKey, isSurprise11, isNew: isCurrentNew });
+  }, [phase, current, displayBoosterIndex, index, currentId, rarityKey, isSurprise11, isCurrentNew]);
+
+  useEffect(() => {
+    if (phase !== "reveal") {
+      revealedSoundKeyRef.current = "";
+    }
+  }, [phase]);
+
+  useEffect(() => {
     if (!settings.autoFlipCards) return;
     if (phase !== "reveal") return;
     if (animatingNext || isDragging) return;
@@ -642,11 +660,13 @@ export default function Opening() {
 
   function startOpening() {
     if (openingLock) return;
+    void primeSound();
 
     clearQueuedTimeouts();
     setOpeningLock(true);
 
     if (skipAnimations) {
+      playSoundEffect(isDisplayMode ? "opening.start-display" : "opening.start-booster");
       if (isDisplayMode) {
         setDisplayStarted(true);
         setPhase("display-final-summary");
@@ -659,6 +679,7 @@ export default function Opening() {
 
     if (isDisplayMode) {
       if (!displayStarted) {
+        playSoundEffect("opening.start-display");
         setPhase("display-intro");
         setDisplayStarted(true);
 
@@ -672,10 +693,12 @@ export default function Opening() {
       const boosterCards = Array.isArray(displayBoosters[displayBoosterIndex])
         ? displayBoosters[displayBoosterIndex]
         : [];
+      playSoundEffect("opening.start-booster");
       beginRevealSequence(boosterCards);
       return;
     }
 
+    playSoundEffect("opening.start-booster");
     beginRevealSequence(cards);
   }
 
@@ -687,6 +710,7 @@ export default function Opening() {
       return;
     }
 
+    playSoundEffect("opening.swipe");
     setAnimatingNext(true);
     setFlyOut(true);
     setThrowMs(280);
@@ -776,12 +800,14 @@ export default function Opening() {
 
   async function openAnother() {
     if (openingLock || isDisplayMode) return;
+    void primeSound();
 
     setOpeningLock(true);
     clearQueuedTimeouts();
 
     try {
       const res = await openBooster(activeSeasonNumber);
+      playSoundEffect("opening.purchase-booster");
 
       await refreshWallet();
       try {
@@ -807,12 +833,14 @@ export default function Opening() {
 
   async function openAnotherDisplay() {
     if (openingLock || !isDisplayMode) return;
+    void primeSound();
 
     setOpeningLock(true);
     clearQueuedTimeouts();
 
     try {
       const res = await openDisplay(activeSeasonNumber);
+      playSoundEffect("opening.purchase-display");
 
       await refreshWallet();
       try {
@@ -838,6 +866,7 @@ export default function Opening() {
 
   function openNextDisplayBooster() {
     if (!isDisplayMode || openingLock) return;
+    void primeSound();
 
     if (skipAnimations) {
       setPhase("display-final-summary");
@@ -855,6 +884,7 @@ export default function Opening() {
     clearQueuedTimeouts();
 
     const boosterCards = Array.isArray(displayBoosters[nextIndex]) ? displayBoosters[nextIndex] : [];
+    playSoundEffect("opening.start-booster");
     beginRevealSequence(boosterCards);
   }
 

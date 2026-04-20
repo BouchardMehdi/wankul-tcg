@@ -20,6 +20,12 @@ import {
   type MarketOfferType,
   type MarketTransactionRow,
 } from "../api/market";
+import {
+  playActionDeniedSound,
+  playSoundEffect,
+  playUiErrorSound,
+  primeSound,
+} from "../utils/sound";
 
 type MarketTab = "my-listings" | "suggestions" | "search" | "history";
 
@@ -571,6 +577,7 @@ export default function Market() {
       setAllCards(cards ?? []);
       setCardImageMap(buildCardImageMap(cards ?? []));
     } catch (e: any) {
+      playUiErrorSound();
       setError(e?.message || "Impossible de charger le market.");
     } finally {
       setLoading(false);
@@ -593,6 +600,14 @@ export default function Market() {
     setActiveTab((prev) => (prev === "search" ? "search" : prev));
   }, [searchFilters]);
 
+  useEffect(() => {
+    if (!feedback) return;
+
+    if (feedback.toLowerCase().includes("impossible")) {
+      playUiErrorSound();
+    }
+  }, [feedback]);
+
   async function refreshCurrentData() {
     await loadData();
   }
@@ -608,6 +623,7 @@ export default function Market() {
   }
 
   async function handleCancel(listingId: number) {
+    void primeSound();
     try {
       setCancellingId(listingId);
       setFeedback("");
@@ -622,10 +638,12 @@ export default function Market() {
   }
 
   async function handleClaimReward(transactionId: number) {
+    void primeSound();
     try {
       setClaimingTransactionId(transactionId);
       setFeedback("");
       await claimMarketTransactionReward(transactionId);
+      playSoundEffect("market.reward");
       setFeedback("Récompense récupérée avec succès.");
       await refreshCurrentData();
     } catch (e: any) {
@@ -636,12 +654,14 @@ export default function Market() {
   }
 
   async function handleBuy(listing: MarketListingRow) {
+    void primeSound();
     const quantity =
       listing.listingMode === "LOT"
         ? listing.remainingQuantity
         : Number(buyQuantityByListing[listing.id] ?? "1");
 
     if (!Number.isInteger(quantity) || quantity < 1) {
+      playActionDeniedSound();
       setFeedback("Quantité d’achat invalide.");
       return;
     }
@@ -660,6 +680,7 @@ export default function Market() {
       });
 
       setFeedback("Achat effectué avec succès.");
+      playSoundEffect("market.buy");
       setBuyQuantityByListing((prev) => ({ ...prev, [listing.id]: "1" }));
       await refreshCurrentData();
     } catch (e: any) {

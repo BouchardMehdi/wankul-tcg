@@ -14,6 +14,7 @@ import {
   writeAppSettings,
   type AppSettings,
 } from "../utils/appSettings";
+import { playSettingToggleSound, primeSound } from "../utils/sound";
 import { useAuth } from "../auth/AuthContext";
 import {
   getMyBugReports,
@@ -42,6 +43,13 @@ type SettingRow =
     };
 
 const SETTING_ROWS: SettingRow[] = [
+  {
+    key: "soundEffects",
+    title: "Sound effects",
+    desc: "Active les sons d'interface, d'opening, de market et des interactions principales.",
+    kind: "toggle",
+    section: "general",
+  },
   {
     key: "skipOpeningAnimations",
     title: "Skip animations",
@@ -345,6 +353,8 @@ export default function Settings() {
   function toggle(key: ToggleSettingKey) {
     const next = !settings[key];
     const merged = { ...settings, [key]: next };
+    void primeSound(key === "soundEffects");
+    playSettingToggleSound(next, { force: key === "soundEffects" });
     setSettings(merged);
     writeAppSettings({ [key]: next });
   }

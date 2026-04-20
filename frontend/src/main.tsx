@@ -4,6 +4,9 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './styles.css';
 import { AuthProvider } from './auth/AuthContext';
+import { installGlobalSoundUnlock } from './utils/sound';
+
+installGlobalSoundUnlock();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

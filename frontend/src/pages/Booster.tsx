@@ -16,6 +16,7 @@ import {
   type BoosterSeasonInfo,
 } from "../api/booster";
 import { readAppSettings, subscribeAppSettings } from "../utils/appSettings";
+import { playSoundEffect, playUiErrorSound, primeSound } from "../utils/sound";
 import {
   getSeasonBoosterImage,
   getSeasonDisplayImage,
@@ -153,6 +154,7 @@ export default function Booster() {
 
   function askOpenBooster(season: SeasonCard) {
     if (!eco || busyKey || boosterDisabled) return;
+    void primeSound();
 
     if (eco.freeBoosterCharges > 0 || !settings.confirmPurchases) {
       void onOpenBooster(season);
@@ -171,6 +173,7 @@ export default function Booster() {
 
   function askOpenDisplay(season: SeasonCard) {
     if (!eco || busyKey || displayDisabled) return;
+    void primeSound();
 
     if (eco.freeDisplayCharges > 0 || !settings.confirmPurchases) {
       void onOpenDisplay(season);
@@ -197,6 +200,7 @@ export default function Booster() {
     try {
       const res = await openBooster(season.seasonNumber);
       setConfirmModal(CLOSED_MODAL);
+      playSoundEffect("opening.purchase-booster");
 
       await refreshWallet();
       await loadPageData();
@@ -210,6 +214,7 @@ export default function Booster() {
         },
       });
     } catch (e: any) {
+      playUiErrorSound();
       setError(e?.message || "Ouverture impossible.");
     } finally {
       setBusyKey(null);
@@ -226,6 +231,7 @@ export default function Booster() {
     try {
       const res = await openDisplay(season.seasonNumber);
       setConfirmModal(CLOSED_MODAL);
+      playSoundEffect("opening.purchase-display");
 
       await refreshWallet();
       await loadPageData();
@@ -239,6 +245,7 @@ export default function Booster() {
         },
       });
     } catch (e: any) {
+      playUiErrorSound();
       setError(e?.message || "Ouverture impossible.");
     } finally {
       setBusyKey(null);
@@ -247,6 +254,7 @@ export default function Booster() {
 
   async function confirmCurrentOpening() {
     if (!confirmModal.open || !confirmModal.kind || !confirmModal.season || busyKey) return;
+    void primeSound();
 
     if (confirmModal.kind === "booster") {
       await onOpenBooster(confirmModal.season);
