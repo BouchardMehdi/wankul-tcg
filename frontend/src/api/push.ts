@@ -23,12 +23,22 @@ export type PushWatchlistItem = {
   cardName: string;
   rarity: string;
   targetPriceCredits: number;
+  marketListingAlertEnabled: boolean;
+  marketDealAlertEnabled: boolean;
+  marketDealThresholdPercent: number;
   currentMarketPrice: number | null;
   targetReachedNotified: boolean;
   lastTriggeredAt: string | null;
   lastTriggeredPrice: number | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type UpsertPushWatchlistItemInput = {
+  targetPriceCredits: number;
+  marketListingAlertEnabled?: boolean;
+  marketDealAlertEnabled?: boolean;
+  marketDealThresholdPercent?: number;
 };
 
 export type BrowserPushSubscriptionPayload = {
@@ -76,11 +86,14 @@ export async function getPushWatchlistItem(cardId: number) {
 
 export async function upsertPushWatchlistItem(
   cardId: number,
-  targetPriceCredits: number,
+  input: number | UpsertPushWatchlistItemInput,
 ) {
+  const body =
+    typeof input === "number" ? { targetPriceCredits: input } : input;
+
   return apiFetch<PushWatchlistItem>(`/push/watchlist/card/${cardId}`, {
     method: "PUT",
-    body: { targetPriceCredits },
+    body,
   });
 }
 

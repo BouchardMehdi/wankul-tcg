@@ -77,11 +77,7 @@ export class PushController {
     @Body() dto: UpsertWatchlistItemDto,
   ) {
     const userId = this.resolveUserId(user);
-    return this.pushService.upsertWatchlistItem(
-      userId,
-      cardId,
-      dto.targetPriceCredits,
-    );
+    return this.pushService.upsertWatchlistItem(userId, cardId, dto);
   }
 
   @UseGuards(JwtAuthGuard)

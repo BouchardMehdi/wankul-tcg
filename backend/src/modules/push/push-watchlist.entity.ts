@@ -28,6 +28,15 @@ export class PushWatchlistEntity {
   @Column({ name: 'target_price_credits', type: 'int' })
   targetPriceCredits!: number;
 
+  @Column({ name: 'market_listing_alert_enabled', type: 'tinyint', default: 1 })
+  marketListingAlertEnabled!: boolean;
+
+  @Column({ name: 'market_deal_alert_enabled', type: 'tinyint', default: 1 })
+  marketDealAlertEnabled!: boolean;
+
+  @Column({ name: 'market_deal_threshold_percent', type: 'int', default: 15 })
+  marketDealThresholdPercent!: number;
+
   @Column({ name: 'target_reached_notified', type: 'tinyint', default: 0 })
   targetReachedNotified!: boolean;
 
@@ -36,6 +45,12 @@ export class PushWatchlistEntity {
 
   @Column({ name: 'last_triggered_price', type: 'int', nullable: true })
   lastTriggeredPrice!: number | null;
+
+  @Column({ name: 'last_listing_notified_id', type: 'int', nullable: true })
+  lastListingNotifiedId!: number | null;
+
+  @Column({ name: 'last_deal_notified_id', type: 'int', nullable: true })
+  lastDealNotifiedId!: number | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt!: Date;

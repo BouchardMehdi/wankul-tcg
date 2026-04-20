@@ -21,13 +21,24 @@ import {
   type MarketTransactionRow,
 } from "../api/market";
 import {
+  deletePushWatchlistItem,
+  getPushWatchlist,
+  upsertPushWatchlistItem,
+  type PushWatchlistItem,
+} from "../api/push";
+import {
   playActionDeniedSound,
   playSoundEffect,
   playUiErrorSound,
   primeSound,
 } from "../utils/sound";
 
-type MarketTab = "my-listings" | "suggestions" | "search" | "history";
+type MarketTab =
+  | "my-listings"
+  | "suggestions"
+  | "watchlist"
+  | "search"
+  | "history";
 
 type SearchFilters = {
   search: string;
@@ -46,9 +57,26 @@ type SearchFilters = {
   sortOrder: "ASC" | "DESC";
 };
 
+type WatchlistFormState = {
+  selectedCardId: number | null;
+  search: string;
+  targetPriceCredits: string;
+  marketListingAlertEnabled: boolean;
+  marketDealAlertEnabled: boolean;
+  marketDealThresholdPercent: string;
+};
+
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const PREVIEW_COUNT = 3;
 const HISTORY_PAGE_SIZE = 10;
+const DEFAULT_WATCHLIST_FORM: WatchlistFormState = {
+  selectedCardId: null,
+  search: "",
+  targetPriceCredits: "",
+  marketListingAlertEnabled: true,
+  marketDealAlertEnabled: true,
+  marketDealThresholdPercent: "15",
+};
 
 function resolveImg(imageUrl?: string | null) {
   const url = (imageUrl ?? "").trim();
@@ -69,6 +97,14 @@ function formatDate(value?: string | null) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleString("fr-FR");
+}
+
+function formatCredits(value?: number | null) {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "—";
+  }
+
+  return `${value.toLocaleString("fr-FR")} crédits`;
 }
 
 function formatPricePosition(position: MarketListingRow["pricePosition"]) {
@@ -375,6 +411,12 @@ export default function Market() {
   const [ownedIds, setOwnedIds] = useState<Set<number>>(new Set());
   const [allCards, setAllCards] = useState<CardDto[]>([]);
   const [cardImageMap, setCardImageMap] = useState<Record<string, string>>({});
+  const [watchlistItems, setWatchlistItems] = useState<PushWatchlistItem[]>([]);
+  const [watchlistForm, setWatchlistForm] =
+    useState<WatchlistFormState>(DEFAULT_WATCHLIST_FORM);
+  const [watchlistBusyCardId, setWatchlistBusyCardId] = useState<number | null>(null);
+  const [watchlistSaving, setWatchlistSaving] = useState(false);
+  const [watchlistFeedback, setWatchlistFeedback] = useState("");
 
   const [purchases, setPurchases] = useState<MarketTransactionRow[]>([]);
   const [sales, setSales] = useState<MarketTransactionRow[]>([]);
@@ -412,6 +454,65 @@ export default function Market() {
     () => uniqSorted(allCards.map((c) => c.season ?? (c as any).extension ?? "")),
     [allCards],
   );
+  const watchlistCardIds = useMemo(
+    () => new Set(watchlistItems.map((item) => item.cardId)),
+    [watchlistItems],
+  );
+  const watchlistSuggestions = useMemo(() => {
+    const query = watchlistForm.search.trim().toLowerCase();
+    if (!query) return [];
+
+    return allCards
+      .filter((card) => {
+        const label = [
+          card.name,
+          card.rarity,
+          card.season ?? (card as any).extension ?? "",
+          card.id,
+          card.key,
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        return label.includes(query);
+      })
+      .slice(0, 8);
+  }, [allCards, watchlistForm.search]);
+  const watchlistCardsById = useMemo(
+    () => new Map(allCards.map((card) => [card.id, card])),
+    [allCards],
+  );
+  const watchlistListingSummaryByCardId = useMemo(() => {
+    const entries = new Map<
+      number,
+      { count: number; bestListing: MarketListingRow | null }
+    >();
+
+    for (const listing of allListingsRaw) {
+      const current = entries.get(listing.cardId) ?? {
+        count: 0,
+        bestListing: null,
+      };
+
+      current.count += 1;
+      if (
+        !current.bestListing ||
+        listing.referenceRequestedValue < current.bestListing.referenceRequestedValue ||
+        (
+          listing.referenceRequestedValue ===
+            current.bestListing.referenceRequestedValue &&
+          (listing.priceDifferencePercent ?? 9999) <
+            (current.bestListing.priceDifferencePercent ?? 9999)
+        )
+      ) {
+        current.bestListing = listing;
+      }
+
+      entries.set(listing.cardId, current);
+    }
+
+    return entries;
+  }, [allListingsRaw]);
 
   const filteredListings = useMemo(() => {
     const search = searchFilters.search.trim().toLowerCase();
@@ -554,7 +655,7 @@ export default function Market() {
     setError("");
 
     try {
-      const [ownedRows, activeListings, mine, myPurchases, mySales, cards] =
+      const [ownedRows, activeListings, mine, myPurchases, mySales, cards, watchlist] =
         await Promise.all([
           fetchOwnedCollection(),
           getMarketListings({ limit: 100 }),
@@ -562,6 +663,7 @@ export default function Market() {
           getMyMarketPurchases(),
           getMyMarketSales(),
           fetchAllCards(),
+          getPushWatchlist(),
         ]);
 
       const owned = new Set<number>();
@@ -576,6 +678,7 @@ export default function Market() {
       setSales(mySales ?? []);
       setAllCards(cards ?? []);
       setCardImageMap(buildCardImageMap(cards ?? []));
+      setWatchlistItems(watchlist ?? []);
     } catch (e: any) {
       playUiErrorSound();
       setError(e?.message || "Impossible de charger le market.");
@@ -608,6 +711,14 @@ export default function Market() {
     }
   }, [feedback]);
 
+  useEffect(() => {
+    if (!watchlistFeedback) return;
+
+    if (watchlistFeedback.toLowerCase().includes("impossible")) {
+      playUiErrorSound();
+    }
+  }, [watchlistFeedback]);
+
   async function refreshCurrentData() {
     await loadData();
   }
@@ -620,6 +731,110 @@ export default function Market() {
     if (activeTab !== "search") {
       setActiveTab("search");
     }
+  }
+
+  function resetWatchlistForm() {
+    setWatchlistForm(DEFAULT_WATCHLIST_FORM);
+  }
+
+  function hydrateWatchlistForm(item: PushWatchlistItem) {
+    setWatchlistForm({
+      selectedCardId: item.cardId,
+      search: `${item.cardName} • ${item.rarity} • #${item.cardId}`,
+      targetPriceCredits: String(item.targetPriceCredits),
+      marketListingAlertEnabled: item.marketListingAlertEnabled,
+      marketDealAlertEnabled: item.marketDealAlertEnabled,
+      marketDealThresholdPercent: String(item.marketDealThresholdPercent),
+    });
+  }
+
+  async function handleSaveWatchlist() {
+    const cardId = watchlistForm.selectedCardId;
+    const targetPriceCredits = Number(watchlistForm.targetPriceCredits);
+    const marketDealThresholdPercent = Number(
+      watchlistForm.marketDealThresholdPercent,
+    );
+
+    if (!cardId) {
+      playActionDeniedSound();
+      setWatchlistFeedback("Choisis d'abord une carte a suivre.");
+      return;
+    }
+
+    if (!Number.isInteger(targetPriceCredits) || targetPriceCredits < 1) {
+      playActionDeniedSound();
+      setWatchlistFeedback("Entre un prix cible valide pour la watchlist.");
+      return;
+    }
+
+    if (
+      !Number.isInteger(marketDealThresholdPercent) ||
+      marketDealThresholdPercent < 1
+    ) {
+      playActionDeniedSound();
+      setWatchlistFeedback("Entre un seuil de bonne affaire valide.");
+      return;
+    }
+
+    try {
+      setWatchlistSaving(true);
+      setWatchlistFeedback("");
+      const item = await upsertPushWatchlistItem(cardId, {
+        targetPriceCredits,
+        marketListingAlertEnabled: watchlistForm.marketListingAlertEnabled,
+        marketDealAlertEnabled: watchlistForm.marketDealAlertEnabled,
+        marketDealThresholdPercent,
+      });
+
+      setWatchlistItems((current) => {
+        const next = [item, ...current.filter((entry) => entry.cardId !== item.cardId)];
+        return next.sort((a, b) => a.cardName.localeCompare(b.cardName, "fr"));
+      });
+      setWatchlistFeedback("Carte ajoutee a la watchlist market.");
+      playSoundEffect("ui.toggle-on");
+      hydrateWatchlistForm(item);
+    } catch (e: any) {
+      setWatchlistFeedback(
+        e?.message || "Impossible d'enregistrer cette carte en watchlist.",
+      );
+    } finally {
+      setWatchlistSaving(false);
+    }
+  }
+
+  async function handleDeleteWatchlist(cardId: number) {
+    try {
+      setWatchlistBusyCardId(cardId);
+      setWatchlistFeedback("");
+      await deletePushWatchlistItem(cardId);
+      setWatchlistItems((current) => current.filter((item) => item.cardId !== cardId));
+      if (watchlistForm.selectedCardId === cardId) {
+        resetWatchlistForm();
+      }
+      setWatchlistFeedback("Carte retiree de la watchlist.");
+      playSoundEffect("ui.toggle-off");
+    } catch (e: any) {
+      setWatchlistFeedback(
+        e?.message || "Impossible de retirer cette carte de la watchlist.",
+      );
+    } finally {
+      setWatchlistBusyCardId(null);
+    }
+  }
+
+  function handleQuickSearchWatchlist(item: PushWatchlistItem) {
+    setSearchFilters({
+      search: item.cardName,
+      rarity: "",
+      season: "",
+      listingMode: "",
+      offerType: "",
+      minPrice: "",
+      maxPrice: "",
+      sortBy: "priceCredits",
+      sortOrder: "ASC",
+    });
+    setActiveTab("search");
   }
 
   async function handleCancel(listingId: number) {
@@ -751,6 +966,9 @@ export default function Market() {
             </div>
 
             <div className="marketListingCard__badges">
+              {watchlistCardIds.has(listing.cardId) && (
+                <span className="badge badge--watchlist">Watchlist</span>
+              )}
               <span className={`badge badge--${listing.pricePosition.toLowerCase()}`}>
                 {formatPricePosition(listing.pricePosition)}
               </span>
@@ -985,6 +1203,13 @@ export default function Market() {
             onClick={() => setActiveTab("suggestions")}
           >
             Suggestions
+          </button>
+          <button
+            type="button"
+            className={activeTab === "watchlist" ? "is-active" : ""}
+            onClick={() => setActiveTab("watchlist")}
+          >
+            Watchlist
           </button>
           <button
             type="button"
@@ -1290,6 +1515,277 @@ export default function Market() {
                 {suggestedListings.map((listing) =>
                   renderListingCard(listing, "suggestion"),
                 )}
+              </div>
+            )}
+          </section>
+        )}
+
+        {!loading && !error && activeTab === "watchlist" && (
+          <section className="marketWatchlistPanel">
+            <div className="marketSection__head">
+              <div>
+                <h2>Watchlist market</h2>
+                <span>
+                  Suis les cartes que tu recherches absolument, lance une recherche
+                  en un clic et recois une notif si une annonce colle a tes
+                  parametres ou sort vraiment sous le marche.
+                </span>
+              </div>
+              <span>{watchlistItems.length} carte(s) suivie(s)</span>
+            </div>
+
+            <div className="marketWatchlistComposer">
+              <label className="marketField marketField--watchlistSearch">
+                <span>Carte a suivre</span>
+                <input
+                  type="text"
+                  value={watchlistForm.search}
+                  onChange={(e) =>
+                    setWatchlistForm((prev) => ({
+                      ...prev,
+                      search: e.target.value,
+                      selectedCardId: null,
+                    }))
+                  }
+                  placeholder="Nom, rarete, saison, identifiant..."
+                />
+              </label>
+
+              <label className="marketField">
+                <span>Prix cible max</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={watchlistForm.targetPriceCredits}
+                  onChange={(e) =>
+                    setWatchlistForm((prev) => ({
+                      ...prev,
+                      targetPriceCredits: e.target.value,
+                    }))
+                  }
+                  placeholder="Ex: 450"
+                />
+              </label>
+
+              <label className="marketField">
+                <span>Seuil bonne affaire (%)</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={watchlistForm.marketDealThresholdPercent}
+                  onChange={(e) =>
+                    setWatchlistForm((prev) => ({
+                      ...prev,
+                      marketDealThresholdPercent: e.target.value,
+                    }))
+                  }
+                  placeholder="15"
+                />
+              </label>
+
+              <label className="marketToggle">
+                <input
+                  type="checkbox"
+                  checked={watchlistForm.marketListingAlertEnabled}
+                  onChange={(e) =>
+                    setWatchlistForm((prev) => ({
+                      ...prev,
+                      marketListingAlertEnabled: e.target.checked,
+                    }))
+                  }
+                />
+                <span>Notif si annonce dispo sous mon prix</span>
+              </label>
+
+              <label className="marketToggle">
+                <input
+                  type="checkbox"
+                  checked={watchlistForm.marketDealAlertEnabled}
+                  onChange={(e) =>
+                    setWatchlistForm((prev) => ({
+                      ...prev,
+                      marketDealAlertEnabled: e.target.checked,
+                    }))
+                  }
+                />
+                <span>Notif si grosse bonne affaire</span>
+              </label>
+
+              <div className="marketWatchlistComposer__actions">
+                <button
+                  type="button"
+                  className="marketBtn"
+                  disabled={watchlistSaving}
+                  onClick={handleSaveWatchlist}
+                >
+                  {watchlistSaving ? "Enregistrement..." : "Ajouter / mettre a jour"}
+                </button>
+
+                <button
+                  type="button"
+                  className="marketBtn marketBtn--secondary"
+                  onClick={resetWatchlistForm}
+                >
+                  Vider
+                </button>
+              </div>
+            </div>
+
+            {watchlistSuggestions.length > 0 && !watchlistForm.selectedCardId ? (
+              <div className="marketWatchlistSuggestions">
+                {watchlistSuggestions.map((card) => (
+                  <button
+                    key={card.id}
+                    type="button"
+                    className={`marketWatchlistSuggestion ${
+                      watchlistCardIds.has(card.id) ? "is-tracked" : ""
+                    }`}
+                    onClick={() => {
+                      const existing = watchlistItems.find((item) => item.cardId === card.id);
+                      if (existing) {
+                        hydrateWatchlistForm(existing);
+                        return;
+                      }
+
+                      setWatchlistForm((prev) => ({
+                        ...prev,
+                        selectedCardId: card.id,
+                        search: `${card.name} • ${card.rarity} • #${card.id}`,
+                      }));
+                    }}
+                  >
+                    <strong>{card.name}</strong>
+                    <span>
+                      {card.rarity} • {card.season ?? (card as any).extension ?? "Speciale"} • #{card.id}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            {watchlistFeedback ? (
+              <div className="marketWatchlistFeedback">{watchlistFeedback}</div>
+            ) : null}
+
+            {watchlistItems.length === 0 ? (
+              <div className="marketEmpty">
+                Aucune carte suivie pour le moment. Ajoute ici les cartes que tu
+                veux traquer en priorite.
+              </div>
+            ) : (
+              <div className="marketWatchlistGrid">
+                {watchlistItems.map((item) => {
+                  const card = watchlistCardsById.get(item.cardId);
+                  const cardImage = getCardImageFromMap(cardImageMap, {
+                    cardId: item.cardId,
+                    cardKey: item.cardKey,
+                  });
+                  const listingSummary =
+                    watchlistListingSummaryByCardId.get(item.cardId) ?? null;
+                  const bestListing = listingSummary?.bestListing ?? null;
+
+                  return (
+                    <article className="marketWatchlistCard" key={item.cardId}>
+                      <div className="marketWatchlistCard__media">
+                        {cardImage ? (
+                          <img src={cardImage} alt={item.cardName} />
+                        ) : (
+                          <div className="marketListingCard__placeholder marketListingCard__placeholder--small">
+                            Aucune image
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="marketWatchlistCard__content">
+                        <div className="marketWatchlistCard__top">
+                          <div>
+                            <h3>{item.cardName}</h3>
+                            <p>
+                              {item.rarity} • {card?.season ?? (card as any)?.extension ?? "Speciale"} • #{item.cardId}
+                            </p>
+                          </div>
+
+                          <div className="marketListingCard__badges">
+                            <span className="badge badge--watchlist">Watchlist</span>
+                            {listingSummary?.count ? (
+                              <span className="badge badge--active">
+                                {listingSummary.count} annonce(s)
+                              </span>
+                            ) : (
+                              <span className="badge badge--not_comparable">
+                                Rien en vente
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="marketWatchlistCard__grid">
+                          <div>
+                            <span className="marketLabel">Prix cible</span>
+                            <strong>{formatCredits(item.targetPriceCredits)}</strong>
+                          </div>
+                          <div>
+                            <span className="marketLabel">Prix du marche</span>
+                            <strong>{formatCredits(item.currentMarketPrice)}</strong>
+                          </div>
+                          <div>
+                            <span className="marketLabel">Annonce dispo</span>
+                            <strong>{item.marketListingAlertEnabled ? "Oui" : "Non"}</strong>
+                          </div>
+                          <div>
+                            <span className="marketLabel">Bonne affaire</span>
+                            <strong>
+                              {item.marketDealAlertEnabled
+                                ? `Oui a -${item.marketDealThresholdPercent}%`
+                                : "Non"}
+                            </strong>
+                          </div>
+                        </div>
+
+                        {bestListing ? (
+                          <div className="marketWatchlistCard__best">
+                            <span className="marketLabel">Meilleure offre actuelle</span>
+                            <strong>{formatCredits(bestListing.referenceRequestedValue)}</strong>
+                            <em>
+                              {bestListing.priceDifferencePercent !== null
+                                ? `${bestListing.priceDifferencePercent}% vs marche`
+                                : "Comparaison indisponible"}
+                            </em>
+                          </div>
+                        ) : null}
+
+                        <div className="marketWatchlistCard__actions">
+                          <button
+                            type="button"
+                            className="marketBtn"
+                            onClick={() => handleQuickSearchWatchlist(item)}
+                          >
+                            Rechercher
+                          </button>
+
+                          <button
+                            type="button"
+                            className="marketBtn marketBtn--secondary"
+                            onClick={() => hydrateWatchlistForm(item)}
+                          >
+                            Charger les parametres
+                          </button>
+
+                          <button
+                            type="button"
+                            className="marketBtn marketBtn--danger"
+                            disabled={watchlistBusyCardId === item.cardId}
+                            onClick={() => handleDeleteWatchlist(item.cardId)}
+                          >
+                            {watchlistBusyCardId === item.cardId
+                              ? "Retrait..."
+                              : "Retirer"}
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>

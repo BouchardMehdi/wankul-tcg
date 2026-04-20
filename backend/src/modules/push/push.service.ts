@@ -18,6 +18,7 @@ import { ECONOMY_RULES } from '../economy/economy.constants';
 import { applyEconomyRecharge } from '../economy/economy.utils';
 import { PushNotificationPreferenceEntity } from './push-preference.entity';
 import { UpdatePushPreferencesDto } from './dto/update-push-preferences.dto';
+import { UpsertWatchlistItemDto } from './dto/upsert-watchlist-item.dto';
 import { PushWatchlistEntity } from './push-watchlist.entity';
 import { Card } from '../cards/card.entity';
 import { MarketPricingService } from '../market/market-pricing.service';
@@ -54,6 +55,13 @@ type PushPreferencesResponse = {
   staleListingAlertEnabled: boolean;
   staleListingHours: number;
   dailyMarketRecapEnabled: boolean;
+};
+
+type WatchlistListingCandidate = {
+  listing: MarketListing;
+  requestedValue: number;
+  referenceMarketValue: number;
+  differencePercent: number | null;
 };
 
 @Injectable()
@@ -199,7 +207,7 @@ export class PushService {
   async upsertWatchlistItem(
     userId: number,
     cardId: number,
-    targetPriceCredits: number,
+    dto: UpsertWatchlistItemDto,
   ) {
     const card = await this.cardRepository.findOne({ where: { id: cardId } });
     if (!card) {
@@ -220,7 +228,13 @@ export class PushService {
 
     item.user = { id: userId } as User;
     item.card = { id: cardId } as Card;
-    item.targetPriceCredits = targetPriceCredits;
+    item.targetPriceCredits = dto.targetPriceCredits;
+    item.marketListingAlertEnabled =
+      dto.marketListingAlertEnabled ?? item.marketListingAlertEnabled ?? true;
+    item.marketDealAlertEnabled =
+      dto.marketDealAlertEnabled ?? item.marketDealAlertEnabled ?? true;
+    item.marketDealThresholdPercent =
+      dto.marketDealThresholdPercent ?? item.marketDealThresholdPercent ?? 15;
     item.targetReachedNotified = false;
 
     await this.pushWatchlistRepository.save(item);
@@ -554,6 +568,173 @@ export class PushService {
     }
   }
 
+  async processWatchlistListingAlerts() {
+    if (!this.pushEnabled) return;
+
+    const items = await this.pushWatchlistRepository.find({
+      relations: ['card', 'user'],
+    });
+
+    if (!items.length) {
+      return;
+    }
+
+    const watchedCardIds = Array.from(new Set(items.map((item) => item.card.id)));
+    const activeListings = await this.marketListingRepository.find({
+      where: { status: MarketListingStatus.ACTIVE },
+      relations: ['seller', 'card', 'wantedCard'],
+      order: { createdAt: 'DESC' },
+    });
+
+    const relevantListings = activeListings.filter((listing) =>
+      watchedCardIds.includes(listing.card.id),
+    );
+
+    if (!relevantListings.length) {
+      return;
+    }
+
+    const pricingCardIds = Array.from(
+      new Set(
+        relevantListings.flatMap((listing) => [
+          listing.card.id,
+          listing.wantedCard?.id ?? null,
+        ]),
+      ),
+    ).filter(
+      (value): value is number =>
+        value !== null && Number.isInteger(value) && value > 0,
+    );
+
+    const pricingEntries = await Promise.all(
+      pricingCardIds.map(
+        async (cardId) =>
+          [cardId, await this.marketPricingService.getMarketPrice(cardId)] as const,
+      ),
+    );
+    const pricingByCardId = new Map(pricingEntries);
+
+    for (const item of items) {
+      const preferences = await this.ensurePreferences(item.user.id);
+      if (!preferences.watchlistPriceAlertEnabled) {
+        continue;
+      }
+
+      const candidates = relevantListings
+        .filter(
+          (listing) =>
+            listing.card.id === item.card.id && listing.seller.id !== item.user.id,
+        )
+        .map((listing) =>
+          this.buildWatchlistListingCandidate(listing, pricingByCardId),
+        );
+
+      if (!candidates.length) {
+        continue;
+      }
+
+      const dealCandidate = (item.marketDealAlertEnabled ?? true)
+        ? [...candidates]
+            .filter(
+              (candidate) =>
+                candidate.differencePercent !== null &&
+                candidate.differencePercent <=
+                  -Math.abs(item.marketDealThresholdPercent ?? 15) &&
+                candidate.listing.id !== item.lastDealNotifiedId,
+            )
+            .sort((a, b) => {
+              if ((a.differencePercent ?? 0) !== (b.differencePercent ?? 0)) {
+                return (a.differencePercent ?? 0) - (b.differencePercent ?? 0);
+              }
+              return a.requestedValue - b.requestedValue;
+            })[0]
+        : undefined;
+
+      if (dealCandidate) {
+        const dealPercent = Math.abs(
+          Number((dealCandidate.differencePercent ?? 0).toFixed(1)),
+        );
+        const result = await this.sendToUser(item.user.id, {
+          title: `${item.card.name} est en vraie bonne affaire`,
+          body: `Une annonce est disponible autour de ${Math.round(
+            dealCandidate.requestedValue,
+          )} credits, soit ${dealPercent}% sous la valeur du marche.`,
+          url: '/market',
+          tag: `watchlist-deal-${item.id}-${dealCandidate.listing.id}`,
+          kind: 'watchlist-deal',
+          accent: 'gold',
+          image: '/push-watchlist.svg',
+          requireInteraction: true,
+          vibrate: [120, 40, 120],
+          actions: [
+            { action: 'open-market', title: 'Voir l annonce', url: '/market' },
+            {
+              action: 'open-card',
+              title: 'Voir la carte',
+              url: `/collection/card/${item.card.id}`,
+            },
+          ],
+        });
+
+        if (result.delivered > 0) {
+          item.lastDealNotifiedId = dealCandidate.listing.id;
+          item.lastListingNotifiedId = dealCandidate.listing.id;
+          await this.pushWatchlistRepository.save(item);
+        }
+
+        continue;
+      }
+
+      const listingCandidate = (item.marketListingAlertEnabled ?? true)
+        ? [...candidates]
+            .filter(
+              (candidate) =>
+                candidate.requestedValue <= item.targetPriceCredits &&
+                candidate.listing.id !== item.lastListingNotifiedId,
+            )
+            .sort((a, b) => {
+              if (a.requestedValue !== b.requestedValue) {
+                return a.requestedValue - b.requestedValue;
+              }
+              return (
+                new Date(b.listing.createdAt).getTime() -
+                new Date(a.listing.createdAt).getTime()
+              );
+            })[0]
+        : undefined;
+
+      if (!listingCandidate) {
+        continue;
+      }
+
+      const result = await this.sendToUser(item.user.id, {
+        title: `${item.card.name} vient d apparaitre sur le market`,
+        body: `Une annonce correspond a ta watchlist avec une valeur autour de ${Math.round(
+          listingCandidate.requestedValue,
+        )} credits pour ta cible fixee a ${item.targetPriceCredits}.`,
+        url: '/market',
+        tag: `watchlist-listing-${item.id}-${listingCandidate.listing.id}`,
+        kind: 'watchlist-listing',
+        accent: 'cyan',
+        image: '/push-watchlist.svg',
+        vibrate: [100, 40, 80],
+        actions: [
+          { action: 'open-market', title: 'Rechercher', url: '/market' },
+          {
+            action: 'open-card',
+            title: 'Voir la carte',
+            url: `/collection/card/${item.card.id}`,
+          },
+        ],
+      });
+
+      if (result.delivered > 0) {
+        item.lastListingNotifiedId = listingCandidate.listing.id;
+        await this.pushWatchlistRepository.save(item);
+      }
+    }
+  }
+
   async processStaleListingAlerts() {
     if (!this.pushEnabled) return;
 
@@ -779,6 +960,9 @@ export class PushService {
       cardName: item.card.name,
       rarity: item.card.rarity,
       targetPriceCredits: item.targetPriceCredits,
+      marketListingAlertEnabled: item.marketListingAlertEnabled ?? true,
+      marketDealAlertEnabled: item.marketDealAlertEnabled ?? true,
+      marketDealThresholdPercent: item.marketDealThresholdPercent ?? 15,
       currentMarketPrice,
       targetReachedNotified: item.targetReachedNotified,
       lastTriggeredAt: item.lastTriggeredAt,
@@ -797,6 +981,42 @@ export class PushService {
     return rows
       .map((row) => Number(row.userId))
       .filter((value) => Number.isInteger(value) && value > 0);
+  }
+
+  private buildWatchlistListingCandidate(
+    listing: MarketListing,
+    pricingByCardId: Map<number, { finalPrice: number }>,
+  ): WatchlistListingCandidate {
+    const currentListedCardPrice =
+      pricingByCardId.get(listing.card.id)?.finalPrice ??
+      listing.marketPriceSnapshot;
+    const currentWantedCardPrice = listing.wantedCard?.id
+      ? (pricingByCardId.get(listing.wantedCard.id)?.finalPrice ??
+        listing.wantedCardMarketPriceSnapshot)
+      : 0;
+
+    const referenceMarketValue =
+      listing.listingMode === 'LOT'
+        ? currentListedCardPrice * listing.remainingQuantity
+        : currentListedCardPrice;
+    const requestedValue =
+      listing.priceCredits + currentWantedCardPrice * listing.wantedCardQuantity;
+    const differencePercent =
+      referenceMarketValue > 0
+        ? Number(
+            (
+              ((requestedValue - referenceMarketValue) / referenceMarketValue) *
+              100
+            ).toFixed(2),
+          )
+        : null;
+
+    return {
+      listing,
+      requestedValue,
+      referenceMarketValue,
+      differencePercent,
+    };
   }
 
   private getAvailableOpeningsParts(economy: UserEconomy) {

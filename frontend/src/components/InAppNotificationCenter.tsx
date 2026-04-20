@@ -42,6 +42,8 @@ function getEyebrow(payload: InAppNotificationPayload) {
     case "market-reward":
       return "Vente conclue";
     case "watchlist-price":
+    case "watchlist-listing":
+    case "watchlist-deal":
       return "Carte en veille";
     case "free-openings-ready":
       return "Ouverture servie";
@@ -61,6 +63,8 @@ function getKindClass(payload: InAppNotificationPayload) {
     case "market-reward":
       return "kind-market-reward";
     case "watchlist-price":
+    case "watchlist-listing":
+    case "watchlist-deal":
       return "kind-watchlist-price";
     case "free-openings-ready":
       return "kind-free-openings-ready";
@@ -81,6 +85,10 @@ function getMonogram(payload: InAppNotificationPayload) {
       return "MK";
     case "watchlist-price":
       return "WL";
+    case "watchlist-listing":
+      return "WL";
+    case "watchlist-deal":
+      return "HOT";
     case "free-openings-ready":
       return "GO";
     case "free-openings-soon":
@@ -100,6 +108,10 @@ function getFlavorText(payload: InAppNotificationPayload) {
       return "Une vente vient de tomber et le gain t'attend";
     case "watchlist-price":
       return "Le bon moment pour tenter ta carte cible";
+    case "watchlist-listing":
+      return "Une annonce vient de matcher ta watchlist";
+    case "watchlist-deal":
+      return "Une vraie bonne affaire vient d arriver";
     case "free-openings-ready":
       return "Le frisson de l'ouverture peut repartir tout de suite";
     case "free-openings-soon":
@@ -119,6 +131,10 @@ function getStamp(payload: InAppNotificationPayload) {
       return "Gain";
     case "watchlist-price":
       return "Cible";
+    case "watchlist-listing":
+      return "Trouvee";
+    case "watchlist-deal":
+      return "Deal";
     case "free-openings-ready":
       return "Ouverture";
     case "free-openings-soon":
@@ -142,7 +158,11 @@ function playToastSound(payload: InAppNotificationPayload) {
       playSoundEffect("market.reward");
       break;
     case "watchlist-price":
+    case "watchlist-listing":
       playSoundEffect("market.buy");
+      break;
+    case "watchlist-deal":
+      playSoundEffect("market.reward");
       break;
     case "free-openings-ready":
       playSoundEffect("opening.new-card");

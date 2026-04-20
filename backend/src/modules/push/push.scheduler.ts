@@ -14,6 +14,7 @@ export class PushScheduler {
       await this.pushService.processFreeOpeningsReadyNotifications();
       await this.pushService.processFreeOpeningsSoonNotifications();
       await this.pushService.processWatchlistPriceAlerts();
+      await this.pushService.processWatchlistListingAlerts();
       await this.pushService.processStaleListingAlerts();
     } catch (error: any) {
       this.logger.warn(
