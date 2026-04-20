@@ -1,0 +1,31 @@
+<svg width="1200" height="628" viewBox="0 0 1200 628" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="628" rx="44" fill="#0A0E19"/>
+  <rect x="18" y="18" width="1164" height="592" rx="30" stroke="url(#stroke)" stroke-width="2"/>
+  <ellipse cx="222" cy="124" rx="300" ry="192" fill="#9A61FF" fill-opacity="0.18"/>
+  <ellipse cx="986" cy="500" rx="352" ry="232" fill="#48D2F1" fill-opacity="0.14"/>
+  <g opacity="0.88">
+    <circle cx="328" cy="314" r="138" fill="#141F37"/>
+    <circle cx="328" cy="314" r="96" fill="none" stroke="#9A61FF" stroke-width="16"/>
+    <circle cx="328" cy="314" r="58" fill="none" stroke="#48D2F1" stroke-width="10" stroke-opacity="0.9"/>
+    <path d="M328 240V314L380 346" stroke="#F7F8FF" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M328 188C398 188 454 244 454 314" stroke="#48D2F1" stroke-width="14" stroke-linecap="round"/>
+  </g>
+  <g opacity="0.94">
+    <rect x="646" y="166" width="188" height="274" rx="28" transform="rotate(-8 646 166)" fill="#F7F8FF"/>
+    <rect x="656" y="180" width="168" height="248" rx="22" transform="rotate(-8 656 180)" fill="#182A4A"/>
+    <rect x="844" y="154" width="204" height="296" rx="30" transform="rotate(6 844 154)" fill="#FFF6FA"/>
+    <rect x="854" y="168" width="184" height="270" rx="24" transform="rotate(6 854 168)" fill="#3A1632"/>
+  </g>
+  <path d="M584 112L880 42" stroke="#9A61FF" stroke-width="18" stroke-linecap="round" opacity="0.7"/>
+  <path d="M688 122L1032 48" stroke="#48D2F1" stroke-width="14" stroke-linecap="round" opacity="0.68"/>
+  <text x="88" y="96" fill="#F7F8FF" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="0.18em">WANKUL TCG</text>
+  <text x="88" y="504" fill="#F7F8FF" font-family="Arial, sans-serif" font-size="82" font-weight="900">Opening soon</text>
+  <text x="88" y="570" fill="#9A61FF" font-family="Arial, sans-serif" font-size="74" font-weight="900">ta prochaine charge arrive tres bientot</text>
+  <defs>
+    <linearGradient id="stroke" x1="60" y1="56" x2="1142" y2="568" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9A61FF"/>
+      <stop offset="0.54" stop-color="#48D2F1"/>
+      <stop offset="1" stop-color="#F7F8FF"/>
+    </linearGradient>
+  </defs>
+</svg>

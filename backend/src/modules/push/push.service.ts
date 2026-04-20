@@ -330,7 +330,7 @@ export class PushService {
       rewardParts.length > 0 ? rewardParts.join(' + ') : 'ta recompense';
 
     return this.sendToUser(args.sellerId, {
-      title: 'Une vente est terminee',
+      title: 'Ta vente a fait mouche',
       body: `${args.soldCardName} a trouve preneur. Passe sur le market pour recuperer ${rewardLabel}.`,
       url: '/market',
       tag: `market-reward-${args.transactionId}`,
@@ -340,7 +340,7 @@ export class PushService {
       requireInteraction: true,
       vibrate: [120, 60, 120],
       actions: [
-        { action: 'open-market', title: 'Voir le market', url: '/market' },
+        { action: 'open-market', title: 'Recuperer', url: '/market' },
         { action: 'dismiss', title: 'Plus tard' },
       ],
     });
@@ -379,8 +379,8 @@ export class PushService {
 
       const availableParts = this.getAvailableOpeningsParts(economy);
       const result = await this.sendToUser(userId, {
-        title: 'Tes ouvertures gratuites sont pretes',
-        body: `${availableParts.join(' et ')} t'attendent dans l'app.`,
+        title: 'Tes ouvertures sont servies',
+        body: `${availableParts.join(' et ')} t'attendent. C'est le moment de relancer la collection.`,
         url: '/booster',
         tag: `free-openings-${userId}`,
         kind: 'free-openings-ready',
@@ -388,7 +388,7 @@ export class PushService {
         image: '/push-opening.svg',
         vibrate: [100, 40, 80],
         actions: [
-          { action: 'open-booster', title: 'Ouvrir', url: '/booster' },
+          { action: 'open-booster', title: 'Entrer', url: '/booster' },
           { action: 'dismiss', title: 'Plus tard' },
         ],
       });
@@ -430,16 +430,16 @@ export class PushService {
         )
       ) {
         const result = await this.sendToUser(userId, {
-          title: 'Un booster gratuit arrive bientot',
-          body: `Un booster gratuit sera de nouveau disponible dans moins de ${preferences.freeOpeningsSoonMinutes} minutes.`,
+          title: 'Un booster revient bientot',
+          body: `Encore un peu de patience: un booster gratuit sera de nouveau disponible dans moins de ${preferences.freeOpeningsSoonMinutes} minutes.`,
           url: '/booster',
           tag: `free-booster-soon-${userId}`,
           kind: 'free-openings-soon',
           accent: 'violet',
-          image: '/push-opening.svg',
+          image: '/push-opening-soon.svg',
           vibrate: [80, 40, 60],
           actions: [
-            { action: 'open-booster', title: 'Voir les charges', url: '/booster' },
+            { action: 'open-booster', title: 'Voir le timer', url: '/booster' },
             { action: 'dismiss', title: 'Fermer' },
           ],
         });
@@ -462,16 +462,16 @@ export class PushService {
         )
       ) {
         const result = await this.sendToUser(userId, {
-          title: 'Une display gratuite arrive bientot',
-          body: `Une display gratuite sera de nouveau disponible dans moins de ${preferences.freeOpeningsSoonMinutes} minutes.`,
+          title: 'Une display revient bientot',
+          body: `Encore un peu de patience: une display gratuite sera de nouveau disponible dans moins de ${preferences.freeOpeningsSoonMinutes} minutes.`,
           url: '/booster',
           tag: `free-display-soon-${userId}`,
           kind: 'free-openings-soon',
           accent: 'violet',
-          image: '/push-opening.svg',
+          image: '/push-opening-soon.svg',
           vibrate: [80, 40, 60],
           actions: [
-            { action: 'open-booster', title: 'Voir les charges', url: '/booster' },
+            { action: 'open-booster', title: 'Voir le timer', url: '/booster' },
             { action: 'dismiss', title: 'Fermer' },
           ],
         });
@@ -519,8 +519,8 @@ export class PushService {
 
       if (currentPrice <= item.targetPriceCredits && !item.targetReachedNotified) {
         const result = await this.sendToUser(item.user.id, {
-          title: 'Prix cible atteint',
-          body: `${item.card.name} est descendue a ${currentPrice} credits, sous ton seuil de ${item.targetPriceCredits}.`,
+          title: 'Ta cible passe sous le seuil',
+          body: `${item.card.name} descend a ${currentPrice} credits, sous ton objectif de ${item.targetPriceCredits}.`,
           url: `/collection/card/${item.card.id}`,
           tag: `watchlist-${item.id}`,
           kind: 'watchlist-price',
@@ -531,7 +531,7 @@ export class PushService {
           actions: [
             {
               action: 'open-card',
-              title: 'Voir la carte',
+              title: 'Voir la cible',
               url: `/collection/card/${item.card.id}`,
             },
             { action: 'dismiss', title: 'Plus tard' },
@@ -581,17 +581,17 @@ export class PushService {
       }
 
       const result = await this.sendToUser(listing.seller.id, {
-        title: 'Ton annonce attend toujours',
-        body: `${listing.card.name} n'a pas encore ete vendue apres ${preferences.staleListingHours}h. Tu peux ajuster ton prix ou ton offre.`,
+        title: 'Ton annonce refroidit',
+        body: `${listing.card.name} n'a toujours pas bouge apres ${preferences.staleListingHours}h. Tu peux ajuster le prix pour relancer l'interet.`,
         url: '/market',
         tag: `stale-listing-${listing.id}`,
         kind: 'stale-listing',
         accent: 'pink',
-        image: '/push-market.svg',
+        image: '/push-stale-listing.svg',
         requireInteraction: true,
         vibrate: [90, 40, 90],
         actions: [
-          { action: 'open-market', title: 'Gerer', url: '/market' },
+          { action: 'open-market', title: 'Relancer', url: '/market' },
           { action: 'dismiss', title: 'Fermer' },
         ],
       });
@@ -675,7 +675,7 @@ export class PushService {
         `Volume global du jour: ${(todayStats?.marketVolume ?? 0).toLocaleString('fr-FR')} credits.`;
 
       const result = await this.sendToUser(userId, {
-        title: 'Recap market du jour',
+        title: 'Le market du jour en bref',
         body,
         url: '/market',
         tag: `daily-market-recap-${todayKey}-${userId}`,
@@ -683,7 +683,7 @@ export class PushService {
         accent: 'gold',
         image: '/push-recap.svg',
         actions: [
-          { action: 'open-market', title: 'Voir le market', url: '/market' },
+          { action: 'open-market', title: 'Lire le recap', url: '/market' },
           { action: 'dismiss', title: 'Plus tard' },
         ],
       });

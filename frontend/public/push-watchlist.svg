@@ -1,18 +1,36 @@
 <svg width="1200" height="628" viewBox="0 0 1200 628" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="628" rx="44" fill="#08101D"/>
+  <rect width="1200" height="628" rx="44" fill="#09111C"/>
   <rect x="18" y="18" width="1164" height="592" rx="30" stroke="url(#stroke)" stroke-width="2"/>
-  <ellipse cx="200" cy="130" rx="300" ry="200" fill="#9A61FF" fill-opacity="0.16"/>
-  <ellipse cx="1028" cy="516" rx="340" ry="220" fill="#4BD0F1" fill-opacity="0.13"/>
-  <rect x="146" y="150" width="316" height="344" rx="36" fill="#111D33"/>
-  <rect x="174" y="180" width="260" height="286" rx="26" fill="#1B2C4A"/>
-  <path d="M742 170C824 170 890 236 890 318C890 404 824 470 742 470C660 470 594 404 594 318C594 236 660 170 742 170Z" fill="#13253F"/>
-  <path d="M742 214L768 274H834L780 312L804 378L742 340L680 378L704 312L650 274H716L742 214Z" fill="#9A61FF"/>
-  <path d="M886 192L906 238H952L916 264L930 308L886 280L842 308L856 264L820 238H866L886 192Z" fill="#4BD0F1"/>
-  <text x="86" y="96" fill="#F7F8FF" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="0.18em">WANKUL TCG</text>
-  <text x="520" y="492" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="76" font-weight="900">Watchlist</text>
-  <text x="520" y="560" fill="#9A61FF" font-family="Arial, sans-serif" font-size="76" font-weight="900">price target hit</text>
+  <ellipse cx="204" cy="126" rx="304" ry="196" fill="#9A61FF" fill-opacity="0.16"/>
+  <ellipse cx="1016" cy="518" rx="340" ry="224" fill="#4BD0F1" fill-opacity="0.14"/>
+  <g opacity="0.3">
+    <path d="M120 162V494" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="2"/>
+    <path d="M196 162V494" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="2"/>
+    <path d="M272 162V494" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="2"/>
+    <path d="M348 162V494" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="2"/>
+    <path d="M120 162H450" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="2"/>
+    <path d="M120 238H450" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="2"/>
+    <path d="M120 314H450" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="2"/>
+    <path d="M120 390H450" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="2"/>
+    <path d="M120 466H450" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="2"/>
+  </g>
+  <rect x="132" y="158" width="340" height="340" rx="38" fill="#101B30"/>
+  <rect x="164" y="194" width="276" height="272" rx="28" fill="#182A48"/>
+  <path d="M132 280H472" stroke="#48D2F1" stroke-opacity="0.26" stroke-width="14"/>
+  <path d="M132 332H472" stroke="#48D2F1" stroke-opacity="0.14" stroke-width="8"/>
+  <g>
+    <circle cx="770" cy="298" r="120" fill="#132540"/>
+    <circle cx="770" cy="298" r="86" fill="none" stroke="#9A61FF" stroke-width="14" stroke-opacity="0.9"/>
+    <circle cx="770" cy="298" r="52" fill="none" stroke="#48D2F1" stroke-width="10" stroke-opacity="0.86"/>
+    <path d="M770 220L796 280H862L808 316L832 382L770 344L708 382L732 316L678 280H744L770 220Z" fill="#9A61FF"/>
+  </g>
+  <path d="M896 188L914 232H960L924 258L938 302L896 276L854 302L868 258L832 232H878L896 188Z" fill="#48D2F1"/>
+  <path d="M944 250C996 250 1038 292 1038 344C1038 396 996 438 944 438C892 438 850 396 850 344C850 292 892 250 944 250Z" stroke="#48D2F1" stroke-opacity="0.42" stroke-width="8"/>
+  <text x="88" y="96" fill="#F7F8FF" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="0.18em">WANKUL TCG</text>
+  <text x="510" y="494" fill="#F7F8FF" font-family="Arial, sans-serif" font-size="82" font-weight="900">Watchlist alert</text>
+  <text x="510" y="562" fill="#9A61FF" font-family="Arial, sans-serif" font-size="74" font-weight="900">ta carte cible passe sous le seuil</text>
   <defs>
-    <linearGradient id="stroke" x1="48" y1="62" x2="1134" y2="564" gradientUnits="userSpaceOnUse">
+    <linearGradient id="stroke" x1="48" y1="62" x2="1136" y2="564" gradientUnits="userSpaceOnUse">
       <stop stop-color="#9A61FF"/>
       <stop offset="0.56" stop-color="#4BD0F1"/>
       <stop offset="1" stop-color="#F7F8FF"/>

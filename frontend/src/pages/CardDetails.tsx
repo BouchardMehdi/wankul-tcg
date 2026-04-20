@@ -108,7 +108,7 @@ function formatAxisDateLabel(iso: string, range: CardPriceHistoryRange) {
   }).format(date);
 }
 
-function formatCredits(value: number) {
+function formatCreditsBase(value: number) {
   return `${value.toLocaleString("fr-FR")} crédits`;
 }
 
@@ -245,6 +245,14 @@ function pickXAxisTicks(
 function CardDetails() {
   const { id } = useParams<{ id: string }>();
   const cardId = Number(id);
+
+  const formatCredits = (value?: number | null) => {
+    if (value === null || value === undefined || !Number.isFinite(value)) {
+      return "--";
+    }
+
+    return formatCreditsBase(value);
+  };
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

@@ -40,17 +40,17 @@ function getAccentClass(payload: InAppNotificationPayload) {
 function getEyebrow(payload: InAppNotificationPayload) {
   switch (payload.kind) {
     case "market-reward":
-      return "Recompense market";
+      return "Vente conclue";
     case "watchlist-price":
-      return "Watchlist";
+      return "Carte en veille";
     case "free-openings-ready":
-      return "Ouverture prete";
+      return "Ouverture servie";
     case "free-openings-soon":
       return "Recharge proche";
     case "stale-listing":
-      return "Annonce a relancer";
+      return "Annonce froide";
     case "daily-market-recap":
-      return "Recap du jour";
+      return "Bilan du jour";
     default:
       return "Wankul TCG";
   }
@@ -97,17 +97,17 @@ function getMonogram(payload: InAppNotificationPayload) {
 function getFlavorText(payload: InAppNotificationPayload) {
   switch (payload.kind) {
     case "market-reward":
-      return "Market live, credits et recompenses a recuperer";
+      return "Une vente vient de tomber et le gain t'attend";
     case "watchlist-price":
-      return "Le bon timing pour tenter une carte cible";
+      return "Le bon moment pour tenter ta carte cible";
     case "free-openings-ready":
-      return "Le frisson de l'ouverture t'attend";
+      return "Le frisson de l'ouverture peut repartir tout de suite";
     case "free-openings-soon":
-      return "Ta prochaine charge arrive tres bientot";
+      return "Ta prochaine charge approche a grands pas";
     case "stale-listing":
-      return "Ton annonce a besoin d'un nouveau souffle";
+      return "Ton annonce merite peut-etre un petit coup de boost";
     case "daily-market-recap":
-      return "Le rythme du marche en une lecture";
+      return "Le marche du jour resume en un clin d'oeil";
     default:
       return "Nouvelle alerte dans ton univers Wankul";
   }
@@ -116,19 +116,19 @@ function getFlavorText(payload: InAppNotificationPayload) {
 function getStamp(payload: InAppNotificationPayload) {
   switch (payload.kind) {
     case "market-reward":
-      return "Credits";
+      return "Gain";
     case "watchlist-price":
-      return "Target";
+      return "Cible";
     case "free-openings-ready":
-      return "Booster";
+      return "Ouverture";
     case "free-openings-soon":
-      return "Timer";
+      return "Bientot";
     case "stale-listing":
-      return "Refresh";
+      return "Relance";
     case "daily-market-recap":
-      return "Recap";
+      return "Bilan";
     default:
-      return "Alert";
+      return "Alerte";
   }
 }
 
