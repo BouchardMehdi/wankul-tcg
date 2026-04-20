@@ -1,0 +1,24 @@
+<svg width="1200" height="628" viewBox="0 0 1200 628" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="628" rx="44" fill="#09111B"/>
+  <rect x="18" y="18" width="1164" height="592" rx="30" stroke="url(#stroke)" stroke-width="2"/>
+  <ellipse cx="1048" cy="124" rx="280" ry="170" fill="#F8C84A" fill-opacity="0.16"/>
+  <ellipse cx="156" cy="554" rx="310" ry="220" fill="#48D2F1" fill-opacity="0.13"/>
+  <ellipse cx="612" cy="314" rx="340" ry="200" fill="#FF5A79" fill-opacity="0.10"/>
+  <rect x="112" y="156" width="304" height="316" rx="34" fill="#101A2E"/>
+  <rect x="144" y="200" width="240" height="44" rx="18" fill="#1B2D4A"/>
+  <rect x="144" y="272" width="182" height="30" rx="15" fill="#283E61"/>
+  <rect x="144" y="324" width="216" height="30" rx="15" fill="#283E61"/>
+  <rect x="144" y="376" width="164" height="30" rx="15" fill="#283E61"/>
+  <circle cx="878" cy="274" r="112" fill="#122542"/>
+  <path d="M878 206L896 252H946L905 282L920 330L878 299L836 330L851 282L810 252H860L878 206Z" fill="#F6C945"/>
+  <text x="86" y="96" fill="#F7F8FF" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="0.18em">WANKUL TCG</text>
+  <text x="496" y="466" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="76" font-weight="900">Market</text>
+  <text x="496" y="534" fill="#F6C945" font-family="Arial, sans-serif" font-size="76" font-weight="900">collector pulse</text>
+  <defs>
+    <linearGradient id="stroke" x1="50" y1="60" x2="1140" y2="568" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#48D2F1"/>
+      <stop offset="0.54" stop-color="#F6C945"/>
+      <stop offset="1" stop-color="#FF5A79"/>
+    </linearGradient>
+  </defs>
+</svg>

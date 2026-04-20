@@ -14,7 +14,16 @@ import {
   writeAppSettings,
   type AppSettings,
 } from "../utils/appSettings";
-import { playSettingToggleSound, primeSound } from "../utils/sound";
+import { playActionDeniedSound, playSettingToggleSound, primeSound } from "../utils/sound";
+import {
+  isPwaNotificationSupported,
+  requestPwaNotificationPermission,
+} from "../utils/pwaNotifications";
+import {
+  getPushPreferences,
+  updatePushPreferences,
+  type PushNotificationPreferences,
+} from "../api/push";
 import { useAuth } from "../auth/AuthContext";
 import {
   getMyBugReports,
@@ -43,6 +52,13 @@ type SettingRow =
     };
 
 const SETTING_ROWS: SettingRow[] = [
+  {
+    key: "pwaNotifications",
+    title: "Notifications PWA",
+    desc: "Recoit une alerte pour les boosters ou displays gratuits et les ventes du market pretes a etre recuperees.",
+    kind: "toggle",
+    section: "general",
+  },
   {
     key: "soundEffects",
     title: "Sound effects",
@@ -173,6 +189,10 @@ const SECTION_META = {
     title: "Market",
     desc: "Paramètres de sécurité et de comportement pour les achats et ventes.",
   },
+  notifications: {
+    title: "Notifications",
+    desc: "Regles push serveur pour le market, les charges gratuites, la watchlist et le recap quotidien.",
+  },
   support: {
     title: "Support",
     desc: "Signale un bug, un problème visuel ou un comportement anormal rencontré dans l'application.",
@@ -269,6 +289,11 @@ export default function Settings() {
   const { logout, user, me } = useAuth();
 
   const [settings, setSettings] = useState<AppSettings>(() => readAppSettings());
+  const [pushPrefsLoading, setPushPrefsLoading] = useState(true);
+  const [pushPrefsSaving, setPushPrefsSaving] = useState(false);
+  const [pushPrefsError, setPushPrefsError] = useState("");
+  const [pushPrefsFeedback, setPushPrefsFeedback] = useState("");
+  const [pushPrefs, setPushPrefs] = useState<PushNotificationPreferences | null>(null);
 
   const [reportOpen, setReportOpen] = useState(false);
   const [reportCategory, setReportCategory] = useState<(typeof CATEGORY_OPTIONS)[number]["value"]>("bug");
@@ -299,6 +324,32 @@ export default function Settings() {
   useEffect(() => {
     loadBugReports(1, reportStatusFilter).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPushPrefs() {
+      setPushPrefsLoading(true);
+      setPushPrefsError("");
+
+      try {
+        const prefs = await getPushPreferences();
+        if (cancelled) return;
+        setPushPrefs(prefs);
+      } catch (err: any) {
+        if (cancelled) return;
+        setPushPrefsError(err?.message || "Impossible de charger les notifications push.");
+      } finally {
+        if (!cancelled) setPushPrefsLoading(false);
+      }
+    }
+
+    loadPushPrefs().catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const enabledCount = useMemo(
@@ -350,10 +401,27 @@ export default function Settings() {
     }
   }
 
-  function toggle(key: ToggleSettingKey) {
+  async function toggle(key: ToggleSettingKey) {
     const next = !settings[key];
-    const merged = { ...settings, [key]: next };
     void primeSound(key === "soundEffects");
+
+    if (key === "pwaNotifications" && next) {
+      if (!isPwaNotificationSupported()) {
+        playActionDeniedSound();
+        return;
+      }
+
+      const permission = await requestPwaNotificationPermission();
+
+      if (permission !== "granted") {
+        playActionDeniedSound();
+        setSettings((current) => ({ ...current, pwaNotifications: false }));
+        writeAppSettings({ pwaNotifications: false });
+        return;
+      }
+    }
+
+    const merged = { ...settings, [key]: next };
     playSettingToggleSound(next, { force: key === "soundEffects" });
     setSettings(merged);
     writeAppSettings({ [key]: next });
@@ -373,6 +441,34 @@ export default function Settings() {
   function handleLogout() {
     logout();
     navigate("/", { replace: true });
+  }
+
+  function updatePushPref<K extends keyof PushNotificationPreferences>(
+    key: K,
+    value: PushNotificationPreferences[K],
+  ) {
+    setPushPrefs((current) => (current ? { ...current, [key]: value } : current));
+    setPushPrefsFeedback("");
+  }
+
+  async function savePushPrefs() {
+    if (!pushPrefs) return;
+
+    void primeSound();
+    setPushPrefsSaving(true);
+    setPushPrefsError("");
+    setPushPrefsFeedback("");
+
+    try {
+      const saved = await updatePushPreferences(pushPrefs);
+      setPushPrefs(saved);
+      setPushPrefsFeedback("Preferences push enregistrees.");
+    } catch (err: any) {
+      playActionDeniedSound();
+      setPushPrefsError(err?.message || "Impossible d'enregistrer les notifications.");
+    } finally {
+      setPushPrefsSaving(false);
+    }
   }
 
   function handleScreenshotChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -494,7 +590,9 @@ export default function Settings() {
         <button
           type="button"
           className={`skipToggleBtn ${checked ? "is-on" : "is-off"}`}
-          onClick={() => toggle(row.key)}
+          onClick={() => {
+            void toggle(row.key);
+          }}
           aria-pressed={checked}
         >
           <span className="skipToggleBtn__track">
@@ -545,6 +643,200 @@ export default function Settings() {
                 <div className="settingsList">
                   {marketRows.map(renderRow)}
                 </div>
+              </div>
+
+              <div className="settingsSection">
+                <div className="settingsSection__head">
+                  <div className="settingsSection__title">{SECTION_META.notifications.title}</div>
+                  <div className="settingsSection__desc">{SECTION_META.notifications.desc}</div>
+                </div>
+
+                {pushPrefsLoading ? (
+                  <div className="settingsSupportCard__desc">Chargement des notifications push...</div>
+                ) : pushPrefs ? (
+                  <div className="settingsList">
+                    <div className="settingsRow">
+                      <div className="settingsRow__content">
+                        <div className="settingsRow__title">Vente terminee</div>
+                        <div className="settingsRow__desc">Notif quand une recompense vendeur est disponible.</div>
+                      </div>
+                      <button
+                        type="button"
+                        className={`skipToggleBtn ${pushPrefs.saleRewardEnabled ? "is-on" : "is-off"}`}
+                        onClick={() => updatePushPref("saleRewardEnabled", !pushPrefs.saleRewardEnabled)}
+                        aria-pressed={pushPrefs.saleRewardEnabled}
+                      >
+                        <span className="skipToggleBtn__track">
+                          <span className="skipToggleBtn__thumb" />
+                        </span>
+                        <span className="skipToggleBtn__label">{pushPrefs.saleRewardEnabled ? "Active" : "Desactive"}</span>
+                      </button>
+                    </div>
+
+                    <div className="settingsRow">
+                      <div className="settingsRow__content">
+                        <div className="settingsRow__title">Charges gratuites pretes</div>
+                        <div className="settingsRow__desc">Notif quand un booster ou une display gratuite est disponible.</div>
+                      </div>
+                      <button
+                        type="button"
+                        className={`skipToggleBtn ${pushPrefs.freeOpeningsReadyEnabled ? "is-on" : "is-off"}`}
+                        onClick={() => updatePushPref("freeOpeningsReadyEnabled", !pushPrefs.freeOpeningsReadyEnabled)}
+                        aria-pressed={pushPrefs.freeOpeningsReadyEnabled}
+                      >
+                        <span className="skipToggleBtn__track">
+                          <span className="skipToggleBtn__thumb" />
+                        </span>
+                        <span className="skipToggleBtn__label">{pushPrefs.freeOpeningsReadyEnabled ? "Active" : "Desactive"}</span>
+                      </button>
+                    </div>
+
+                    <div className="settingsRow">
+                      <div className="settingsRow__content">
+                        <div className="settingsRow__title">Charge gratuite bientot prete</div>
+                        <div className="settingsRow__desc">Alerte quand une charge gratuite arrive dans moins de X minutes.</div>
+                      </div>
+                      <button
+                        type="button"
+                        className={`skipToggleBtn ${pushPrefs.freeOpeningsSoonEnabled ? "is-on" : "is-off"}`}
+                        onClick={() => updatePushPref("freeOpeningsSoonEnabled", !pushPrefs.freeOpeningsSoonEnabled)}
+                        aria-pressed={pushPrefs.freeOpeningsSoonEnabled}
+                      >
+                        <span className="skipToggleBtn__track">
+                          <span className="skipToggleBtn__thumb" />
+                        </span>
+                        <span className="skipToggleBtn__label">{pushPrefs.freeOpeningsSoonEnabled ? "Active" : "Desactive"}</span>
+                      </button>
+                    </div>
+
+                    <div className="settingsRow">
+                      <div className="settingsRow__content">
+                        <div className="settingsRow__title">Fenetre avant recharge</div>
+                        <div className="settingsRow__desc">Nombre de minutes avant recharge pour recevoir l'alerte.</div>
+                      </div>
+                      <div className="settingsRow__control">
+                        <input
+                          className="settingsSelect"
+                          type="number"
+                          min={5}
+                          max={180}
+                          value={pushPrefs.freeOpeningsSoonMinutes}
+                          onChange={(e) =>
+                            updatePushPref(
+                              "freeOpeningsSoonMinutes",
+                              Math.max(5, Number(e.target.value || 15)),
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="settingsRow">
+                      <div className="settingsRow__content">
+                        <div className="settingsRow__title">Watchlist prix cible</div>
+                        <div className="settingsRow__desc">Notif quand une carte suivie passe sous ton prix cible.</div>
+                      </div>
+                      <button
+                        type="button"
+                        className={`skipToggleBtn ${pushPrefs.watchlistPriceAlertEnabled ? "is-on" : "is-off"}`}
+                        onClick={() => updatePushPref("watchlistPriceAlertEnabled", !pushPrefs.watchlistPriceAlertEnabled)}
+                        aria-pressed={pushPrefs.watchlistPriceAlertEnabled}
+                      >
+                        <span className="skipToggleBtn__track">
+                          <span className="skipToggleBtn__thumb" />
+                        </span>
+                        <span className="skipToggleBtn__label">{pushPrefs.watchlistPriceAlertEnabled ? "Active" : "Desactive"}</span>
+                      </button>
+                    </div>
+
+                    <div className="settingsRow">
+                      <div className="settingsRow__content">
+                        <div className="settingsRow__title">Annonce perso trop longue</div>
+                        <div className="settingsRow__desc">Rappel quand une annonce reste invendue apres un certain temps.</div>
+                      </div>
+                      <button
+                        type="button"
+                        className={`skipToggleBtn ${pushPrefs.staleListingAlertEnabled ? "is-on" : "is-off"}`}
+                        onClick={() => updatePushPref("staleListingAlertEnabled", !pushPrefs.staleListingAlertEnabled)}
+                        aria-pressed={pushPrefs.staleListingAlertEnabled}
+                      >
+                        <span className="skipToggleBtn__track">
+                          <span className="skipToggleBtn__thumb" />
+                        </span>
+                        <span className="skipToggleBtn__label">{pushPrefs.staleListingAlertEnabled ? "Active" : "Desactive"}</span>
+                      </button>
+                    </div>
+
+                    <div className="settingsRow">
+                      <div className="settingsRow__content">
+                        <div className="settingsRow__title">Seuil annonce invendue</div>
+                        <div className="settingsRow__desc">Nombre d'heures avant le rappel sur une annonce active.</div>
+                      </div>
+                      <div className="settingsRow__control">
+                        <input
+                          className="settingsSelect"
+                          type="number"
+                          min={6}
+                          max={336}
+                          value={pushPrefs.staleListingHours}
+                          onChange={(e) =>
+                            updatePushPref(
+                              "staleListingHours",
+                              Math.max(6, Number(e.target.value || 24)),
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="settingsRow">
+                      <div className="settingsRow__content">
+                        <div className="settingsRow__title">Recap quotidien market</div>
+                        <div className="settingsRow__desc">Petit point journalier plus engageant sur ton activite et le volume du jour.</div>
+                      </div>
+                      <button
+                        type="button"
+                        className={`skipToggleBtn ${pushPrefs.dailyMarketRecapEnabled ? "is-on" : "is-off"}`}
+                        onClick={() => updatePushPref("dailyMarketRecapEnabled", !pushPrefs.dailyMarketRecapEnabled)}
+                        aria-pressed={pushPrefs.dailyMarketRecapEnabled}
+                      >
+                        <span className="skipToggleBtn__track">
+                          <span className="skipToggleBtn__thumb" />
+                        </span>
+                        <span className="skipToggleBtn__label">{pushPrefs.dailyMarketRecapEnabled ? "Active" : "Desactive"}</span>
+                      </button>
+                    </div>
+
+                    {pushPrefsFeedback ? (
+                      <div className="settingsReportFeedback settingsReportFeedback--success">
+                        {pushPrefsFeedback}
+                      </div>
+                    ) : null}
+
+                    {pushPrefsError ? (
+                      <div className="settingsReportFeedback settingsReportFeedback--error">
+                        {pushPrefsError}
+                      </div>
+                    ) : null}
+
+                    <div className="settingsFooter">
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => {
+                          void savePushPrefs();
+                        }}
+                        disabled={pushPrefsSaving}
+                      >
+                        {pushPrefsSaving ? "Enregistrement..." : "Sauvegarder les notifications push"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="settingsReportFeedback settingsReportFeedback--error">
+                    {pushPrefsError || "Impossible de charger les notifications push."}
+                  </div>
+                )}
               </div>
 
               <div className="settingsSection">

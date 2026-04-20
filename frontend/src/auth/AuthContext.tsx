@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { getMe, getWallet, type MeResponse } from "../api/me";
+import { unsubscribeCurrentBrowserFromPush } from "../utils/pwaNotifications";
 
 type DecodedPlayerToken = {
   sub?: number;
@@ -99,6 +100,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    const activeToken = token;
+    if (activeToken) {
+      void unsubscribeCurrentBrowserFromPush(activeToken);
+    }
     setToken(null);
     setAdminToken(null);
     setMe(null);

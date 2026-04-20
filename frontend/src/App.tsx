@@ -16,6 +16,8 @@ import MarketCreate from "./pages/MarketCreate";
 import QuickSell from "./pages/QuickSell";
 import Admin from "./pages/Admin";
 import CardDetails from "./pages/CardDetails";
+import PwaNotificationManager from "./components/PwaNotificationManager";
+import InAppNotificationCenter from "./components/InAppNotificationCenter";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -49,113 +51,118 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={<Home />}
-      />
-      <Route
-        path="/login"
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
-      />
-      <Route
-        path="/register"
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />}
-      />
-      <Route
-        path="/forgot-password"
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ForgotPassword />}
-      />
+    <>
+      <PwaNotificationManager />
+      <InAppNotificationCenter />
 
-      <Route
-        path="/menu"
-        element={<Navigate to="/dashboard" replace />}
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <PrivateRoute>
-            <Dashboard />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/collection"
-        element={
-          <PrivateRoute>
-            <Collection />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/collection/card/:id"
-        element={
-          <PrivateRoute>
-            <CardDetails />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/booster"
-        element={
-          <PrivateRoute>
-            <Booster />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/opening"
-        element={
-          <PrivateRoute>
-            <Opening />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <PrivateRoute>
-            <Settings />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/market"
-        element={
-          <PrivateRoute>
-            <Market />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/market/create"
-        element={
-          <PrivateRoute>
-            <MarketCreate />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/market/quick-sell"
-        element={
-          <PrivateRoute>
-            <QuickSell />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          <AdminRoleRoute>
-            <Admin />
-          </AdminRoleRoute>
-        }
-      />
+      <Routes>
+        <Route
+          path="/"
+          element={<Home />}
+        />
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
+        />
+        <Route
+          path="/register"
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />}
+        />
+        <Route
+          path="/forgot-password"
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <ForgotPassword />}
+        />
 
-      <Route
-        path="*"
-        element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />}
-      />
-    </Routes>
+        <Route
+          path="/menu"
+          element={<Navigate to="/dashboard" replace />}
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/collection"
+          element={
+            <PrivateRoute>
+              <Collection />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/collection/card/:id"
+          element={
+            <PrivateRoute>
+              <CardDetails />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/booster"
+          element={
+            <PrivateRoute>
+              <Booster />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/opening"
+          element={
+            <PrivateRoute>
+              <Opening />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <PrivateRoute>
+              <Settings />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/market"
+          element={
+            <PrivateRoute>
+              <Market />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/market/create"
+          element={
+            <PrivateRoute>
+              <MarketCreate />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/market/quick-sell"
+          element={
+            <PrivateRoute>
+              <QuickSell />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoleRoute>
+              <Admin />
+            </AdminRoleRoute>
+          }
+        />
+
+        <Route
+          path="*"
+          element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />}
+        />
+      </Routes>
+    </>
   );
 }

@@ -1,0 +1,27 @@
+<svg width="1200" height="628" viewBox="0 0 1200 628" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="628" rx="44" fill="#08101E"/>
+  <rect x="18" y="18" width="1164" height="592" rx="30" stroke="url(#stroke)" stroke-width="2"/>
+  <ellipse cx="220" cy="116" rx="280" ry="190" fill="#45C7F1" fill-opacity="0.18"/>
+  <ellipse cx="962" cy="532" rx="340" ry="220" fill="#FF5578" fill-opacity="0.16"/>
+  <ellipse cx="748" cy="118" rx="320" ry="170" fill="#9A61FF" fill-opacity="0.18"/>
+  <g opacity="0.92">
+    <rect x="150" y="164" width="180" height="260" rx="26" transform="rotate(-14 150 164)" fill="#F3F2FF"/>
+    <rect x="158" y="176" width="164" height="236" rx="20" transform="rotate(-14 158 176)" fill="#122343"/>
+    <rect x="338" y="130" width="192" height="282" rx="28" transform="rotate(-5 338 130)" fill="#F8FAFF"/>
+    <rect x="346" y="142" width="176" height="258" rx="22" transform="rotate(-5 346 142)" fill="#224F43"/>
+    <rect x="534" y="122" width="204" height="298" rx="30" fill="#FFF5FA"/>
+    <rect x="544" y="134" width="184" height="274" rx="24" fill="#3D1538"/>
+    <rect x="736" y="142" width="188" height="276" rx="28" transform="rotate(7 736 142)" fill="#FFF9EE"/>
+    <rect x="746" y="154" width="168" height="252" rx="22" transform="rotate(7 746 154)" fill="#4B2618"/>
+  </g>
+  <text x="88" y="96" fill="#F7F8FF" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="0.18em">WANKUL TCG</text>
+  <text x="88" y="520" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="78" font-weight="900">Booster</text>
+  <text x="88" y="586" fill="#FFBF66" font-family="Arial, sans-serif" font-size="78" font-weight="900">opening alert</text>
+  <defs>
+    <linearGradient id="stroke" x1="62" y1="58" x2="1136" y2="564" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#48D2F1"/>
+      <stop offset="0.48" stop-color="#9A61FF"/>
+      <stop offset="1" stop-color="#FF6482"/>
+    </linearGradient>
+  </defs>
+</svg>

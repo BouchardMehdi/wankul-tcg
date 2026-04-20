@@ -1,0 +1,24 @@
+<svg width="1200" height="628" viewBox="0 0 1200 628" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="628" rx="44" fill="#09101A"/>
+  <rect x="18" y="18" width="1164" height="592" rx="30" stroke="url(#stroke)" stroke-width="2"/>
+  <ellipse cx="936" cy="98" rx="280" ry="170" fill="#FF5E7A" fill-opacity="0.14"/>
+  <ellipse cx="180" cy="524" rx="320" ry="220" fill="#F8C84A" fill-opacity="0.12"/>
+  <rect x="122" y="154" width="412" height="328" rx="36" fill="#10192D"/>
+  <rect x="160" y="210" width="336" height="30" rx="15" fill="#263B61"/>
+  <rect x="160" y="270" width="274" height="30" rx="15" fill="#263B61"/>
+  <rect x="160" y="330" width="308" height="30" rx="15" fill="#263B61"/>
+  <rect x="160" y="390" width="222" height="30" rx="15" fill="#263B61"/>
+  <path d="M754 428V264" stroke="#4BD0F1" stroke-width="28" stroke-linecap="round"/>
+  <path d="M842 428V198" stroke="#F8C84A" stroke-width="28" stroke-linecap="round"/>
+  <path d="M930 428V142" stroke="#FF5E7A" stroke-width="28" stroke-linecap="round"/>
+  <text x="86" y="96" fill="#F7F8FF" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="0.18em">WANKUL TCG</text>
+  <text x="594" y="494" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="76" font-weight="900">Daily</text>
+  <text x="594" y="560" fill="#F8C84A" font-family="Arial, sans-serif" font-size="76" font-weight="900">market recap</text>
+  <defs>
+    <linearGradient id="stroke" x1="42" y1="58" x2="1138" y2="566" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4BD0F1"/>
+      <stop offset="0.52" stop-color="#F8C84A"/>
+      <stop offset="1" stop-color="#FF5E7A"/>
+    </linearGradient>
+  </defs>
+</svg>

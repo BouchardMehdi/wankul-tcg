@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ScheduleModule } from '@nestjs/schedule';
 import { join } from 'path';
 
 import { typeOrmConfig } from './config/typeorm.config';
@@ -16,10 +17,12 @@ import { MailModule } from './modules/mail/mail.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { MarketModule } from './modules/market/market.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { PushModule } from './modules/push/push.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
 
     TypeOrmModule.forRoot(typeOrmConfig()),
 
@@ -38,6 +41,7 @@ import { AdminModule } from './modules/admin/admin.module';
     StatsModule,
     MarketModule,
     AdminModule,
+    PushModule,
   ],
 })
 export class AppModule {}

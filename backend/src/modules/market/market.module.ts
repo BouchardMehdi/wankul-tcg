@@ -15,6 +15,7 @@ import { UserEconomy } from '../economy/user-economy.entity';
 import { Card } from '../cards/card.entity';
 
 import { EconomyAnalyticsModule } from '../economy/economy-analytics.module';
+import { PushModule } from '../push/push.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { EconomyAnalyticsModule } from '../economy/economy-analytics.module';
       MarketPriceHistory,
     ]),
     EconomyAnalyticsModule,
+    PushModule,
   ],
   controllers: [MarketController],
   providers: [

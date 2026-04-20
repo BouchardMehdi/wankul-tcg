@@ -18,6 +18,13 @@ import {
   type CardDetailsDto,
   type CardPriceHistoryRange,
 } from "../api/card-details";
+import {
+  deletePushWatchlistItem,
+  getPushWatchlistItem,
+  upsertPushWatchlistItem,
+  type PushWatchlistItem,
+} from "../api/push";
+import { playSoundEffect, playUiErrorSound, primeSound } from "../utils/sound";
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const RANGES: Array<{ value: CardPriceHistoryRange; label: string }> = [
@@ -252,6 +259,12 @@ function CardDetails() {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth <= 860 : false,
   );
+  const [watchlistLoading, setWatchlistLoading] = useState(true);
+  const [watchlistSaving, setWatchlistSaving] = useState(false);
+  const [watchlistError, setWatchlistError] = useState("");
+  const [watchlistFeedback, setWatchlistFeedback] = useState("");
+  const [watchlistItem, setWatchlistItem] = useState<PushWatchlistItem | null>(null);
+  const [watchlistTarget, setWatchlistTarget] = useState("");
 
   const chartWrapRef = useRef<HTMLDivElement | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
@@ -331,6 +344,38 @@ function CardDetails() {
       cancelled = true;
     };
   }, [cardId, range]);
+
+  useEffect(() => {
+    if (!Number.isInteger(cardId) || cardId < 1) {
+      setWatchlistLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadWatchlist() {
+      setWatchlistLoading(true);
+      setWatchlistError("");
+
+      try {
+        const item = await getPushWatchlistItem(cardId);
+        if (cancelled) return;
+        setWatchlistItem(item);
+        setWatchlistTarget(item ? String(item.targetPriceCredits) : "");
+      } catch (e: any) {
+        if (cancelled) return;
+        setWatchlistError(e?.message || "Impossible de charger la watchlist.");
+      } finally {
+        if (!cancelled) setWatchlistLoading(false);
+      }
+    }
+
+    loadWatchlist();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cardId]);
 
   const chart = useMemo(() => {
     if (!points.length) return null;
@@ -493,6 +538,54 @@ function CardDetails() {
   const imageSrc = resolveImg(card?.imageUrl);
   const chartTone = chart?.tone ?? "flat";
 
+  async function handleSaveWatchlist() {
+    const target = Number(watchlistTarget);
+
+    if (!Number.isInteger(target) || target < 1) {
+      playUiErrorSound();
+      setWatchlistError("Entre un prix cible valide en credits.");
+      return;
+    }
+
+    void primeSound();
+    setWatchlistSaving(true);
+    setWatchlistError("");
+    setWatchlistFeedback("");
+
+    try {
+      const item = await upsertPushWatchlistItem(cardId, target);
+      setWatchlistItem(item);
+      setWatchlistTarget(String(item.targetPriceCredits));
+      setWatchlistFeedback("Alerte de prix enregistree pour cette carte.");
+      playSoundEffect("ui.toggle-on");
+    } catch (e: any) {
+      playUiErrorSound();
+      setWatchlistError(e?.message || "Impossible d'enregistrer cette alerte.");
+    } finally {
+      setWatchlistSaving(false);
+    }
+  }
+
+  async function handleDeleteWatchlist() {
+    void primeSound();
+    setWatchlistSaving(true);
+    setWatchlistError("");
+    setWatchlistFeedback("");
+
+    try {
+      await deletePushWatchlistItem(cardId);
+      setWatchlistItem(null);
+      setWatchlistTarget("");
+      setWatchlistFeedback("Alerte de prix retiree.");
+      playSoundEffect("ui.toggle-off");
+    } catch (e: any) {
+      playUiErrorSound();
+      setWatchlistError(e?.message || "Impossible de retirer cette alerte.");
+    } finally {
+      setWatchlistSaving(false);
+    }
+  }
+
   return (
     <div className="app-shell">
       <AppNavbar currentPage="collection" />
@@ -539,6 +632,83 @@ function CardDetails() {
                     <div><span>Rareté</span><strong>{card.rarity}</strong></div>
                   </div>
                 </div>
+              </div>
+
+              <div className="cardDetailsWatchlist">
+                <div className="cardDetailsWatchlist__head">
+                  <div>
+                    <h2>Watchlist prix</h2>
+                    <p>Recois une notif push quand cette carte descend sous ton prix cible.</p>
+                  </div>
+
+                  <div className="cardDetailsWatchlist__current">
+                    Prix actuel :{" "}
+                    <strong>
+                      {watchlistItem?.currentMarketPrice !== null && watchlistItem?.currentMarketPrice !== undefined
+                        ? formatCredits(watchlistItem.currentMarketPrice)
+                        : chart
+                          ? formatCredits(chart.svgPoints[chart.svgPoints.length - 1].price)
+                          : "—"}
+                    </strong>
+                  </div>
+                </div>
+
+                {watchlistLoading ? (
+                  <div className="cardDetailsState">Chargement de la watchlist…</div>
+                ) : (
+                  <div className="cardDetailsWatchlist__body">
+                    <label className="cardDetailsWatchlist__field">
+                      <span>Prix cible</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={watchlistTarget}
+                        onChange={(e) => setWatchlistTarget(e.target.value)}
+                        placeholder="Ex: 450"
+                      />
+                    </label>
+
+                    <div className="cardDetailsWatchlist__actions">
+                      <button
+                        type="button"
+                        className="btn"
+                        disabled={watchlistSaving}
+                        onClick={handleSaveWatchlist}
+                      >
+                        {watchlistSaving ? "Enregistrement..." : watchlistItem ? "Mettre a jour l'alerte" : "Ajouter a la watchlist"}
+                      </button>
+
+                      {watchlistItem ? (
+                        <button
+                          type="button"
+                          className="btn"
+                          disabled={watchlistSaving}
+                          onClick={handleDeleteWatchlist}
+                        >
+                          Retirer l'alerte
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {watchlistItem ? (
+                      <div className="cardDetailsWatchlist__meta">
+                        Alerte active a {formatCredits(watchlistItem.targetPriceCredits)}.
+                      </div>
+                    ) : null}
+
+                    {watchlistFeedback ? (
+                      <div className="cardDetailsWatchlist__feedback cardDetailsWatchlist__feedback--success">
+                        {watchlistFeedback}
+                      </div>
+                    ) : null}
+
+                    {watchlistError ? (
+                      <div className="cardDetailsWatchlist__feedback cardDetailsWatchlist__feedback--error">
+                        {watchlistError}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               </div>
 
               <div className={`cardDetailsChartCard cardDetailsChartCard--${chartTone}`}>

@@ -22,6 +22,7 @@ import { MarketOfferType } from './market-offer-type.enum';
 import { BuyListingDto } from './dto/buy-listing.dto';
 import { MarketPricePosition } from './market-price-position.enum';
 import { EconomyAnalyticsService } from '../economy/economy-analytics.service';
+import { PushService } from '../push/push.service';
 
 export interface QuickSellResult {
   success: true;
@@ -56,6 +57,7 @@ export class MarketService {
     private readonly marketPricingService: MarketPricingService,
     private readonly marketPriceHistoryService: MarketPriceHistoryService,
     private readonly economyAnalyticsService: EconomyAnalyticsService,
+    private readonly pushService: PushService,
 
     @InjectRepository(UserCard)
     private readonly userCardsRepository: Repository<UserCard>,
@@ -773,11 +775,13 @@ export class MarketService {
           sellerId: listing.seller.id,
           buyerId: userId,
           cardId: listing.card.id,
+          cardName: listing.card.name,
           listingMode: savedTransaction.listingMode,
           offerType: savedTransaction.offerType,
           quantity: purchaseQuantity,
           totalPriceCredits: requiredCredits,
           buyerOfferedCardId: buyerOfferedCard?.id ?? null,
+          buyerOfferedCardName: buyerOfferedCard?.name ?? null,
           buyerOfferedCardQuantity: requiredWantedCardQuantity,
           transactionType: savedTransaction.transactionType,
           sellerRewardClaimedAt: savedTransaction.sellerRewardClaimedAt,
@@ -793,6 +797,16 @@ export class MarketService {
     });
 
     await this.snapshotCards(result.snapshotCardIds, 'listing_bought');
+    await this.pushService
+      .notifySaleRewardAvailable({
+        sellerId: result.transaction.sellerId,
+        transactionId: result.transaction.id,
+        soldCardName: result.transaction.cardName,
+        rewardCredits: result.settlement.creditsPaid,
+        rewardCardName: result.transaction.buyerOfferedCardName,
+        rewardCardQuantity: result.settlement.offeredCardQuantity,
+      })
+      .catch(() => undefined);
 
     return {
       success: result.success,

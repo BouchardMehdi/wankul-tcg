@@ -2,6 +2,7 @@ export type CollectionLayout = "standard" | "compact" | "large";
 
 export type AppSettings = {
   soundEffects: boolean;
+  pwaNotifications: boolean;
   skipOpeningAnimations: boolean;
   autoFlipCards: boolean;
   fastReveal: boolean;
@@ -33,6 +34,7 @@ const LAST_NEW_CARD_IDS_KEY = "wankul_last_new_card_ids";
 
 export const APP_SETTINGS_DEFAULTS: AppSettings = {
   soundEffects: true,
+  pwaNotifications: false,
   skipOpeningAnimations: false,
   autoFlipCards: false,
   fastReveal: false,
@@ -66,6 +68,11 @@ function migrateSettings(raw: Partial<AppSettings> | null | undefined): AppSetti
     typeof base.soundEffects === "boolean"
       ? base.soundEffects
       : APP_SETTINGS_DEFAULTS.soundEffects;
+
+  base.pwaNotifications =
+    typeof base.pwaNotifications === "boolean"
+      ? base.pwaNotifications
+      : APP_SETTINGS_DEFAULTS.pwaNotifications;
 
   if (!("collectionLayout" in (raw ?? {})) && typeof raw?.compactCollectionGrid === "boolean") {
     base.collectionLayout = raw.compactCollectionGrid ? "compact" : "standard";

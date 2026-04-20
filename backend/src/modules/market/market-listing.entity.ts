@@ -99,4 +99,7 @@ export class MarketListing {
 
   @Column({ name: 'closed_at', type: 'datetime', nullable: true })
   closedAt!: Date | null;
+
+  @Column({ name: 'stale_push_sent_at', type: 'datetime', nullable: true })
+  stalePushSentAt!: Date | null;
 }

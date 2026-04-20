@@ -1,0 +1,21 @@
+<svg width="1200" height="628" viewBox="0 0 1200 628" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="628" rx="44" fill="#08101D"/>
+  <rect x="18" y="18" width="1164" height="592" rx="30" stroke="url(#stroke)" stroke-width="2"/>
+  <ellipse cx="200" cy="130" rx="300" ry="200" fill="#9A61FF" fill-opacity="0.16"/>
+  <ellipse cx="1028" cy="516" rx="340" ry="220" fill="#4BD0F1" fill-opacity="0.13"/>
+  <rect x="146" y="150" width="316" height="344" rx="36" fill="#111D33"/>
+  <rect x="174" y="180" width="260" height="286" rx="26" fill="#1B2C4A"/>
+  <path d="M742 170C824 170 890 236 890 318C890 404 824 470 742 470C660 470 594 404 594 318C594 236 660 170 742 170Z" fill="#13253F"/>
+  <path d="M742 214L768 274H834L780 312L804 378L742 340L680 378L704 312L650 274H716L742 214Z" fill="#9A61FF"/>
+  <path d="M886 192L906 238H952L916 264L930 308L886 280L842 308L856 264L820 238H866L886 192Z" fill="#4BD0F1"/>
+  <text x="86" y="96" fill="#F7F8FF" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="0.18em">WANKUL TCG</text>
+  <text x="520" y="492" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="76" font-weight="900">Watchlist</text>
+  <text x="520" y="560" fill="#9A61FF" font-family="Arial, sans-serif" font-size="76" font-weight="900">price target hit</text>
+  <defs>
+    <linearGradient id="stroke" x1="48" y1="62" x2="1134" y2="564" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9A61FF"/>
+      <stop offset="0.56" stop-color="#4BD0F1"/>
+      <stop offset="1" stop-color="#F7F8FF"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -30,4 +30,13 @@ export class UserEconomy {
 
   @Column({ name: 'display_recharge_at', type: 'datetime', nullable: true })
   displayRechargeAt!: Date | null;
+
+  @Column({ name: 'last_free_openings_push_at', type: 'datetime', nullable: true })
+  lastFreeOpeningsPushAt!: Date | null;
+
+  @Column({ name: 'last_free_booster_soon_push_for_at', type: 'datetime', nullable: true })
+  lastFreeBoosterSoonPushForAt!: Date | null;
+
+  @Column({ name: 'last_free_display_soon_push_for_at', type: 'datetime', nullable: true })
+  lastFreeDisplaySoonPushForAt!: Date | null;
 }

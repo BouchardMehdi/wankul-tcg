@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { UserEconomy } from './user-economy.entity';
 import { User } from '../users/user.entity';
 import { MarketPricingService } from '../market/market-pricing.service';
+import { ECONOMY_RULES } from './economy.constants';
+import { applyEconomyRecharge, ensureRechargeDates } from './economy.utils';
 
 export type OpenKind = 'booster' | 'display';
 
@@ -16,24 +18,6 @@ export type CreditBreakdown = {
   total: number;
 };
 
-const ECON = {
-  SIGNUP_BONUS: 1500,
-
-  cost: { booster: 200, display: 4800 },
-
-  charges: {
-    booster: { cap: 4, rechargeMinutes: 90 },
-    display: { cap: 1, rechargeMinutes: 60 * 60 },
-  },
-
-  multipliers: {
-    gtoBooster: 1.35,
-    goldDisplay: 1.15,
-  },
-
-  jackpotTicketOr: 6000,
-};
-
 @Injectable()
 export class EconomyService {
   constructor(
@@ -43,48 +27,7 @@ export class EconomyService {
   ) {}
 
   getCosts() {
-    return ECON.cost;
-  }
-
-  private minutesBetween(a: Date, b: Date) {
-    return (b.getTime() - a.getTime()) / 60000;
-  }
-
-  private ensureRechargeDates(row: UserEconomy, now: Date) {
-    if (!row.boosterRechargeAt) row.boosterRechargeAt = now;
-    if (!row.displayRechargeAt) row.displayRechargeAt = now;
-  }
-
-  private applyRecharge(row: UserEconomy, now = new Date()) {
-    this.ensureRechargeDates(row, now);
-
-    if (row.freeBoosterCharges < ECON.charges.booster.cap) {
-      const mins = this.minutesBetween(row.boosterRechargeAt!, now);
-      const add = Math.floor(mins / ECON.charges.booster.rechargeMinutes);
-
-      if (add > 0) {
-        row.freeBoosterCharges = Math.min(ECON.charges.booster.cap, row.freeBoosterCharges + add);
-        row.boosterRechargeAt = new Date(
-          row.boosterRechargeAt!.getTime() + add * ECON.charges.booster.rechargeMinutes * 60000,
-        );
-      }
-    } else {
-      row.boosterRechargeAt = now;
-    }
-
-    if (row.freeDisplayCharges < ECON.charges.display.cap) {
-      const mins = this.minutesBetween(row.displayRechargeAt!, now);
-      const add = Math.floor(mins / ECON.charges.display.rechargeMinutes);
-
-      if (add > 0) {
-        row.freeDisplayCharges = Math.min(ECON.charges.display.cap, row.freeDisplayCharges + add);
-        row.displayRechargeAt = new Date(
-          row.displayRechargeAt!.getTime() + add * ECON.charges.display.rechargeMinutes * 60000,
-        );
-      }
-    } else {
-      row.displayRechargeAt = now;
-    }
+    return ECONOMY_RULES.cost;
   }
 
   async ensure(userId: number): Promise<UserEconomy> {
@@ -98,20 +41,21 @@ export class EconomyService {
         user: { id: userId } as User,
         credits: 0,
         signupBonusGranted: 0,
-        freeBoosterCharges: ECON.charges.booster.cap,
-        freeDisplayCharges: ECON.charges.display.cap,
+        freeBoosterCharges: ECONOMY_RULES.charges.booster.cap,
+        freeDisplayCharges: ECONOMY_RULES.charges.display.cap,
         boosterRechargeAt: now,
         displayRechargeAt: now,
+        lastFreeOpeningsPushAt: null,
       });
     }
 
-    this.ensureRechargeDates(row, new Date());
+    ensureRechargeDates(row, new Date());
     return await this.economyRepo.save(row);
   }
 
   async getSnapshot(userId: number) {
     const row = await this.ensure(userId);
-    this.applyRecharge(row);
+    applyEconomyRecharge(row);
     await this.economyRepo.save(row);
 
     return {
@@ -124,9 +68,9 @@ export class EconomyService {
 
   async consumeOpen(userId: number, kind: OpenKind) {
     const row = await this.ensure(userId);
-    this.applyRecharge(row);
+    applyEconomyRecharge(row);
 
-    const cost = ECON.cost[kind];
+    const cost = ECONOMY_RULES.cost[kind];
 
     if (kind === 'booster') {
       if (row.freeBoosterCharges > 0) {
@@ -186,10 +130,11 @@ export class EconomyService {
 
     let subtotal = base + newBonus;
 
-    const boosterMult = gtoPresent ? ECON.multipliers.gtoBooster : 1;
+    const boosterMult = gtoPresent ? ECONOMY_RULES.multipliers.gtoBooster : 1;
     subtotal = Math.floor(subtotal * boosterMult);
 
-    const jackpot = ticketOrPresent && ticketOrIsNew ? ECON.jackpotTicketOr : 0;
+    const jackpot =
+      ticketOrPresent && ticketOrIsNew ? ECONOMY_RULES.jackpotTicketOr : 0;
 
     return {
       base,
@@ -213,7 +158,9 @@ export class EconomyService {
       subtotalNoJackpot += b.total - (b.ticketGoldJackpot ?? 0);
     }
 
-    const displayMult = args.goldMultiplier ? ECON.multipliers.goldDisplay : 1;
+    const displayMult = args.goldMultiplier
+      ? ECONOMY_RULES.multipliers.goldDisplay
+      : 1;
     const after = Math.floor(subtotalNoJackpot * displayMult);
 
     return {

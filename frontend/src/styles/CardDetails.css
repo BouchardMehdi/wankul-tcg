@@ -376,6 +376,100 @@
   text-transform: lowercase;
 }
 
+.cardDetailsWatchlist {
+  margin-top: 18px;
+  padding: 20px 22px;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(18, 24, 45, 0.92), rgba(11, 15, 28, 0.94));
+  box-shadow: 0 18px 50px rgba(5, 8, 18, 0.34);
+}
+
+.cardDetailsWatchlist__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cardDetailsWatchlist__head h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.cardDetailsWatchlist__head p,
+.cardDetailsWatchlist__meta {
+  margin: 8px 0 0;
+  color: rgba(238, 242, 255, 0.72);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cardDetailsWatchlist__current {
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(238, 242, 255, 0.78);
+  text-align: right;
+}
+
+.cardDetailsWatchlist__body {
+  margin-top: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.cardDetailsWatchlist__field {
+  display: grid;
+  gap: 8px;
+}
+
+.cardDetailsWatchlist__field span {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(238, 242, 255, 0.66);
+}
+
+.cardDetailsWatchlist__field input {
+  width: min(280px, 100%);
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 13, 24, 0.88);
+  color: #f7f8ff;
+  font: inherit;
+  font-weight: 800;
+}
+
+.cardDetailsWatchlist__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cardDetailsWatchlist__feedback {
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.cardDetailsWatchlist__feedback--success {
+  background: rgba(59, 196, 124, 0.12);
+  border: 1px solid rgba(59, 196, 124, 0.24);
+  color: #91f0b6;
+}
+
+.cardDetailsWatchlist__feedback--error {
+  background: rgba(255, 96, 122, 0.12);
+  border: 1px solid rgba(255, 96, 122, 0.22);
+  color: #ff9eab;
+}
+
 @media (max-width: 1200px) {
   .cardDetailsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cardDetailsKpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -388,6 +482,7 @@
 
   .cardDetailsTopbar,
   .cardDetailsHero,
+  .cardDetailsWatchlist,
   .cardDetailsChartCard {
     padding: 14px;
   }
@@ -414,6 +509,14 @@
 
   .cardDetailsChartCard {
     margin-bottom: 8px;
+  }
+
+  .cardDetailsWatchlist__head {
+    flex-direction: column;
+  }
+
+  .cardDetailsWatchlist__current {
+    text-align: left;
   }
 
   .cardDetailsChartCard__head {
