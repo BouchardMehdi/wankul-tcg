@@ -269,6 +269,35 @@
   margin-top: 26px;
 }
 
+.homeHero__install {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.homeButton--install {
+  width: fit-content;
+  min-width: min(100%, 248px);
+  background: rgba(8, 12, 24, 0.72);
+}
+
+.homeButton:disabled {
+  opacity: 0.72;
+  cursor: default;
+  transform: none;
+  filter: none;
+}
+
+.homeHero__installNote {
+  margin: 0;
+  max-width: 52ch;
+  font-size: 12px;
+  line-height: 1.65;
+  color: rgba(240, 245, 255, 0.68);
+  font-weight: 800;
+}
+
 .homeHero__stats {
   margin-top: 24px;
   display: grid;
@@ -963,6 +992,10 @@
   .homeTopbar__actions,
   .homeHero__actions,
   .homeClosing__actions {
+    width: 100%;
+  }
+
+  .homeButton--install {
     width: 100%;
   }
 

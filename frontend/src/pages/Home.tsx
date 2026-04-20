@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import "../styles/Home.css";
@@ -101,8 +102,99 @@ const SHOWCASE_FOOTER_POINTS = [
   },
 ];
 
+type InstallChoiceOutcome = "accepted" | "dismissed";
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{
+    outcome: InstallChoiceOutcome;
+    platform: string;
+  }>;
+}
+
+function isStandaloneMode() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
+}
+
 export default function Home() {
   const { isAuthenticated } = useAuth();
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [installMessage, setInstallMessage] = useState(
+    "Installe Wankul TCG pour le retrouver directement sur ton ecran d'accueil.",
+  );
+
+  useEffect(() => {
+    const displayModeQuery = window.matchMedia("(display-mode: standalone)");
+
+    const syncInstallState = () => {
+      const installed = isStandaloneMode();
+      setIsInstalled(installed);
+
+      if (installed) {
+        setInstallPrompt(null);
+        setInstallMessage("Wankul TCG est deja installee sur cet appareil.");
+      }
+    };
+
+    const handleInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+      setInstallMessage("L'installation est disponible en un appui sur mobile comme sur desktop.");
+    };
+
+    const handleInstalled = () => {
+      setIsInstalled(true);
+      setInstallPrompt(null);
+      setInstallMessage("Wankul TCG est installee. Tu peux maintenant l'ouvrir comme une vraie app.");
+    };
+
+    syncInstallState();
+
+    displayModeQuery.addEventListener("change", syncInstallState);
+    window.addEventListener("beforeinstallprompt", handleInstallPrompt as EventListener);
+    window.addEventListener("appinstalled", handleInstalled);
+
+    return () => {
+      displayModeQuery.removeEventListener("change", syncInstallState);
+      window.removeEventListener("beforeinstallprompt", handleInstallPrompt as EventListener);
+      window.removeEventListener("appinstalled", handleInstalled);
+    };
+  }, []);
+
+  async function handleInstallClick() {
+    if (isInstalled) {
+      return;
+    }
+
+    if (installPrompt) {
+      await installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      setInstallPrompt(null);
+
+      if (outcome === "accepted") {
+        setInstallMessage("Installation lancee. L'app sera accessible depuis ton ecran d'accueil.");
+      } else {
+        setInstallMessage("Tu peux relancer l'installation quand tu veux depuis ce bouton.");
+      }
+
+      return;
+    }
+
+    const isAppleMobile = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+
+    if (isAppleMobile) {
+      setInstallMessage("Sur iPhone ou iPad, ouvre Partager puis choisis Sur l'ecran d'accueil.");
+      return;
+    }
+
+    setInstallMessage(
+      "L'installation apparait seulement quand le navigateur la propose. Chrome ou Edge sont les plus fiables.",
+    );
+  }
 
   return (
     <div className="homeLanding">
@@ -183,6 +275,18 @@ export default function Home() {
                   </Link>
                 </>
               )}
+            </div>
+
+            <div className="homeHero__install">
+              <button
+                type="button"
+                className="homeButton homeButton--ghost homeButton--install"
+                onClick={handleInstallClick}
+                disabled={isInstalled}
+              >
+                {isInstalled ? "Web app installee" : "Telecharger la web app"}
+              </button>
+              <p className="homeHero__installNote">{installMessage}</p>
             </div>
 
             <div className="homeHero__stats">
