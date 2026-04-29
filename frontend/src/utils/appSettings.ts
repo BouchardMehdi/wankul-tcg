@@ -1,6 +1,8 @@
 export type CollectionLayout = "standard" | "compact" | "large";
+export type ThemeMode = "system" | "light" | "dark";
 
 export type AppSettings = {
+  themeMode: ThemeMode;
   soundEffects: boolean;
   pwaNotifications: boolean;
   skipOpeningAnimations: boolean;
@@ -35,6 +37,7 @@ const APP_SETTINGS_KEY = "wankul_app_settings";
 const LAST_NEW_CARD_IDS_KEY = "wankul_last_new_card_ids";
 
 export const APP_SETTINGS_DEFAULTS: AppSettings = {
+  themeMode: "system",
   soundEffects: true,
   pwaNotifications: false,
   skipOpeningAnimations: false,
@@ -65,8 +68,15 @@ function normalizeLayout(value: unknown): CollectionLayout {
   return "standard";
 }
 
+function normalizeThemeMode(value: unknown): ThemeMode {
+  if (value === "light" || value === "dark" || value === "system") return value;
+  return "system";
+}
+
 function migrateSettings(raw: Partial<AppSettings> | null | undefined): AppSettings {
   const base = { ...APP_SETTINGS_DEFAULTS, ...(raw ?? {}) };
+
+  base.themeMode = normalizeThemeMode(base.themeMode);
 
   base.soundEffects =
     typeof base.soundEffects === "boolean"

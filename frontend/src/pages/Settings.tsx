@@ -13,6 +13,7 @@ import {
   subscribeAppSettings,
   writeAppSettings,
   type AppSettings,
+  type ThemeMode,
 } from "../utils/appSettings";
 import { playActionDeniedSound, playSettingToggleSound, primeSound } from "../utils/sound";
 import {
@@ -32,7 +33,7 @@ import {
   type BugReportStatus,
 } from "../api/auth";
 
-type SelectSettingKey = "collectionLayout";
+type SelectSettingKey = "collectionLayout" | "themeMode";
 type ToggleSettingKey = Exclude<keyof AppSettings, SelectSettingKey | "compactCollectionGrid">;
 
 type SettingRow =
@@ -52,6 +53,13 @@ type SettingRow =
     };
 
 const SETTING_ROWS: SettingRow[] = [
+  {
+    key: "themeMode",
+    title: "Apparence",
+    desc: "Suit le theme de ton appareil par defaut, ou force le mode clair/sombre.",
+    kind: "select",
+    section: "general",
+  },
   {
     key: "pwaNotifications",
     title: "Notifications PWA",
@@ -355,7 +363,7 @@ export default function Settings() {
   const enabledCount = useMemo(
     () =>
       Object.entries(settings).filter(([key, value]) => {
-        if (key === "collectionLayout" || key === "compactCollectionGrid") return false;
+        if (key === "themeMode" || key === "collectionLayout" || key === "compactCollectionGrid") return false;
         return Boolean(value);
       }).length,
     [settings],
@@ -431,6 +439,13 @@ export default function Settings() {
     const merged = { ...settings, collectionLayout: value };
     setSettings(merged);
     writeAppSettings({ collectionLayout: value });
+  }
+
+  function updateThemeMode(value: ThemeMode) {
+    const merged = { ...settings, themeMode: value };
+    setSettings(merged);
+    writeAppSettings({ themeMode: value });
+    playSettingToggleSound(value !== "system");
   }
 
   function resetAll() {
@@ -555,6 +570,8 @@ export default function Settings() {
 
   function renderRow(row: SettingRow) {
     if (row.kind === "select") {
+      const isThemeSelect = row.key === "themeMode";
+
       return (
         <div className="settingsRow" key={row.key}>
           <div className="settingsRow__content">
@@ -565,14 +582,29 @@ export default function Settings() {
           <div className="settingsRow__control">
             <select
               className="settingsSelect"
-              value={settings.collectionLayout}
-              onChange={(e) =>
-                updateCollectionLayout(e.target.value as AppSettings["collectionLayout"])
-              }
+              value={isThemeSelect ? settings.themeMode : settings.collectionLayout}
+              onChange={(e) => {
+                if (isThemeSelect) {
+                  updateThemeMode(e.target.value as ThemeMode);
+                  return;
+                }
+
+                updateCollectionLayout(e.target.value as AppSettings["collectionLayout"]);
+              }}
             >
-              <option value="standard">Standard — 5 colonnes</option>
-              <option value="compact">Compact — 6 colonnes</option>
-              <option value="large">Large — 4 colonnes</option>
+              {isThemeSelect ? (
+                <>
+                  <option value="system">Automatique systeme</option>
+                  <option value="dark">Mode sombre</option>
+                  <option value="light">Mode clair</option>
+                </>
+              ) : (
+                <>
+                  <option value="standard">Standard — 5 colonnes</option>
+                  <option value="compact">Compact — 6 colonnes</option>
+                  <option value="large">Large — 4 colonnes</option>
+                </>
+              )}
             </select>
           </div>
         </div>

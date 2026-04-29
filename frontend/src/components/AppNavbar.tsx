@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import "../styles/Nav.css";
 import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
+import wankulLogoBlack from "../assets/logo_wankul_noir.png";
 import { useAuth } from "../auth/AuthContext";
 import SmartImage from "./SmartImage";
 
@@ -212,7 +213,14 @@ export default function AppNavbar({
         <Link to="/" className="topbar__brand" aria-label="Accueil Wankul TCG">
           <SmartImage
             src={wankulLogo}
-            className="topbar__logo"
+            className="topbar__logo topbar__logo--white"
+            alt="Wankul"
+            loading="eager"
+            fetchPriority="high"
+          />
+          <SmartImage
+            src={wankulLogoBlack}
+            className="topbar__logo topbar__logo--black"
             alt="Wankul"
             loading="eager"
             fetchPriority="high"

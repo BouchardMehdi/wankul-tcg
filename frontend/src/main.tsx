@@ -3,9 +3,12 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './styles.css';
+import './styles/LightModeText.css';
 import { AuthProvider } from './auth/AuthContext';
 import { installGlobalSoundUnlock } from './utils/sound';
+import { applyTheme } from './utils/theme';
 
+applyTheme();
 installGlobalSoundUnlock();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

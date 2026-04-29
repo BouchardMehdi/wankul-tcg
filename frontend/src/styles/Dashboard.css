@@ -11,7 +11,11 @@
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border2);
 }
-[data-theme="light"] .topbar { background: rgba(245, 247, 255, 0.72); }
+[data-theme="light"] .topbar {
+  background:
+    linear-gradient(180deg, rgba(255, 250, 239, 0.88), rgba(244, 237, 223, 0.72));
+  box-shadow: 0 12px 36px rgba(94, 68, 41, 0.08);
+}
 
 .topbar__inner {
   display: flex;
@@ -33,7 +37,11 @@
   font-weight: 900;
   transition: transform var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
 }
-[data-theme="light"] .topbar__link { background: rgba(11, 16, 32, 0.05); }
+[data-theme="light"] .topbar__link {
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.88), rgba(244, 233, 213, 0.64));
+  border-color: rgba(42, 35, 54, 0.12);
+}
 .topbar__link:hover { transform: translateY(-1px); filter: brightness(1.06); }
 
 .menuSection {
@@ -71,6 +79,15 @@
   background: rgba(255, 255, 255, 0.05);
   padding: 16px 18px;
   min-width: 220px;
+}
+
+[data-theme="light"] .kpi,
+[data-theme="light"] .statCard {
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.82), rgba(244, 233, 213, 0.66));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.66),
+    0 12px 28px rgba(94, 68, 41, 0.08);
 }
 .kpi__label { font-size: 12px; color: var(--muted); font-weight: 900; }
 .kpi__value { margin-top: 8px; font-size: 28px; font-weight: 950; }
@@ -139,6 +156,14 @@
   overflow: hidden;
   padding: 24px 24px 22px;
   min-height: 440px;
+}
+
+[data-theme="light"] .chartCard {
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.76), rgba(244, 233, 213, 0.58));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.64),
+    var(--shadow-md);
 }
 
 .chartCard--season {
@@ -572,7 +597,7 @@
   -moz-appearance: none;
   min-width: 148px;
   height: 40px;
-  padding: 0 40px 0 14px;
+  padding: 0 14px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background:
@@ -589,12 +614,18 @@
     border-color 0.18s ease,
     box-shadow 0.18s ease,
     transform 0.18s ease;
-  background-image:
-    linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04)),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'><path fill='white' d='M3.2 5.1 7 8.9l3.8-3.8.9.9L7 10.7 2.3 6z'/></svg>");
-  background-repeat: no-repeat, no-repeat;
-  background-position: 0 0, right 12px center;
-  background-size: auto, 14px 14px;
+  background-image: none;
+}
+
+[data-theme="light"] .lootFilter__select {
+  border-color: rgba(42, 35, 54, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.96), rgba(244, 233, 213, 0.84)),
+    rgba(255, 251, 241, 0.92);
+  color: rgba(27, 25, 34, 0.95);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.78),
+    0 10px 24px rgba(94, 68, 41, 0.10);
 }
 
 .lootFilter__select:hover {
@@ -612,6 +643,11 @@
   background: #0b1220;
   color: #fff;
   font-weight: 700;
+}
+
+[data-theme="light"] .lootFilter__select option {
+  background: #fff8ed;
+  color: rgba(27, 25, 34, 0.95);
 }
 
 .lootFilterHint {

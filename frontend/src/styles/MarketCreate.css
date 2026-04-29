@@ -207,13 +207,8 @@
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  padding-right: 38px;
-  background-image:
-    linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'><path fill='white' d='M3.2 5.1 7 8.9l3.8-3.8.9.9L7 10.7 2.3 6z'/></svg>");
-  background-repeat: no-repeat, no-repeat;
-  background-position: 0 0, right 12px center;
-  background-size: auto, 14px 14px;
+  padding-right: 12px;
+  background-image: none;
 }
 
 .marketCreateField select option {

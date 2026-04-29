@@ -16,6 +16,26 @@
       name="description"
       content="Wankul TCG, l'experience de collection, d'ouverture et de market en PWA."
     />
+    <script>
+      (() => {
+        try {
+          const raw = localStorage.getItem("wankul_app_settings");
+          const settings = raw ? JSON.parse(raw) : {};
+          const mode = settings.themeMode || "system";
+          const systemLight = window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: light)").matches;
+          const theme = mode === "system" ? (systemLight ? "light" : "dark") : mode;
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.dataset.themeMode = mode;
+          document.documentElement.style.colorScheme = theme;
+          const metaTheme = document.querySelector('meta[name="theme-color"]');
+          if (metaTheme) metaTheme.content = theme === "light" ? "#f4eddf" : "#070a12";
+        } catch {
+          document.documentElement.dataset.theme = "dark";
+          document.documentElement.dataset.themeMode = "system";
+        }
+      })();
+    </script>
     <style>
       #root:empty {
         min-height: 100dvh;
@@ -25,6 +45,12 @@
           radial-gradient(circle at 18% 10%, rgba(155, 92, 255, 0.22), transparent 34%),
           radial-gradient(circle at 86% 12%, rgba(76, 201, 240, 0.18), transparent 34%),
           #070a12;
+      }
+      [data-theme="light"] #root:empty {
+        background:
+          radial-gradient(circle at 18% 10%, rgba(109, 78, 255, 0.13), transparent 34%),
+          radial-gradient(circle at 86% 12%, rgba(0, 144, 169, 0.16), transparent 34%),
+          #f4eddf;
       }
       #root:empty::before {
         content: "Wankul TCG";

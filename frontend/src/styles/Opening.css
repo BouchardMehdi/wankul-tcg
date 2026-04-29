@@ -98,6 +98,16 @@
   transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
 
+[data-theme="light"] .skipToggleBtn {
+  color: rgba(27, 25, 34, 0.92);
+  border-color: rgba(42, 35, 54, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.88), rgba(244, 233, 213, 0.74));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.68),
+    0 10px 22px rgba(94, 68, 41, 0.08);
+}
+
 .skipToggleBtn:hover {
   transform: translateY(-1px);
 }
@@ -105,6 +115,13 @@
 .skipToggleBtn.is-on {
   background: rgba(255,255,255,0.1);
   border-color: rgba(255,255,255,0.22);
+}
+
+[data-theme="light"] .skipToggleBtn.is-on {
+  border-color: rgba(233, 79, 85, 0.26);
+  background:
+    linear-gradient(135deg, rgba(233, 79, 85, 0.13), rgba(241, 154, 53, 0.12)),
+    rgba(255, 250, 239, 0.84);
 }
 
 .skipToggleBtn__track {
@@ -118,9 +135,19 @@
   transition: background 160ms ease, border-color 160ms ease;
 }
 
+[data-theme="light"] .skipToggleBtn__track {
+  background: rgba(42, 35, 54, 0.16);
+  border-color: rgba(42, 35, 54, 0.22);
+  box-shadow: inset 0 1px 2px rgba(42, 35, 54, 0.16);
+}
+
 .skipToggleBtn.is-on .skipToggleBtn__track {
   background: linear-gradient(90deg, #ff5c93, #9d5cff);
   border-color: transparent;
+}
+
+[data-theme="light"] .skipToggleBtn.is-on .skipToggleBtn__track {
+  background: linear-gradient(90deg, #e94f55, #f19a35, #7155d9);
 }
 
 .skipToggleBtn__thumb {
@@ -133,6 +160,13 @@
   background: #fff;
   box-shadow: 0 3px 10px rgba(0,0,0,0.28);
   transition: transform 160ms ease;
+}
+
+[data-theme="light"] .skipToggleBtn__thumb {
+  background: #fffaf0;
+  box-shadow:
+    0 4px 10px rgba(94, 68, 41, 0.22),
+    0 0 0 1px rgba(42, 35, 54, 0.10);
 }
 
 .skipToggleBtn.is-on .skipToggleBtn__thumb {

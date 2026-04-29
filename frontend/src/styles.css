@@ -7,6 +7,7 @@
 ========================= */
 
 :root {
+  color-scheme: dark;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -22,6 +23,9 @@
 
   /* Surfaces */
   --bg: #070a12;
+  --bg-spot-violet: rgba(155, 92, 255, 0.18);
+  --bg-spot-cyan: rgba(76, 201, 240, 0.16);
+  --bg-spot-pink: rgba(255, 77, 109, 0.12);
   --panel: rgba(16, 22, 40, 0.72);
   --panel2: rgba(10, 14, 26, 0.76);
 
@@ -46,16 +50,29 @@
   --ease: cubic-bezier(.2, .8, .2, 1);
 }
 
-/* Light theme (si tu utilises data-theme="light") */
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 [data-theme="light"] {
-  --bg: #f5f7ff;
-  --text: rgba(15, 20, 35, 0.95);
-  --text2: rgba(15, 20, 35, 0.80);
-  --muted: rgba(15, 20, 35, 0.62);
-  --panel: rgba(255, 255, 255, 0.86);
-  --panel2: rgba(245, 247, 255, 0.90);
-  --border: rgba(15, 20, 35, 0.10);
-  --border2: rgba(15, 20, 35, 0.14);
+  color-scheme: light;
+  --bg: #f4eddf;
+  --bg-spot-violet: rgba(109, 78, 255, 0.10);
+  --bg-spot-cyan: rgba(0, 144, 169, 0.14);
+  --bg-spot-pink: rgba(238, 83, 78, 0.13);
+  --text: rgba(27, 25, 34, 0.96);
+  --text2: rgba(42, 39, 52, 0.82);
+  --muted: rgba(72, 67, 82, 0.66);
+  --panel: rgba(255, 251, 241, 0.88);
+  --panel2: rgba(246, 236, 218, 0.84);
+  --border: rgba(42, 35, 54, 0.13);
+  --border2: rgba(42, 35, 54, 0.18);
+  --shadow-sm: 0 10px 30px rgba(94, 68, 41, 0.11);
+  --shadow-md: 0 22px 70px rgba(94, 68, 41, 0.16);
+  --a-pink: #e94f55;
+  --a-violet: #7155d9;
+  --a-cyan: #008fa3;
+  --a-gold: #c98a18;
 }
 
 /* Reset */
@@ -75,14 +92,17 @@ body {
 
   /* ✅ Fix background qui se répète */
   background:
-    radial-gradient(1200px 700px at 20% 10%, rgba(155, 92, 255, 0.18), transparent 55%),
-    radial-gradient(1000px 600px at 80% 0%, rgba(76, 201, 240, 0.16), transparent 55%),
-    radial-gradient(900px 600px at 50% 100%, rgba(255, 77, 109, 0.12), transparent 60%),
+    radial-gradient(1200px 700px at 20% 10%, var(--bg-spot-violet), transparent 55%),
+    radial-gradient(1000px 600px at 80% 0%, var(--bg-spot-cyan), transparent 55%),
+    radial-gradient(900px 600px at 50% 100%, var(--bg-spot-pink), transparent 60%),
     var(--bg);
 
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-size: cover;
+  transition:
+    background-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
 }
 
 /* ✅ important pour que ça couvre toute l'app */
@@ -139,14 +159,57 @@ img[loading="lazy"] {
 }
 .btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
 
+[data-theme="light"] .btn {
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.94), rgba(241, 229, 207, 0.78));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.72),
+    0 10px 24px rgba(94, 68, 41, 0.10);
+}
+
 .btn--primary {
   border: 0;
   background: linear-gradient(135deg, var(--a-pink), var(--a-violet));
   box-shadow: 0 16px 55px rgba(255, 77, 109, 0.18);
 }
 
+[data-theme="light"] .btn--primary {
+  background: linear-gradient(135deg, #e94f55, #f19a35 48%, #7155d9);
+  color: #fff;
+  box-shadow: 0 18px 48px rgba(233, 79, 85, 0.22);
+}
+
 .btn--ghost {
   background: rgba(255, 255, 255, 0.04);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+  filter: saturate(0.78);
+}
+
+[data-theme="light"] .btn--ghost {
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.9), rgba(244, 233, 213, 0.72));
+  color: rgba(27, 25, 34, 0.92);
+}
+
+[data-theme="light"] .btn:disabled {
+  color: rgba(42, 39, 52, 0.56);
+  -webkit-text-fill-color: rgba(42, 39, 52, 0.56);
+  border-color: rgba(42, 35, 54, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.58), rgba(232, 219, 198, 0.46));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.54),
+    0 8px 18px rgba(94, 68, 41, 0.06);
+}
+
+[data-theme="light"] .btn--primary:not(:disabled) {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
 }
 
 /* Inputs */
@@ -161,7 +224,8 @@ img[loading="lazy"] {
 }
 [data-theme="light"] .input,
 [data-theme="light"] .select {
-  background: rgba(255, 255, 255, 0.70);
+  background: rgba(255, 251, 241, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.82);
 }
 
 /* Checkboxes */

@@ -9,7 +9,9 @@
 }
 
 [data-theme="light"] .topbar {
-  background: rgba(245, 247, 255, 0.72);
+  background:
+    linear-gradient(180deg, rgba(255, 250, 239, 0.88), rgba(244, 237, 223, 0.72));
+  box-shadow: 0 12px 36px rgba(94, 68, 41, 0.08);
 }
 
 .topbar__inner {
@@ -29,6 +31,19 @@
 .topbar__logo {
   width: 100px;
   display: block;
+}
+
+.topbar__logo--black {
+  display: none;
+}
+
+[data-theme="light"] .topbar__logo--white {
+  display: none;
+}
+
+[data-theme="light"] .topbar__logo--black {
+  display: block;
+  filter: drop-shadow(0 6px 14px rgba(94, 68, 41, 0.18));
 }
 
 .topbar__nav {
@@ -67,11 +82,20 @@
 }
 
 [data-theme="light"] .topbar__link {
-  background: rgba(11, 16, 32, 0.05);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.88), rgba(244, 233, 213, 0.64));
+  border-color: rgba(42, 35, 54, 0.12);
 }
 
 [data-theme="light"] .topbar__link.is-active {
-  background: rgba(11, 16, 32, 0.10);
+  color: #191622;
+  border-color: rgba(233, 79, 85, 0.26);
+  background:
+    linear-gradient(135deg, rgba(233, 79, 85, 0.14), rgba(241, 154, 53, 0.14)),
+    rgba(255, 250, 239, 0.82);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.64) inset,
+    0 12px 28px rgba(94, 68, 41, 0.10);
 }
 
 .topbar__link:hover {
@@ -147,7 +171,12 @@
   }
 
   [data-theme="light"] .topbar__nav {
-    background: rgba(255,255,255,0.90);
+    border-color: rgba(42, 35, 54, 0.14);
+    background:
+      linear-gradient(180deg, rgba(255, 251, 241, 0.94), rgba(241, 229, 207, 0.9));
+    box-shadow:
+      0 18px 44px rgba(94, 68, 41, 0.18),
+      inset 0 1px 0 rgba(255,255,255,0.68);
   }
 
   .topbar__nav::-webkit-scrollbar {
@@ -187,11 +216,17 @@
   }
 
   [data-theme="light"] .topbar__link {
-    background: rgba(11, 16, 32, 0.05);
+    background: rgba(255, 251, 241, 0.64);
   }
 
   [data-theme="light"] .topbar__link.is-active {
-    background: rgba(155, 92, 255, 0.12);
+    border-color: rgba(233, 79, 85, 0.34);
+    background:
+      linear-gradient(180deg, rgba(233, 79, 85, 0.16), rgba(241, 154, 53, 0.13)),
+      rgba(255, 251, 241, 0.88);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.7) inset,
+      0 10px 22px rgba(233, 79, 85, 0.13);
   }
 
   .topbar__icon {

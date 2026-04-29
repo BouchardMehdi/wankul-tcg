@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
 
 import { useAuth } from "./auth/AuthContext";
 
@@ -22,6 +23,12 @@ import PwaCacheManager from "./components/PwaCacheManager";
 import InAppNotificationCenter from "./components/InAppNotificationCenter";
 import PwaSplash from "./components/PwaSplash";
 import PwaStatusOverlay from "./components/PwaStatusOverlay";
+import { installThemeSync } from "./utils/theme";
+
+function ThemeSync() {
+  useEffect(() => installThemeSync(), []);
+  return null;
+}
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -56,6 +63,7 @@ export default function App() {
 
   return (
     <>
+      <ThemeSync />
       <PwaNotificationManager />
       <PwaCacheManager />
       <InAppNotificationCenter />

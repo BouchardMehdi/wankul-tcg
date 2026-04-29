@@ -264,12 +264,28 @@
   cursor: pointer;
 }
 
+[data-theme="light"] .pwaPreferencesPage .skipToggleBtn {
+  border-color: rgba(42, 35, 54, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.88), rgba(244, 233, 213, 0.74));
+  color: rgba(27, 25, 34, 0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.68),
+    0 10px 22px rgba(94, 68, 41, 0.08);
+}
+
 .pwaPreferencesPage .skipToggleBtn__track {
   width: 44px;
   height: 24px;
   padding: 3px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="light"] .pwaPreferencesPage .skipToggleBtn__track {
+  background: rgba(42, 35, 54, 0.16);
+  border: 1px solid rgba(42, 35, 54, 0.22);
+  box-shadow: inset 0 1px 2px rgba(42, 35, 54, 0.16);
 }
 
 .pwaPreferencesPage .skipToggleBtn__thumb {
@@ -281,8 +297,20 @@
   transition: transform var(--t-fast) var(--ease);
 }
 
+[data-theme="light"] .pwaPreferencesPage .skipToggleBtn__thumb {
+  background: #fffaf0;
+  box-shadow:
+    0 4px 10px rgba(94, 68, 41, 0.22),
+    0 0 0 1px rgba(42, 35, 54, 0.10);
+}
+
 .pwaPreferencesPage .skipToggleBtn.is-on .skipToggleBtn__track {
   background: linear-gradient(135deg, var(--a-pink), var(--a-violet));
+}
+
+[data-theme="light"] .pwaPreferencesPage .skipToggleBtn.is-on .skipToggleBtn__track {
+  background: linear-gradient(90deg, #e94f55, #f19a35, #7155d9);
+  border-color: transparent;
 }
 
 .pwaPreferencesPage .skipToggleBtn.is-on .skipToggleBtn__thumb {
