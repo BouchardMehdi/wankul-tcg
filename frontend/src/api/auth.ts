@@ -178,8 +178,80 @@ export type AdminEconomyOverviewResponse = {
   totals: {
     creditsSpent: number;
     creditsEarned: number;
+    creditsEarnedOpening?: number;
+    creditsEarnedQuickSell?: number;
+    creditsEarnedJackpot?: number;
+    marketVolume?: number;
   };
   inflation: number;
+  advanced?: {
+    health: {
+      creditsCreated: number;
+      creditsCreatedOpening: number;
+      creditsCreatedQuickSell: number;
+      creditsCreatedJackpot: number;
+      creditsDestroyed: number;
+      netInflation: number;
+      inflationRatePercent: number;
+      marketVolume: number;
+      quickSellToMarketPercent: number;
+      quickSellShareOfCreatedPercent: number;
+      openingShareOfCreatedPercent: number;
+      riskScore: number;
+      riskLevel: 'ok' | 'watch' | 'danger';
+    };
+    rarityProfitability: Array<{
+      rarity: string;
+      saleCount: number;
+      quantitySold: number;
+      marketVolume: number;
+      avgUnitPrice: number;
+      avgMarketSnapshot: number;
+      avgVsMarketPercent: number;
+      openedCardsCount: number;
+      estimatedOpeningRewards: number;
+      estimatedRewardPerOpenedCard: number;
+      score: number;
+      status: 'ok' | 'watch' | 'danger';
+    }>;
+    manipulatedCards: Array<{
+      cardId: number;
+      cardName: string;
+      rarity: string;
+      saleCount: number;
+      quantitySold: number;
+      marketVolume: number;
+      avgUnitPrice: number;
+      avgMarketSnapshot: number;
+      avgVsMarketPercent: number;
+      outlierTrades: number;
+      volatilityPercent: number;
+      minPrice: number;
+      maxPrice: number;
+      priceSamples: number;
+      lastActivityAt: string | null;
+      score: number;
+    }>;
+    suspiciousUsers: Array<{
+      userId: number;
+      username: string;
+      score: number;
+      reasons: string[];
+      salesCount: number;
+      purchasesCount: number;
+      totalTrades: number;
+      soldVolume: number;
+      boughtVolume: number;
+      totalVolume: number;
+      listingCount: number;
+      cancelledListings: number;
+      activeListings: number;
+      cancelRatePercent: number;
+      openingCount: number;
+      currentCredits: number;
+      highDeviationTrades: number;
+    }>;
+  };
 };
 
 export async function login(dto: LoginDto) {

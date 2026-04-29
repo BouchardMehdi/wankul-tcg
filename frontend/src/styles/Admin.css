@@ -189,6 +189,21 @@
   background: rgba(255, 97, 123, 0.08);
 }
 
+.adminStatCard--risk.is-ok {
+  border-color: rgba(86, 214, 144, 0.24);
+  background: linear-gradient(135deg, rgba(86, 214, 144, 0.12), rgba(90, 170, 255, 0.08));
+}
+
+.adminStatCard--risk.is-watch {
+  border-color: rgba(255, 204, 102, 0.3);
+  background: linear-gradient(135deg, rgba(255, 204, 102, 0.14), rgba(255, 139, 74, 0.08));
+}
+
+.adminStatCard--risk.is-danger {
+  border-color: rgba(255, 97, 123, 0.34);
+  background: linear-gradient(135deg, rgba(255, 97, 123, 0.16), rgba(155, 92, 255, 0.1));
+}
+
 .adminStatCard__value {
   font-size: 28px;
   font-weight: 900;
@@ -211,6 +226,10 @@
   gap: 16px;
 }
 
+.adminDashboardGrid--analytics {
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+}
+
 .adminDashboardPanel {
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,0.08);
@@ -228,6 +247,73 @@
 
 .adminDashboardPanel__head h3 {
   margin: 0 0 4px;
+}
+
+.adminRiskStrip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
+
+.adminRiskStrip.is-ok {
+  border-color: rgba(86, 214, 144, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(86, 214, 144, 0.05);
+}
+
+.adminRiskStrip.is-watch {
+  border-color: rgba(255, 204, 102, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(255, 204, 102, 0.05);
+}
+
+.adminRiskStrip.is-danger {
+  border-color: rgba(255, 97, 123, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(255, 97, 123, 0.06);
+}
+
+.adminRiskStrip__main span,
+.adminRiskStrip__metrics span {
+  color: rgba(255,255,255,0.68);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.adminRiskStrip__main strong {
+  display: block;
+  margin-top: 4px;
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 950;
+}
+
+.adminRiskStrip__main p {
+  margin: 6px 0 0;
+  color: rgba(255,255,255,0.76);
+  line-height: 1.45;
+}
+
+.adminRiskStrip__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.adminRiskStrip__metrics div {
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.16);
+}
+
+.adminRiskStrip__metrics b {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
 }
 
 .adminBarChart {
@@ -380,12 +466,58 @@
 
 .adminDataTableWrap {
   overflow-x: auto;
+  padding-bottom: 10px;
+  color-scheme: dark;
+  scrollbar-color: rgba(255, 77, 109, 0.78) rgba(14, 19, 34, 0.96);
+  scrollbar-width: thin;
+}
+
+.adminDataTableWrap::-webkit-scrollbar,
+.adminSuspiciousList::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: rgba(14, 19, 34, 0.96);
+}
+
+.adminDataTableWrap::-webkit-scrollbar-track,
+.adminSuspiciousList::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(155, 92, 255, 0.08));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+.adminDataTableWrap::-webkit-scrollbar-thumb,
+.adminSuspiciousList::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 77, 109, 0.82), rgba(155, 92, 255, 0.82));
+  border: 3px solid rgba(14, 19, 34, 0.96);
+}
+
+.adminDataTableWrap::-webkit-scrollbar-thumb:hover,
+.adminSuspiciousList::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, rgba(255, 107, 139, 0.96), rgba(184, 122, 255, 0.96));
+}
+
+.adminDataTableWrap::-webkit-scrollbar-corner,
+.adminSuspiciousList::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.adminDataTableWrap::-webkit-scrollbar-button,
+.adminSuspiciousList::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .adminDataTable {
   width: 100%;
   border-collapse: collapse;
   min-width: 760px;
+}
+
+.adminDataTable--compact {
+  min-width: 620px;
 }
 
 .adminDataTable th,
@@ -401,6 +533,104 @@
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.adminDataTable td strong {
+  display: block;
+}
+
+.adminTableSub {
+  display: block;
+  margin-top: 4px;
+  color: rgba(255,255,255,0.58);
+  font-size: 12px;
+}
+
+.adminSignalBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.06);
+}
+
+.adminSignalBadge.is-ok {
+  color: #b9ffd5;
+  background: rgba(86, 214, 144, 0.12);
+}
+
+.adminSignalBadge.is-watch {
+  color: #ffe3a3;
+  background: rgba(255, 204, 102, 0.14);
+}
+
+.adminSignalBadge.is-danger {
+  color: #ffd6df;
+  background: rgba(255, 97, 123, 0.16);
+}
+
+.adminSuspiciousList {
+  display: grid;
+  gap: 12px;
+  max-height: 540px;
+  overflow: auto;
+  padding-right: 4px;
+  color-scheme: dark;
+  scrollbar-color: rgba(255, 77, 109, 0.78) rgba(14, 19, 34, 0.96);
+  scrollbar-width: thin;
+}
+
+.adminSuspiciousCard {
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.035);
+}
+
+.adminSuspiciousCard__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.adminSuspiciousCard__top strong,
+.adminSuspiciousCard__top b {
+  font-weight: 950;
+}
+
+.adminSuspiciousCard__top span {
+  display: block;
+  margin-top: 2px;
+  color: rgba(255,255,255,0.58);
+  font-size: 12px;
+}
+
+.adminSuspiciousCard__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.adminSuspiciousCard__grid span {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.78);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.adminSuspiciousCard p {
+  margin: 12px 0 0;
+  color: rgba(255,255,255,0.72);
+  line-height: 1.45;
+  font-size: 13px;
 }
 
 .adminReports {
@@ -646,6 +876,11 @@
 
   .adminToolbar {
     align-items: stretch;
+  }
+
+  .adminRiskStrip,
+  .adminRiskStrip__metrics {
+    grid-template-columns: 1fr;
   }
 
   .adminToolbar__left {

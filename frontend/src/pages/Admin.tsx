@@ -63,8 +63,21 @@ function formatSignedNumber(value?: number | null) {
   return `${num > 0 ? "+" : ""}${formatNumber(num)}`;
 }
 
+function formatPercent(value?: number | null, signed = true) {
+  const num = Number(value ?? 0);
+  return `${signed && num > 0 ? "+" : ""}${new Intl.NumberFormat("fr-FR", {
+    maximumFractionDigits: 1,
+  }).format(num)}%`;
+}
+
 function clampPercent(value: number) {
   return Math.max(4, Math.min(100, value));
+}
+
+function getRiskLabel(level?: string) {
+  if (level === "danger") return "Critique";
+  if (level === "watch") return "A surveiller";
+  return "Stable";
 }
 
 const PAGE_SIZE = 5;
@@ -184,6 +197,8 @@ export default function Admin() {
     creditsSpent: 0,
     creditsEarned: 0,
   };
+  const advanced = ecoOverview?.advanced ?? null;
+  const health = advanced?.health ?? null;
   const ecoInflation = ecoOverview?.inflation ?? 0;
 
   const maxChartValue = useMemo(() => {
@@ -222,6 +237,16 @@ export default function Admin() {
 
   const averageBoosterNet = totalBoostersOpened > 0 ? Math.round(totalOpeningEarned / totalBoostersOpened) : 0;
   const averageDisplayNet = totalDisplaysOpened > 0 ? Math.round(totalOpeningEarned / totalDisplaysOpened) : 0;
+  const creditsCreated = health?.creditsCreated ?? ecoTotals.creditsEarned;
+  const creditsDestroyed = health?.creditsDestroyed ?? ecoTotals.creditsSpent;
+  const quickSellToMarketPercent = health?.quickSellToMarketPercent ?? 0;
+  const quickSellShareOfCreatedPercent = health?.quickSellShareOfCreatedPercent ?? 0;
+  const openingShareOfCreatedPercent = health?.openingShareOfCreatedPercent ?? 0;
+  const riskScore = health?.riskScore ?? 0;
+  const riskLevel = health?.riskLevel ?? "ok";
+  const rarityProfitability = advanced?.rarityProfitability ?? [];
+  const manipulatedCards = advanced?.manipulatedCards ?? [];
+  const suspiciousUsers = advanced?.suspiciousUsers ?? [];
 
   async function handleAdminLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -395,18 +420,25 @@ export default function Admin() {
                   <>
                     <div className="adminStats adminStats--dashboard">
                       <div className="adminStatCard adminStatCard--accent">
-                        <div className="adminStatCard__value">{formatNumber(ecoTotals.creditsEarned)}</div>
+                        <div className="adminStatCard__value">{formatNumber(creditsCreated)}</div>
                         <div className="adminStatCard__label">Crédits créés</div>
                       </div>
 
                       <div className="adminStatCard">
-                        <div className="adminStatCard__value">{formatNumber(ecoTotals.creditsSpent)}</div>
+                        <div className="adminStatCard__value">{formatNumber(creditsDestroyed)}</div>
                         <div className="adminStatCard__label">Crédits détruits</div>
                       </div>
 
                       <div className={`adminStatCard ${ecoInflation >= 0 ? "is-positive" : "is-negative"}`}>
                         <div className="adminStatCard__value">{formatSignedNumber(ecoInflation)}</div>
                         <div className="adminStatCard__label">Inflation nette</div>
+                      </div>
+
+                      <div className={`adminStatCard adminStatCard--risk is-${riskLevel}`}>
+                        <div className="adminStatCard__value">{riskScore}/100</div>
+                        <div className="adminStatCard__label">
+                          Risque economie - {getRiskLabel(riskLevel)}
+                        </div>
                       </div>
 
                       <div className="adminStatCard">
@@ -422,6 +454,31 @@ export default function Admin() {
                       <div className="adminStatCard">
                         <div className="adminStatCard__value">{formatNumber(totalQuickSellEarned)}</div>
                         <div className="adminStatCard__label">Quick sell généré</div>
+                      </div>
+                    </div>
+
+                    <div className={`adminRiskStrip is-${riskLevel}`}>
+                      <div className="adminRiskStrip__main">
+                        <span>Sante economie</span>
+                        <strong>{getRiskLabel(riskLevel)}</strong>
+                        <p>
+                          {formatSignedNumber(health?.netInflation ?? ecoInflation)} credits nets sur {ecoOverview?.days ?? ecoDays} jours.
+                          Quick sell = {formatPercent(quickSellShareOfCreatedPercent, false)} des credits crees.
+                        </p>
+                      </div>
+                      <div className="adminRiskStrip__metrics">
+                        <div>
+                          <span>Inflation</span>
+                          <b>{formatPercent(health?.inflationRatePercent ?? 0)}</b>
+                        </div>
+                        <div>
+                          <span>Quick sell / market</span>
+                          <b>{formatPercent(quickSellToMarketPercent, false)}</b>
+                        </div>
+                        <div>
+                          <span>Opening / creation</span>
+                          <b>{formatPercent(openingShareOfCreatedPercent, false)}</b>
+                        </div>
                       </div>
                     </div>
 
@@ -544,6 +601,135 @@ export default function Admin() {
                         </div>
                       </section>
                     </div>
+
+                    <div className="adminDashboardGrid adminDashboardGrid--analytics">
+                      <section className="adminDashboardPanel">
+                        <div className="adminDashboardPanel__head">
+                          <h3>Raretes trop rentables</h3>
+                          <p className="small">Raretés avec trop de volume, de rewards ou d'ecart au prix marche.</p>
+                        </div>
+
+                        <div className="adminDataTableWrap">
+                          <table className="adminDataTable adminDataTable--compact">
+                            <thead>
+                              <tr>
+                                <th>Rarete</th>
+                                <th>Score</th>
+                                <th>Ventes</th>
+                                <th>Prix moy.</th>
+                                <th>Ecart</th>
+                                <th>Reward/carte</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rarityProfitability.length > 0 ? (
+                                rarityProfitability.map((row) => (
+                                  <tr key={row.rarity}>
+                                    <td>
+                                      <span className={`adminSignalBadge is-${row.status}`}>
+                                        {row.rarity}
+                                      </span>
+                                    </td>
+                                    <td>{row.score}</td>
+                                    <td>{formatNumber(row.saleCount)}</td>
+                                    <td>{formatNumber(row.avgUnitPrice)}</td>
+                                    <td>{formatPercent(row.avgVsMarketPercent)}</td>
+                                    <td>{formatNumber(row.estimatedRewardPerOpenedCard)}</td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td colSpan={6}>Pas assez de ventes pour detecter une rarete a risque.</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </section>
+
+                      <section className="adminDashboardPanel">
+                        <div className="adminDashboardPanel__head">
+                          <h3>Utilisateurs suspects</h3>
+                          <p className="small">Scores heuristiques: volume, ecarts prix, annulations, openings.</p>
+                        </div>
+
+                        <div className="adminSuspiciousList">
+                          {suspiciousUsers.length > 0 ? (
+                            suspiciousUsers.map((user) => (
+                              <article className="adminSuspiciousCard" key={user.userId}>
+                                <div className="adminSuspiciousCard__top">
+                                  <div>
+                                    <strong>{user.username}</strong>
+                                    <span>#{user.userId}</span>
+                                  </div>
+                                  <b>{user.score}/100</b>
+                                </div>
+                                <div className="adminSuspiciousCard__grid">
+                                  <span>{formatNumber(user.totalVolume)} vol.</span>
+                                  <span>{formatNumber(user.totalTrades)} trades</span>
+                                  <span>{formatNumber(user.openingCount)} openings</span>
+                                  <span>{formatPercent(user.cancelRatePercent, false)} annulations</span>
+                                </div>
+                                <p>
+                                  {user.reasons.length > 0
+                                    ? user.reasons.join(" • ")
+                                    : "Signal faible, a surveiller."}
+                                </p>
+                              </article>
+                            ))
+                          ) : (
+                            <div className="adminEmpty">Aucun utilisateur suspect sur cette periode.</div>
+                          )}
+                        </div>
+                      </section>
+                    </div>
+
+                    <section className="adminDashboardPanel adminDashboardPanel--full">
+                      <div className="adminDashboardPanel__head">
+                        <h3>Cartes possiblement manipulees</h3>
+                        <p className="small">Ecart au prix snapshot, volatilite historique et trades outliers.</p>
+                      </div>
+
+                      <div className="adminDataTableWrap">
+                        <table className="adminDataTable">
+                          <thead>
+                            <tr>
+                              <th>Carte</th>
+                              <th>Rarete</th>
+                              <th>Score</th>
+                              <th>Ventes</th>
+                              <th>Prix moy.</th>
+                              <th>Ecart marche</th>
+                              <th>Volatilite</th>
+                              <th>Outliers</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {manipulatedCards.length > 0 ? (
+                              manipulatedCards.map((card) => (
+                                <tr key={card.cardId}>
+                                  <td>
+                                    <strong>{card.cardName}</strong>
+                                    <span className="adminTableSub">#{card.cardId}</span>
+                                  </td>
+                                  <td>{card.rarity}</td>
+                                  <td>{card.score}</td>
+                                  <td>{formatNumber(card.saleCount)}</td>
+                                  <td>{formatNumber(card.avgUnitPrice)}</td>
+                                  <td>{formatPercent(card.avgVsMarketPercent)}</td>
+                                  <td>{formatPercent(card.volatilityPercent, false)}</td>
+                                  <td>{formatNumber(card.outlierTrades)}</td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={8}>Aucune carte manipulee detectee sur cette periode.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
 
                     <section className="adminDashboardPanel adminDashboardPanel--full">
                       <div className="adminDashboardPanel__head">
