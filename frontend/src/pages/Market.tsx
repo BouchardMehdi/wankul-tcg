@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import "../styles.css";
 import "../styles/Market.css";
@@ -520,6 +520,8 @@ function HistorySection({
 }
 
 export default function Market() {
+  const [searchParams] = useSearchParams();
+  const initialSearch = searchParams.get("search") ?? "";
   const [activeTab, setActiveTab] = useState<MarketTab>("my-listings");
 
   const [loading, setLoading] = useState(true);
@@ -937,6 +939,15 @@ export default function Market() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!initialSearch.trim()) return;
+
+    setSearchFilters((prev) =>
+      prev.search === initialSearch ? prev : { ...prev, search: initialSearch },
+    );
+    setActiveTab("search");
+  }, [initialSearch]);
 
   useEffect(() => {
     setPurchasesPage(1);

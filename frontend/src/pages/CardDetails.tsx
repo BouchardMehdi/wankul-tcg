@@ -12,12 +12,20 @@ import "../styles/CardDetails.css";
 
 import AppNavbar from "../components/AppNavbar";
 import { fetchOwnedCollection } from "../api/collection";
+import { fetchAllCards, type CardDto } from "../api/cards";
 import {
   fetchCardDetails,
   fetchCardPriceHistory,
   type CardDetailsDto,
   type CardPriceHistoryRange,
 } from "../api/card-details";
+import {
+  buyMarketListing,
+  getMarketListings,
+  getRecentMarketSales,
+  type MarketListingRow,
+  type MarketSaleHistoryRow,
+} from "../api/market";
 import {
   deletePushWatchlistItem,
   getPushWatchlistItem,
@@ -122,6 +130,61 @@ function formatSignedPercent(value: number | null) {
   const rounded = Number(value.toFixed(1));
   const sign = rounded > 0 ? "+" : "";
   return `${sign}${rounded.toLocaleString("fr-FR")} %`;
+}
+
+function formatListingMode(mode: MarketListingRow["listingMode"]) {
+  return mode === "LOT" ? "Lot" : "Unite";
+}
+
+function formatOfferType(offerType: MarketListingRow["offerType"]) {
+  switch (offerType) {
+    case "CREDITS_ONLY":
+      return "Credits";
+    case "CARD_ONLY":
+      return "Echange";
+    case "CARD_AND_CREDITS":
+      return "Carte + credits";
+    default:
+      return offerType;
+  }
+}
+
+function formatOffer(listing: MarketListingRow) {
+  if (listing.offerType === "CREDITS_ONLY") {
+    return listing.listingMode === "LOT"
+      ? `${listing.priceCredits.toLocaleString("fr-FR")} credits le lot`
+      : `${listing.priceCredits.toLocaleString("fr-FR")} credits / carte`;
+  }
+
+  const wantedCard = listing.wantedCardName ?? `Carte #${listing.wantedCardId}`;
+  if (listing.offerType === "CARD_ONLY") {
+    return listing.listingMode === "LOT"
+      ? `${listing.wantedCardQuantity}x ${wantedCard}`
+      : `${listing.wantedCardQuantity}x ${wantedCard} / carte`;
+  }
+
+  return listing.listingMode === "LOT"
+    ? `${listing.wantedCardQuantity}x ${wantedCard} + ${listing.priceCredits.toLocaleString("fr-FR")} credits`
+    : `${listing.wantedCardQuantity}x ${wantedCard} + ${listing.priceCredits.toLocaleString("fr-FR")} credits / carte`;
+}
+
+function getSaleUnitValue(tx: MarketSaleHistoryRow) {
+  if (tx.unitSaleValueCredits !== null && tx.unitSaleValueCredits !== undefined) {
+    return tx.unitSaleValueCredits;
+  }
+  if (!tx.totalPriceCredits || tx.quantity <= 0) return null;
+  return Math.round(tx.totalPriceCredits / tx.quantity);
+}
+
+function normalizeCardName(value?: string | null) {
+  return (value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(foil|gold|bronze|argent|or|edition|speciale)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function getTrendTone(delta: number) {
@@ -273,6 +336,13 @@ function CardDetails() {
   const [watchlistFeedback, setWatchlistFeedback] = useState("");
   const [watchlistItem, setWatchlistItem] = useState<PushWatchlistItem | null>(null);
   const [watchlistTarget, setWatchlistTarget] = useState("");
+  const [marketLoading, setMarketLoading] = useState(true);
+  const [marketError, setMarketError] = useState("");
+  const [marketListings, setMarketListings] = useState<MarketListingRow[]>([]);
+  const [marketSales, setMarketSales] = useState<MarketSaleHistoryRow[]>([]);
+  const [allCards, setAllCards] = useState<CardDto[]>([]);
+  const [buyingListingId, setBuyingListingId] = useState<number | null>(null);
+  const [marketFeedback, setMarketFeedback] = useState("");
 
   const chartWrapRef = useRef<HTMLDivElement | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
@@ -283,6 +353,38 @@ function CardDetails() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  async function loadMarketData() {
+    if (!Number.isInteger(cardId) || cardId < 1) {
+      setMarketLoading(false);
+      return;
+    }
+
+    setMarketLoading(true);
+    setMarketError("");
+
+    try {
+      const [listingsRes, salesRes, cardsRes] = await Promise.all([
+        getMarketListings({
+          search: card?.name ?? "",
+          limit: 300,
+        }),
+        getRecentMarketSales(300),
+        fetchAllCards(),
+      ]);
+
+      setMarketListings(
+        (listingsRes ?? []).filter((listing) => listing.cardId === cardId),
+      );
+      setMarketSales((salesRes ?? []).filter((sale) => sale.cardId === cardId));
+      setAllCards(cardsRes ?? []);
+    } catch (e: any) {
+      playUiErrorSound();
+      setMarketError(e?.message || "Impossible de charger le market lie a cette carte.");
+    } finally {
+      setMarketLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (!Number.isInteger(cardId) || cardId < 1) {
@@ -322,6 +424,11 @@ function CardDetails() {
       cancelled = true;
     };
   }, [cardId]);
+
+  useEffect(() => {
+    loadMarketData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardId, card?.name]);
 
   useEffect(() => {
     if (!Number.isInteger(cardId) || cardId < 1) return;
@@ -480,6 +587,70 @@ function CardDetails() {
     };
   }, [card?.rarity, isMobile, points, range]);
 
+  const relatedListings = useMemo(
+    () =>
+      [...marketListings].sort((a, b) => {
+        if (a.referenceRequestedValue !== b.referenceRequestedValue) {
+          return a.referenceRequestedValue - b.referenceRequestedValue;
+        }
+
+        return (
+          (a.priceDifferencePercent ?? 9999) -
+          (b.priceDifferencePercent ?? 9999)
+        );
+      }),
+    [marketListings],
+  );
+
+  const bestMarketListing = relatedListings[0] ?? null;
+  const bestDirectBuyListing =
+    relatedListings.find((listing) => listing.offerType === "CREDITS_ONLY") ??
+    null;
+
+  const recentSales = useMemo(
+    () =>
+      [...marketSales].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
+    [marketSales],
+  );
+
+  const averageSalePrice = useMemo(() => {
+    const values = recentSales
+      .map(getSaleUnitValue)
+      .filter((value): value is number => value !== null && value > 0);
+
+    if (!values.length) return null;
+    return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+  }, [recentSales]);
+
+  const relatedVariants = useMemo(() => {
+    if (!card) return [];
+    const normalizedName = normalizeCardName(card.name);
+    if (!normalizedName) return [];
+
+    return allCards
+      .filter((candidate) => {
+        if (candidate.id === card.id) return false;
+        return normalizeCardName(candidate.name) === normalizedName;
+      })
+      .sort((a, b) => {
+        const seasonCmp = (a.season ?? "").localeCompare(b.season ?? "", "fr");
+        if (seasonCmp !== 0) return seasonCmp;
+        return (a.number ?? 0) - (b.number ?? 0);
+      })
+      .slice(0, 8);
+  }, [allCards, card]);
+
+  const currentMarketPrice =
+    watchlistItem?.currentMarketPrice ??
+    (chart ? chart.svgPoints[chart.svgPoints.length - 1].price : null) ??
+    bestMarketListing?.marketPriceSnapshot ??
+    null;
+
+  const canSellCard = ownedQuantity > 1;
+
   useLayoutEffect(() => {
     const wrapEl = chartWrapRef.current;
     if (!wrapEl) return;
@@ -594,6 +765,36 @@ function CardDetails() {
     }
   }
 
+  async function handleBuyListing(listing: MarketListingRow) {
+    if (listing.offerType !== "CREDITS_ONLY") {
+      setMarketFeedback("Cette offre demande une carte en echange. Ouvre le market pour finaliser.");
+      return;
+    }
+
+    const quantity = listing.listingMode === "LOT" ? listing.remainingQuantity : 1;
+
+    void primeSound();
+    setBuyingListingId(listing.id);
+    setMarketFeedback("");
+    setMarketError("");
+
+    try {
+      await buyMarketListing(listing.id, { quantity });
+      playSoundEffect("market.buy");
+      setMarketFeedback("Achat effectue. La carte arrive dans ta collection.");
+
+      const ownedRes = await fetchOwnedCollection();
+      const ownedRow = ownedRes.find((row) => row.card.id === cardId);
+      setOwnedQuantity(Number(ownedRow?.quantity ?? 0));
+      await loadMarketData();
+    } catch (e: any) {
+      playUiErrorSound();
+      setMarketError(e?.message || "Impossible d'acheter cette offre.");
+    } finally {
+      setBuyingListingId(null);
+    }
+  }
+
   return (
     <div className="app-shell">
       <AppNavbar currentPage="collection" />
@@ -629,6 +830,55 @@ function CardDetails() {
                   <h1>{card.name}</h1>
                   <div className="cardDetailsBadges">
                     <span className="cardDetailsBadge">Possédée : {ownedQuantity}</span>
+                  </div>
+
+                  <div className="cardDetailsMarketSnapshot">
+                    <div>
+                      <span>Prix actuel</span>
+                      <strong>{formatCredits(currentMarketPrice)}</strong>
+                    </div>
+                    <div>
+                      <span>Meilleure offre</span>
+                      <strong>
+                        {bestMarketListing
+                          ? formatCredits(bestMarketListing.referenceRequestedValue)
+                          : "Aucune"}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Moyenne ventes</span>
+                      <strong>{formatCredits(averageSalePrice)}</strong>
+                    </div>
+                    <div>
+                      <span>Offres actives</span>
+                      <strong>{relatedListings.length}</strong>
+                    </div>
+                  </div>
+
+                  <div className="cardDetailsHeroActions">
+                    {bestDirectBuyListing ? (
+                      <button
+                        type="button"
+                        className="btn"
+                        disabled={buyingListingId === bestDirectBuyListing.id}
+                        onClick={() => handleBuyListing(bestDirectBuyListing)}
+                      >
+                        {buyingListingId === bestDirectBuyListing.id
+                          ? "Achat..."
+                          : "Acheter au meilleur prix"}
+                      </button>
+                    ) : (
+                      <Link className="btn" to={`/market?search=${encodeURIComponent(card.name)}`}>
+                        Chercher sur le market
+                      </Link>
+                    )}
+
+                    <Link
+                      className="btn"
+                      to={canSellCard ? `/market/create?cardId=${card.id}` : "/collection"}
+                    >
+                      {canSellCard ? "Vendre cette carte" : "Voir ma collection"}
+                    </Link>
                   </div>
 
                   <div className="cardDetailsGrid">
@@ -715,6 +965,151 @@ function CardDetails() {
                         {watchlistError}
                       </div>
                     ) : null}
+                  </div>
+                )}
+              </div>
+
+              <div className="cardDetailsMarketPanel">
+                <div className="cardDetailsMarketPanel__head">
+                  <div>
+                    <h2>Market lie a cette carte</h2>
+                    <p>Offres actives, dernieres ventes et editions associees.</p>
+                  </div>
+                  <Link className="btn" to={`/market?search=${encodeURIComponent(card.name)}`}>
+                    Ouvrir le market
+                  </Link>
+                </div>
+
+                {marketFeedback ? (
+                  <div className="cardDetailsMarketFeedback cardDetailsMarketFeedback--success">
+                    {marketFeedback}
+                  </div>
+                ) : null}
+
+                {marketError ? (
+                  <div className="cardDetailsMarketFeedback cardDetailsMarketFeedback--error">
+                    {marketError}
+                  </div>
+                ) : null}
+
+                {marketLoading ? (
+                  <div className="cardDetailsState">Chargement des offres market...</div>
+                ) : (
+                  <div className="cardDetailsMarketLayout">
+                    <section className="cardDetailsMarketBlock">
+                      <div className="cardDetailsMarketBlock__head">
+                        <h3>Offres liees</h3>
+                        <span>{relatedListings.length} active(s)</span>
+                      </div>
+
+                      {relatedListings.length === 0 ? (
+                        <div className="cardDetailsMarketEmpty">
+                          Aucune offre active pour cette carte.
+                        </div>
+                      ) : (
+                        <div className="cardDetailsOfferList">
+                          {relatedListings.slice(0, 5).map((listing) => (
+                            <article className="cardDetailsOfferCard" key={listing.id}>
+                              <div>
+                                <h4>{formatOffer(listing)}</h4>
+                                <p>
+                                  {listing.sellerUsername} • {formatListingMode(listing.listingMode)} • {formatOfferType(listing.offerType)}
+                                </p>
+                              </div>
+
+                              <div className="cardDetailsOfferCard__meta">
+                                <span>{listing.remainingQuantity} / {listing.quantity}</span>
+                                <strong>{formatCredits(listing.referenceRequestedValue)}</strong>
+                                {listing.priceDifferencePercent !== null ? (
+                                  <em>{formatSignedPercent(listing.priceDifferencePercent)} vs marche</em>
+                                ) : null}
+                              </div>
+
+                              {listing.offerType === "CREDITS_ONLY" ? (
+                                <button
+                                  type="button"
+                                  className="btn"
+                                  disabled={buyingListingId === listing.id}
+                                  onClick={() => handleBuyListing(listing)}
+                                >
+                                  {buyingListingId === listing.id ? "Achat..." : "Acheter"}
+                                </button>
+                              ) : (
+                                <Link className="btn" to={`/market?search=${encodeURIComponent(card.name)}`}>
+                                  Voir l'offre
+                                </Link>
+                              )}
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+
+                    <section className="cardDetailsMarketBlock">
+                      <div className="cardDetailsMarketBlock__head">
+                        <h3>Historique ventes</h3>
+                        <span>{recentSales.length} vente(s)</span>
+                      </div>
+
+                      {recentSales.length === 0 ? (
+                        <div className="cardDetailsMarketEmpty">
+                          Pas encore de vente recente connue pour cette carte.
+                        </div>
+                      ) : (
+                        <div className="cardDetailsSalesList">
+                          {recentSales.slice(0, 6).map((sale) => {
+                            const unitValue = getSaleUnitValue(sale);
+
+                            return (
+                              <article className="cardDetailsSaleRow" key={sale.id}>
+                                <div>
+                                  <strong>{unitValue ? formatCredits(unitValue) : "Echange"}</strong>
+                                  <span>{new Date(sale.createdAt).toLocaleString("fr-FR")}</span>
+                                </div>
+                                <em>x{sale.quantity}</em>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </section>
+
+                    <section className="cardDetailsMarketBlock cardDetailsMarketBlock--variants">
+                      <div className="cardDetailsMarketBlock__head">
+                        <h3>Variantes / editions</h3>
+                        <span>{relatedVariants.length}</span>
+                      </div>
+
+                      {relatedVariants.length === 0 ? (
+                        <div className="cardDetailsMarketEmpty">
+                          Aucune variante associee trouvee.
+                        </div>
+                      ) : (
+                        <div className="cardDetailsVariants">
+                          {relatedVariants.map((variant) => (
+                            <Link
+                              className="cardDetailsVariantCard"
+                              key={variant.id}
+                              to={`/collection/card/${variant.id}`}
+                            >
+                              <div className="cardDetailsVariantCard__image">
+                                {resolveImg(variant.imageUrl) ? (
+                                  <img src={resolveImg(variant.imageUrl)} alt={variant.name} />
+                                ) : (
+                                  <span>?</span>
+                                )}
+                              </div>
+                              <div>
+                                <strong>{variant.name}</strong>
+                                <span>
+                                  {variant.rarity} • {variant.season ?? variant.extension ?? "Speciale"}
+                                </span>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </section>
                   </div>
                 )}
               </div>

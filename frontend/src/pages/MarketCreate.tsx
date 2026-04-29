@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import "../styles.css";
 import "../styles/MarketCreate.css";
@@ -103,6 +103,8 @@ function formatOfferType(offerType: MarketOfferType) {
 }
 
 export default function MarketCreate() {
+  const [searchParams] = useSearchParams();
+  const preselectedCardIdParam = searchParams.get("cardId") ?? "";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -139,12 +141,16 @@ export default function MarketCreate() {
         setAllCards(sortedCards);
         setCardImageMap(buildCardImageMap(sortedCards));
 
-        if (sellable?.[0]) {
+        const requestedCardId = Number(preselectedCardIdParam);
+        const preselected =
+          sellable?.find((card) => card.cardId === requestedCardId) ?? sellable?.[0];
+
+        if (preselected) {
           setForm((prev) => ({
             ...prev,
-            cardId: String(sellable[0].cardId),
+            cardId: String(preselected.cardId),
             quantity: "1",
-            priceCredits: String(sellable[0].marketPrice),
+            priceCredits: String(preselected.marketPrice),
           }));
         }
       } catch (e: any) {
@@ -156,7 +162,7 @@ export default function MarketCreate() {
     }
 
     load();
-  }, []);
+  }, [preselectedCardIdParam]);
 
   const selectedSellable = useMemo(() => {
     const cardId = Number(form.cardId);
