@@ -11,6 +11,7 @@ import {
   buyMarketListing,
   cancelMarketListing,
   claimMarketTransactionReward,
+  getRecentMarketSales,
   getMarketListings,
   getMyMarketListings,
   getMyMarketPurchases,
@@ -18,6 +19,7 @@ import {
   type MarketListingMode,
   type MarketListingRow,
   type MarketOfferType,
+  type MarketSaleHistoryRow,
   type MarketTransactionRow,
 } from "../api/market";
 import {
@@ -66,9 +68,44 @@ type WatchlistFormState = {
   marketDealThresholdPercent: string;
 };
 
+type TrendDirection = "up" | "down" | "flat" | "neutral";
+
+type MarketTrend = {
+  direction: TrendDirection;
+  percent: number | null;
+  volume: number;
+  label: string;
+};
+
+type CardMarketSignal = {
+  cardId: number;
+  listingCount: number;
+  bestListing: MarketListingRow | null;
+  bestPrice: number | null;
+  averageListingPrice: number | null;
+  averageMarketPrice: number | null;
+  bestDiscountPercent: number | null;
+  salesCount: number;
+  averageSalePrice: number | null;
+  lastSale: MarketSaleHistoryRow | null;
+  trend24h: MarketTrend;
+  trend7d: MarketTrend;
+};
+
+type MarketPulse = {
+  dealCount: number;
+  sales24h: number;
+  volume24h: number;
+  sales7d: number;
+  volume7d: number;
+  watchlistMatches: number;
+  hottestCardName: string | null;
+};
+
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const PREVIEW_COUNT = 3;
 const HISTORY_PAGE_SIZE = 10;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_WATCHLIST_FORM: WatchlistFormState = {
   selectedCardId: null,
   search: "",
@@ -105,6 +142,88 @@ function formatCredits(value?: number | null) {
   }
 
   return `${value.toLocaleString("fr-FR")} crédits`;
+}
+
+function formatSignedPercent(value?: number | null) {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "n/a";
+  }
+
+  const rounded = Number(value.toFixed(1));
+  return `${rounded > 0 ? "+" : ""}${rounded.toLocaleString("fr-FR")}%`;
+}
+
+function average(values: number[]) {
+  const usable = values.filter((value) => Number.isFinite(value));
+  if (usable.length === 0) return null;
+  return Math.round(
+    usable.reduce((sum, value) => sum + value, 0) / usable.length,
+  );
+}
+
+function getSaleUnitValue(tx: MarketSaleHistoryRow | MarketTransactionRow) {
+  const explicitValue = (tx as MarketSaleHistoryRow).unitSaleValueCredits;
+  if (explicitValue !== undefined) return explicitValue;
+  if (!tx.totalPriceCredits || tx.quantity <= 0) return null;
+  return Math.round(tx.totalPriceCredits / tx.quantity);
+}
+
+function buildTrend(
+  sales: MarketSaleHistoryRow[],
+  currentWindowMs: number,
+  label: string,
+): MarketTrend {
+  const now = Date.now();
+  const currentStart = now - currentWindowMs;
+  const previousStart = now - currentWindowMs * 2;
+
+  const currentValues = sales
+    .filter((sale) => new Date(sale.createdAt).getTime() >= currentStart)
+    .map(getSaleUnitValue)
+    .filter((value): value is number => value !== null && value > 0);
+
+  const previousValues = sales
+    .filter((sale) => {
+      const time = new Date(sale.createdAt).getTime();
+      return time >= previousStart && time < currentStart;
+    })
+    .map(getSaleUnitValue)
+    .filter((value): value is number => value !== null && value > 0);
+
+  const currentAverage = average(currentValues);
+  const previousAverage = average(previousValues);
+
+  if (!currentAverage || !previousAverage) {
+    return {
+      direction: "neutral",
+      percent: null,
+      volume: currentValues.length,
+      label,
+    };
+  }
+
+  const percent = Number(
+    (((currentAverage - previousAverage) / previousAverage) * 100).toFixed(1),
+  );
+
+  return {
+    direction: percent > 2 ? "up" : percent < -2 ? "down" : "flat",
+    percent,
+    volume: currentValues.length,
+    label,
+  };
+}
+
+function formatTrend(trend: MarketTrend) {
+  if (trend.percent === null) {
+    return trend.volume > 0 ? `${trend.volume} vente(s)` : "Peu de data";
+  }
+
+  return `${formatSignedPercent(trend.percent)} (${trend.volume} vente(s))`;
+}
+
+function getTrendClass(trend: MarketTrend) {
+  return `marketTrend marketTrend--${trend.direction}`;
 }
 
 function formatPricePosition(position: MarketListingRow["pricePosition"]) {
@@ -420,6 +539,7 @@ export default function Market() {
 
   const [purchases, setPurchases] = useState<MarketTransactionRow[]>([]);
   const [sales, setSales] = useState<MarketTransactionRow[]>([]);
+  const [recentSales, setRecentSales] = useState<MarketSaleHistoryRow[]>([]);
 
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
     search: "",
@@ -482,37 +602,141 @@ export default function Market() {
     () => new Map(allCards.map((card) => [card.id, card])),
     [allCards],
   );
-  const watchlistListingSummaryByCardId = useMemo(() => {
-    const entries = new Map<
-      number,
-      { count: number; bestListing: MarketListingRow | null }
-    >();
 
-    for (const listing of allListingsRaw) {
-      const current = entries.get(listing.cardId) ?? {
-        count: 0,
-        bestListing: null,
-      };
+  const salesByCardId = useMemo(() => {
+    const entries = new Map<number, MarketSaleHistoryRow[]>();
 
-      current.count += 1;
-      if (
-        !current.bestListing ||
-        listing.referenceRequestedValue < current.bestListing.referenceRequestedValue ||
-        (
-          listing.referenceRequestedValue ===
-            current.bestListing.referenceRequestedValue &&
-          (listing.priceDifferencePercent ?? 9999) <
-            (current.bestListing.priceDifferencePercent ?? 9999)
-        )
-      ) {
-        current.bestListing = listing;
-      }
+    for (const sale of recentSales) {
+      const list = entries.get(sale.cardId) ?? [];
+      list.push(sale);
+      entries.set(sale.cardId, list);
+    }
 
-      entries.set(listing.cardId, current);
+    for (const list of entries.values()) {
+      list.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
     }
 
     return entries;
-  }, [allListingsRaw]);
+  }, [recentSales]);
+
+  const marketSignalsByCardId = useMemo(() => {
+    const entries = new Map<number, CardMarketSignal>();
+    const listingGroups = new Map<number, MarketListingRow[]>();
+
+    for (const listing of allListingsRaw) {
+      const group = listingGroups.get(listing.cardId) ?? [];
+      group.push(listing);
+      listingGroups.set(listing.cardId, group);
+    }
+
+    const cardIds = new Set<number>([
+      ...listingGroups.keys(),
+      ...salesByCardId.keys(),
+      ...watchlistItems.map((item) => item.cardId),
+    ]);
+
+    for (const cardId of cardIds) {
+      const listings = listingGroups.get(cardId) ?? [];
+      const cardSales = salesByCardId.get(cardId) ?? [];
+      const bestListing =
+        listings.length === 0
+          ? null
+          : [...listings].sort((a, b) => {
+              if (a.referenceRequestedValue !== b.referenceRequestedValue) {
+                return a.referenceRequestedValue - b.referenceRequestedValue;
+              }
+
+              return (
+                (a.priceDifferencePercent ?? 9999) -
+                (b.priceDifferencePercent ?? 9999)
+              );
+            })[0];
+
+      const saleUnitValues = cardSales
+        .map(getSaleUnitValue)
+        .filter((value): value is number => value !== null && value > 0);
+
+      entries.set(cardId, {
+        cardId,
+        listingCount: listings.length,
+        bestListing,
+        bestPrice: bestListing?.referenceRequestedValue ?? null,
+        averageListingPrice: average(
+          listings.map((listing) => listing.referenceRequestedValue),
+        ),
+        averageMarketPrice: average(
+          listings.map((listing) => listing.referenceListedValue),
+        ),
+        bestDiscountPercent:
+          bestListing?.priceDifferencePercent === null ||
+          bestListing?.priceDifferencePercent === undefined
+            ? null
+            : -bestListing.priceDifferencePercent,
+        salesCount: cardSales.length,
+        averageSalePrice: average(saleUnitValues),
+        lastSale: cardSales[0] ?? null,
+        trend24h: buildTrend(cardSales, DAY_MS, "24h"),
+        trend7d: buildTrend(cardSales, DAY_MS * 7, "7j"),
+      });
+    }
+
+    return entries;
+  }, [allListingsRaw, salesByCardId, watchlistItems]);
+
+  const marketPulse = useMemo<MarketPulse>(() => {
+    const now = Date.now();
+    const sales24h = recentSales.filter(
+      (sale) => now - new Date(sale.createdAt).getTime() <= DAY_MS,
+    );
+    const sales7d = recentSales.filter(
+      (sale) => now - new Date(sale.createdAt).getTime() <= DAY_MS * 7,
+    );
+    const dealCount = allListingsRaw.filter(
+      (listing) =>
+        listing.priceDifferencePercent !== null &&
+        listing.priceDifferencePercent <= -10,
+    ).length;
+    const watchlistMatches = watchlistItems.filter((item) => {
+      const signal = marketSignalsByCardId.get(item.cardId);
+      const bestListing = signal?.bestListing;
+      if (!bestListing) return false;
+
+      const matchesTarget =
+        item.marketListingAlertEnabled &&
+        bestListing.referenceRequestedValue <= item.targetPriceCredits;
+      const matchesDeal =
+        item.marketDealAlertEnabled &&
+        signal.bestDiscountPercent !== null &&
+        signal.bestDiscountPercent >= item.marketDealThresholdPercent;
+
+      return matchesTarget || matchesDeal;
+    }).length;
+
+    const salesVolumeByCard = new Map<string, number>();
+    for (const sale of sales7d) {
+      salesVolumeByCard.set(
+        sale.cardName,
+        (salesVolumeByCard.get(sale.cardName) ?? 0) + sale.quantity,
+      );
+    }
+
+    const hottestCardName =
+      [...salesVolumeByCard.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+      null;
+
+    return {
+      dealCount,
+      sales24h: sales24h.length,
+      volume24h: sales24h.reduce((sum, sale) => sum + sale.totalPriceCredits, 0),
+      sales7d: sales7d.length,
+      volume7d: sales7d.reduce((sum, sale) => sum + sale.totalPriceCredits, 0),
+      watchlistMatches,
+      hottestCardName,
+    };
+  }, [allListingsRaw, marketSignalsByCardId, recentSales, watchlistItems]);
 
   const filteredListings = useMemo(() => {
     const search = searchFilters.search.trim().toLowerCase();
@@ -599,15 +823,27 @@ export default function Market() {
 
   const suggestedListings = useMemo(() => {
     return filteredListings
-      .filter((listing) => !ownedIds.has(listing.cardId))
+      .filter((listing) => {
+        const signal = marketSignalsByCardId.get(listing.cardId);
+        const isMissing = !ownedIds.has(listing.cardId);
+        const isTracked = watchlistCardIds.has(listing.cardId);
+        const hasRealDeal =
+          signal?.bestDiscountPercent !== null &&
+          signal?.bestDiscountPercent !== undefined &&
+          signal.bestDiscountPercent >= 5;
+
+        return (isMissing || isTracked) && hasRealDeal;
+      })
       .sort((a, b) => {
-        const aScore = Math.abs(a.priceDifferencePercent ?? 99999);
-        const bScore = Math.abs(b.priceDifferencePercent ?? 99999);
-        if (aScore !== bScore) return aScore - bScore;
+        const aDiscount =
+          marketSignalsByCardId.get(a.cardId)?.bestDiscountPercent ?? 0;
+        const bDiscount =
+          marketSignalsByCardId.get(b.cardId)?.bestDiscountPercent ?? 0;
+        if (aDiscount !== bDiscount) return bDiscount - aDiscount;
         return a.priceCredits - b.priceCredits;
       })
       .slice(0, 12);
-  }, [filteredListings, ownedIds]);
+  }, [filteredListings, marketSignalsByCardId, ownedIds, watchlistCardIds]);
 
   const rewardPendingSales = useMemo(
     () =>
@@ -655,15 +891,25 @@ export default function Market() {
     setError("");
 
     try {
-      const [ownedRows, activeListings, mine, myPurchases, mySales, cards, watchlist] =
+      const [
+        ownedRows,
+        activeListings,
+        mine,
+        myPurchases,
+        mySales,
+        cards,
+        watchlist,
+        marketSales,
+      ] =
         await Promise.all([
           fetchOwnedCollection(),
-          getMarketListings({ limit: 100 }),
+          getMarketListings({ limit: 300 }),
           getMyMarketListings(),
           getMyMarketPurchases(),
           getMyMarketSales(),
           fetchAllCards(),
           getPushWatchlist(),
+          getRecentMarketSales(300),
         ]);
 
       const owned = new Set<number>();
@@ -676,6 +922,7 @@ export default function Market() {
       setMyListings(mine ?? []);
       setPurchases(myPurchases ?? []);
       setSales(mySales ?? []);
+      setRecentSales(marketSales ?? []);
       setAllCards(cards ?? []);
       setCardImageMap(buildCardImageMap(cards ?? []));
       setWatchlistItems(watchlist ?? []);
@@ -822,7 +1069,7 @@ export default function Market() {
     }
   }
 
-  function handleQuickSearchWatchlist(item: PushWatchlistItem) {
+  function handleQuickSearchWatchlist(item: PushWatchlistItem, maxPrice?: number) {
     setSearchFilters({
       search: item.cardName,
       rarity: "",
@@ -830,7 +1077,7 @@ export default function Market() {
       listingMode: "",
       offerType: "",
       minPrice: "",
-      maxPrice: "",
+      maxPrice: maxPrice ? String(maxPrice) : "",
       sortBy: "priceCredits",
       sortOrder: "ASC",
     });
@@ -905,6 +1152,70 @@ export default function Market() {
     }
   }
 
+  function renderMarketSignalStrip(signal?: CardMarketSignal | null) {
+    if (!signal) return null;
+
+    return (
+      <div className="marketInsightStrip">
+        <div>
+          <span className="marketLabel">Prix actuel</span>
+          <strong>{formatCredits(signal.bestPrice)}</strong>
+        </div>
+        <div>
+          <span className="marketLabel">Moyenne annonces</span>
+          <strong>{formatCredits(signal.averageListingPrice)}</strong>
+        </div>
+        <div className={getTrendClass(signal.trend24h)}>
+          <span className="marketLabel">Tendance 24h</span>
+          <strong>{formatTrend(signal.trend24h)}</strong>
+        </div>
+        <div className={getTrendClass(signal.trend7d)}>
+          <span className="marketLabel">Tendance 7j</span>
+          <strong>{formatTrend(signal.trend7d)}</strong>
+        </div>
+      </div>
+    );
+  }
+
+  function renderCardSalesMini(cardId: number, showEmpty = false) {
+    const cardSales = salesByCardId.get(cardId)?.slice(0, 3) ?? [];
+
+    if (cardSales.length === 0) {
+      if (!showEmpty) return null;
+
+      return (
+        <div className="marketSalesMini marketSalesMini--empty">
+          Aucune vente recente connue pour cette carte.
+        </div>
+      );
+    }
+
+    return (
+      <div className="marketSalesMini">
+        <div className="marketSalesMini__head">
+          <span>Dernieres ventes de cette carte</span>
+          <strong>{salesByCardId.get(cardId)?.length ?? 0}</strong>
+        </div>
+
+        <div className="marketSalesMini__list">
+          {cardSales.map((sale) => {
+            const unitValue = getSaleUnitValue(sale);
+
+            return (
+              <div className="marketSalesMini__row" key={sale.id}>
+                <span>{formatDate(sale.createdAt)}</span>
+                <strong>
+                  {unitValue ? formatCredits(unitValue) : "Echange"}
+                </strong>
+                <em>x{sale.quantity}</em>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   function renderListingCard(
     listing: MarketListingRow,
     kind: "mine" | "market" | "suggestion",
@@ -925,6 +1236,11 @@ export default function Market() {
           cardKey: listing.wantedCardKey,
         })
       : "";
+    const signal = marketSignalsByCardId.get(listing.cardId);
+    const isStrongDeal =
+      signal?.bestDiscountPercent !== null &&
+      signal?.bestDiscountPercent !== undefined &&
+      signal.bestDiscountPercent >= 10;
 
     return (
       <article className="marketListingCard" key={listing.id}>
@@ -969,6 +1285,11 @@ export default function Market() {
               {watchlistCardIds.has(listing.cardId) && (
                 <span className="badge badge--watchlist">Watchlist</span>
               )}
+              {isStrongDeal && (
+                <span className="badge badge--deal">
+                  Deal {formatSignedPercent(signal?.bestDiscountPercent ?? null)}
+                </span>
+              )}
               <span className={`badge badge--${listing.pricePosition.toLowerCase()}`}>
                 {formatPricePosition(listing.pricePosition)}
               </span>
@@ -1012,6 +1333,9 @@ export default function Market() {
             <span>Créée le {formatDate(listing.createdAt)}</span>
             {listing.closedAt && <span>Clôturée le {formatDate(listing.closedAt)}</span>}
           </div>
+
+          {renderMarketSignalStrip(signal)}
+          {renderCardSalesMini(listing.cardId)}
 
           {kind === "mine" ? (
             listing.status === "ACTIVE" && (
@@ -1397,6 +1721,34 @@ export default function Market() {
           )}
         </section>
 
+        {!loading && !error && (
+          <section className="marketPulseGrid" aria-label="Pulse market">
+            <article className="marketPulseCard marketPulseCard--deal">
+              <span>Bonnes affaires</span>
+              <strong>{marketPulse.dealCount}</strong>
+              <em>Annonces a -10% ou mieux</em>
+            </article>
+            <article className="marketPulseCard">
+              <span>Ventes 24h</span>
+              <strong>{marketPulse.sales24h}</strong>
+              <em>{formatCredits(marketPulse.volume24h)} de volume</em>
+            </article>
+            <article className="marketPulseCard">
+              <span>Volume 7j</span>
+              <strong>{formatCredits(marketPulse.volume7d)}</strong>
+              <em>
+                {marketPulse.sales7d} vente(s)
+                {marketPulse.hottestCardName ? `, hot: ${marketPulse.hottestCardName}` : ""}
+              </em>
+            </article>
+            <article className="marketPulseCard marketPulseCard--watchlist">
+              <span>Watchlist qui match</span>
+              <strong>{marketPulse.watchlistMatches}</strong>
+              <em>Cartes sous cible ou en gros deal</em>
+            </article>
+          </section>
+        )}
+
         {feedback && <div className="marketFeedback">{feedback}</div>}
         {loading && <div className="marketInfo">Chargement...</div>}
         {error && !loading && <div className="marketError">{error}</div>}
@@ -1680,9 +2032,15 @@ export default function Market() {
                     cardId: item.cardId,
                     cardKey: item.cardKey,
                   });
-                  const listingSummary =
-                    watchlistListingSummaryByCardId.get(item.cardId) ?? null;
-                  const bestListing = listingSummary?.bestListing ?? null;
+                  const signal = marketSignalsByCardId.get(item.cardId) ?? null;
+                  const bestListing = signal?.bestListing ?? null;
+                  const targetMatch =
+                    !!bestListing &&
+                    bestListing.referenceRequestedValue <= item.targetPriceCredits;
+                  const dealMatch =
+                    !!signal &&
+                    signal.bestDiscountPercent !== null &&
+                    signal.bestDiscountPercent >= item.marketDealThresholdPercent;
 
                   return (
                     <article className="marketWatchlistCard" key={item.cardId}>
@@ -1707,13 +2065,21 @@ export default function Market() {
 
                           <div className="marketListingCard__badges">
                             <span className="badge badge--watchlist">Watchlist</span>
-                            {listingSummary?.count ? (
+                            {signal?.listingCount ? (
                               <span className="badge badge--active">
-                                {listingSummary.count} annonce(s)
+                                {signal.listingCount} annonce(s)
                               </span>
                             ) : (
                               <span className="badge badge--not_comparable">
                                 Rien en vente
+                              </span>
+                            )}
+                            {targetMatch && (
+                              <span className="badge badge--deal">Sous cible</span>
+                            )}
+                            {dealMatch && (
+                              <span className="badge badge--deal">
+                                Deal {formatSignedPercent(signal?.bestDiscountPercent ?? null)}
                               </span>
                             )}
                           </div>
@@ -1725,15 +2091,23 @@ export default function Market() {
                             <strong>{formatCredits(item.targetPriceCredits)}</strong>
                           </div>
                           <div>
-                            <span className="marketLabel">Prix du marche</span>
+                            <span className="marketLabel">Prix marche</span>
                             <strong>{formatCredits(item.currentMarketPrice)}</strong>
                           </div>
                           <div>
-                            <span className="marketLabel">Annonce dispo</span>
-                            <strong>{item.marketListingAlertEnabled ? "Oui" : "Non"}</strong>
+                            <span className="marketLabel">Prix actuel</span>
+                            <strong>{formatCredits(signal?.bestPrice ?? null)}</strong>
                           </div>
                           <div>
-                            <span className="marketLabel">Bonne affaire</span>
+                            <span className="marketLabel">Moyenne ventes</span>
+                            <strong>{formatCredits(signal?.averageSalePrice ?? null)}</strong>
+                          </div>
+                          <div>
+                            <span className="marketLabel">Alerte prix</span>
+                            <strong>{item.marketListingAlertEnabled ? "Active" : "Off"}</strong>
+                          </div>
+                          <div>
+                            <span className="marketLabel">Alerte deal</span>
                             <strong>
                               {item.marketDealAlertEnabled
                                 ? `Oui a -${item.marketDealThresholdPercent}%`
@@ -1754,10 +2128,23 @@ export default function Market() {
                           </div>
                         ) : null}
 
+                        {renderMarketSignalStrip(signal)}
+                        {renderCardSalesMini(item.cardId, true)}
+
                         <div className="marketWatchlistCard__actions">
                           <button
                             type="button"
                             className="marketBtn"
+                            onClick={() =>
+                              handleQuickSearchWatchlist(item, item.targetPriceCredits)
+                            }
+                          >
+                            Sous mon prix
+                          </button>
+
+                          <button
+                            type="button"
+                            className="marketBtn marketBtn--secondary"
                             onClick={() => handleQuickSearchWatchlist(item)}
                           >
                             Rechercher

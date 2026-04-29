@@ -139,6 +139,59 @@
   padding: 20px;
 }
 
+.marketPulseGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.marketPulseCard {
+  position: relative;
+  overflow: hidden;
+  min-height: 116px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background:
+    radial-gradient(circle at 18% 15%, rgba(76, 201, 240, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.035));
+  box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+}
+
+.marketPulseCard--deal {
+  background:
+    radial-gradient(circle at 18% 15%, rgba(70, 196, 126, 0.22), transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.035));
+}
+
+.marketPulseCard--watchlist {
+  background:
+    radial-gradient(circle at 18% 15%, rgba(246, 201, 69, 0.20), transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.035));
+}
+
+.marketPulseCard span,
+.marketPulseCard em {
+  display: block;
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.marketPulseCard strong {
+  display: block;
+  margin: 8px 0 6px;
+  color: rgba(240,245,255,0.98);
+  font-size: clamp(22px, 2.4vw, 32px);
+  font-weight: 950;
+}
+
+.marketPulseCard em {
+  font-style: normal;
+  line-height: 1.45;
+}
+
 .marketStack {
   display: grid;
   gap: 16px;
@@ -613,6 +666,13 @@
   border-color: rgba(246, 201, 69, 0.34);
 }
 
+.badge--deal {
+  color: rgba(255, 252, 230, 0.96);
+  background: linear-gradient(135deg, rgba(70, 196, 126, 0.22), rgba(246, 201, 69, 0.16));
+  border-color: rgba(246, 201, 69, 0.42);
+  box-shadow: 0 0 18px rgba(70, 196, 126, 0.10);
+}
+
 .badge--active {
   background: rgba(70, 196, 126, 0.14);
   border-color: rgba(70, 196, 126, 0.34);
@@ -657,6 +717,102 @@
 
 .marketListingCard__details {
   margin-bottom: 16px;
+}
+
+.marketInsightStrip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.marketInsightStrip > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.16);
+}
+
+.marketInsightStrip strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgba(240,245,255,0.96);
+  font-size: 13px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.marketTrend--up strong {
+  color: #ff9aad;
+}
+
+.marketTrend--down strong {
+  color: #8af0b2;
+}
+
+.marketTrend--flat strong {
+  color: #8bdaf2;
+}
+
+.marketTrend--neutral strong {
+  color: var(--text2);
+}
+
+.marketSalesMini {
+  margin: 0 0 14px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background:
+    linear-gradient(180deg, rgba(76, 201, 240, 0.08), rgba(255,255,255,0.025));
+}
+
+.marketSalesMini--empty {
+  color: var(--text2);
+  font-weight: 900;
+}
+
+.marketSalesMini__head,
+.marketSalesMini__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.marketSalesMini__head {
+  margin-bottom: 8px;
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.marketSalesMini__list {
+  display: grid;
+  gap: 6px;
+}
+
+.marketSalesMini__row {
+  min-height: 30px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.marketSalesMini__row strong {
+  color: rgba(240,245,255,0.96);
+  font-weight: 950;
+}
+
+.marketSalesMini__row em {
+  color: rgba(246, 201, 69, 0.92);
+  font-style: normal;
+  font-weight: 950;
 }
 
 .marketListingCard__actions,
@@ -742,12 +898,14 @@
 }
 
 @media (max-width: 1240px) {
+  .marketPulseGrid,
   .marketWatchlistComposer,
   .marketWatchlistSuggestions,
   .marketSearchGrid {
     grid-template-columns: 1fr 1fr;
   }
 
+  .marketInsightStrip,
   .marketWatchlistCard__grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -806,11 +964,13 @@
   }
 
   .marketSearchQuickRow,
+  .marketPulseGrid,
   .marketWatchlistComposer,
   .marketWatchlistSuggestions,
   .marketSearchGrid,
   .marketHistoryGrid,
   .marketWatchlistCard,
+  .marketInsightStrip,
   .marketListingCard__grid,
   .marketRewardCard__grid {
     grid-template-columns: 1fr;

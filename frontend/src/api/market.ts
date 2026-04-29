@@ -112,6 +112,10 @@ export type MarketTransactionRow = {
   createdAt: string;
 };
 
+export type MarketSaleHistoryRow = Omit<MarketTransactionRow, "role"> & {
+  unitSaleValueCredits: number | null;
+};
+
 export type CreateListingInput = {
   cardId: number;
   quantity: number;
@@ -242,6 +246,14 @@ export async function getMyMarketPurchases(): Promise<MarketTransactionRow[]> {
 
 export async function getMyMarketSales(): Promise<MarketTransactionRow[]> {
   return apiFetch("/market/transactions/me/sales", {
+    method: "GET",
+  });
+}
+
+export async function getRecentMarketSales(
+  limit = 250,
+): Promise<MarketSaleHistoryRow[]> {
+  return apiFetch(`/market/transactions/recent-sales${buildQuery({ limit })}`, {
     method: "GET",
   });
 }

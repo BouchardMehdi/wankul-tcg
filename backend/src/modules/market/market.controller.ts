@@ -144,6 +144,12 @@ export class MarketController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('transactions/recent-sales')
+  async getRecentSales(@Query('limit') limit?: string) {
+    return this.marketService.getRecentSales(limit);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('transactions/me/purchases')
   async getMyPurchases(@CurrentUser() user: CurrentAuthUser) {
     const userId = this.resolveUserId(user);

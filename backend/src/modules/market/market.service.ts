@@ -947,6 +947,21 @@ export class MarketService {
     );
   }
 
+  async getRecentSales(limit?: string) {
+    const parsedLimit = Number(limit ?? 250);
+    const safeLimit = Number.isInteger(parsedLimit)
+      ? Math.min(Math.max(parsedLimit, 1), 500)
+      : 250;
+
+    const transactions = await this.marketTransactionRepository.find({
+      relations: ['listing', 'seller', 'buyer', 'card', 'buyerOfferedCard'],
+      order: { createdAt: 'DESC' },
+      take: safeLimit,
+    });
+
+    return transactions.map((transaction) => this.mapRecentSale(transaction));
+  }
+
   async getMyPurchases(userId: number) {
     const transactions = await this.marketTransactionRepository.find({
       where: { buyer: { id: userId } },
@@ -1225,6 +1240,45 @@ export class MarketService {
     }
 
     return MarketPricePosition.AT_MARKET;
+  }
+
+  private mapRecentSale(transaction: MarketTransaction) {
+    const unitSaleValueCredits =
+      transaction.totalPriceCredits > 0 && transaction.quantity > 0
+        ? Math.round(transaction.totalPriceCredits / transaction.quantity)
+        : null;
+
+    return {
+      id: transaction.id,
+      listingId: transaction.listing.id,
+      sellerId: transaction.seller.id,
+      sellerUsername: transaction.seller.username,
+      buyerId: transaction.buyer.id,
+      buyerUsername: transaction.buyer.username,
+      cardId: transaction.card.id,
+      cardKey: transaction.card.key,
+      cardName: transaction.card.name,
+      rarity: transaction.card.rarity,
+      listingMode: transaction.listingMode,
+      offerType: transaction.offerType,
+      quantity: transaction.quantity,
+      unitPriceCredits: transaction.unitPriceCredits,
+      totalPriceCredits: transaction.totalPriceCredits,
+      unitSaleValueCredits,
+      buyerOfferedCardId: transaction.buyerOfferedCard?.id ?? null,
+      buyerOfferedCardKey: transaction.buyerOfferedCard?.key ?? null,
+      buyerOfferedCardName: transaction.buyerOfferedCard?.name ?? null,
+      buyerOfferedCardRarity: transaction.buyerOfferedCard?.rarity ?? null,
+      buyerOfferedCardQuantity: transaction.buyerOfferedCardQuantity,
+      transactionType: transaction.transactionType,
+      sellerRewardClaimedAt: transaction.sellerRewardClaimedAt,
+      sellerRewardClaimed: !!transaction.sellerRewardClaimedAt,
+      pendingRewardCredits: 0,
+      pendingRewardCardId: null,
+      pendingRewardCardName: null,
+      pendingRewardCardQuantity: 0,
+      createdAt: transaction.createdAt,
+    };
   }
 
   private mapTransaction(transaction: MarketTransaction, currentUserId: number) {
