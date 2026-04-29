@@ -96,7 +96,14 @@ button, input, select, textarea { min-width: 0; }
 button, a {
   -webkit-tap-highlight-color: transparent;
 }
-img { max-width: 100%; display: block; }
+img {
+  max-width: 100%;
+  display: block;
+}
+
+img[loading="lazy"] {
+  content-visibility: auto;
+}
 
 .app-shell {
   min-height: 100dvh;

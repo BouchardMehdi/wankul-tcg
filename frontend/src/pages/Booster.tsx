@@ -6,6 +6,7 @@ import "../styles/Dashboard.css";
 import "../styles/Booster.css";
 
 import AppNavbar from "../components/AppNavbar";
+import SmartImage from "../components/SmartImage";
 
 import { useAuth } from "../auth/AuthContext";
 import { API_BASE } from "../api/http";
@@ -20,6 +21,12 @@ import {
   type OpeningHistoryItem,
 } from "../api/booster";
 import { readAppSettings, subscribeAppSettings } from "../utils/appSettings";
+import {
+  collectOpeningCardImageUrls,
+  preloadImages,
+  runWhenIdle,
+} from "../utils/imagePerformance";
+import { warmCardImageCache } from "../utils/pwaCache";
 import { playSoundEffect, playUiErrorSound, primeSound } from "../utils/sound";
 import {
   getSeasonBoosterImage,
@@ -74,6 +81,27 @@ function resolveHistoryImg(imageUrl?: string | null) {
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   if (url.startsWith("/")) return `${API_BASE}${url}`;
   return `${API_BASE}/${url}`;
+}
+
+async function prepareOpeningImages(result: any) {
+  const urls = collectOpeningCardImageUrls(result, resolveHistoryImg);
+  if (urls.length === 0) return;
+
+  await preloadImages(urls.slice(0, 4), {
+    concurrency: 4,
+    limit: 4,
+    priority: "high",
+    timeoutMs: 1200,
+  });
+
+  runWhenIdle(() => {
+    void warmCardImageCache(urls.slice(0, 96)).catch(() => undefined);
+    void preloadImages(urls.slice(5, 20), {
+      concurrency: 2,
+      priority: "low",
+      timeoutMs: 2200,
+    });
+  }, 700);
 }
 
 function formatOpeningDate(value?: string | null) {
@@ -277,8 +305,10 @@ export default function Booster() {
       setConfirmModal(CLOSED_MODAL);
       playSoundEffect("opening.purchase-booster");
 
+      const imagePrep = prepareOpeningImages(res).catch(() => undefined);
       await refreshWallet();
       await loadPageData();
+      await imagePrep;
 
       navigate("/opening", {
         state: {
@@ -308,8 +338,10 @@ export default function Booster() {
       setConfirmModal(CLOSED_MODAL);
       playSoundEffect("opening.purchase-display");
 
+      const imagePrep = prepareOpeningImages(res).catch(() => undefined);
       await refreshWallet();
       await loadPageData();
+      await imagePrep;
 
       navigate("/opening", {
         state: {
@@ -484,7 +516,7 @@ export default function Booster() {
                     >
                       <div className="openingHistoryCard__visual">
                         {cover ? (
-                          <img src={cover} alt={item.coverCard?.name ?? "Carte de l'ouverture"} />
+                          <SmartImage src={cover} alt={item.coverCard?.name ?? "Carte de l'ouverture"} />
                         ) : (
                           <span>{formatHistoryKind(item).slice(0, 1)}</span>
                         )}
@@ -564,7 +596,7 @@ export default function Booster() {
             </div>
           ) : activePanel === "shop" ? (
             <div className="boosterGrid">
-              {seasons.map((s) => (
+              {seasons.map((s, index) => (
                 <div key={s.seasonNumber} className="panel boosterSeasonCard">
                   <div className="boosterSeasonCard__top">
                     <div>
@@ -592,7 +624,13 @@ export default function Booster() {
                           }
                         }}
                       >
-                        <img className="boosterPack__img" src={s.boosterImg} alt={`Booster ${s.label}`} />
+                        <SmartImage
+                          className="boosterPack__img"
+                          src={s.boosterImg}
+                          alt={`Booster ${s.label}`}
+                          loading={index < 2 ? "eager" : "lazy"}
+                          fetchPriority={index < 2 ? "high" : "low"}
+                        />
                       </div>
 
                       <button
@@ -625,10 +663,12 @@ export default function Booster() {
                           }
                         }}
                       >
-                        <img
+                        <SmartImage
                           className="boosterPack__img boosterPack__img--display"
                           src={s.displayImg}
                           alt={`Display ${s.label}`}
+                          loading={index < 2 ? "eager" : "lazy"}
+                          fetchPriority={index < 2 ? "high" : "low"}
                         />
                       </div>
 

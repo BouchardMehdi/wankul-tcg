@@ -6,11 +6,18 @@ import "../styles/Dashboard.css";
 import "../styles/Opening.css";
 
 import AppNavbar from "../components/AppNavbar";
+import SmartImage from "../components/SmartImage";
 
 import { useAuth } from "../auth/AuthContext";
 import { getEconomyMe, type EconomySnapshot } from "../api/economy";
 import { openBooster, openDisplay } from "../api/booster";
 import { readAppSettings, subscribeAppSettings, writeLastNewCardIds } from "../utils/appSettings";
+import {
+  collectOpeningCardImageUrls,
+  preloadImages,
+  runWhenIdle,
+} from "../utils/imagePerformance";
+import { warmCardImageCache } from "../utils/pwaCache";
 import { playOpeningRevealSound, playSoundEffect, primeSound } from "../utils/sound";
 import { getSeasonBoosterImage, getSeasonDisplayImage } from "../utils/seasonAssets";
 
@@ -409,6 +416,10 @@ export default function Opening() {
   const revealIntroMs = settings.fastReveal ? 450 : 1100;
   const displayIntroMs = settings.fastReveal ? 800 : 1700;
   const autoFlipMs = settings.fastReveal ? 380 : 850;
+  const openingCardImageUrls = useMemo(
+    () => collectOpeningCardImageUrls(state?.result, resolveImg),
+    [state?.result],
+  );
 
   function queueTimeout(cb: () => void, ms: number) {
     const id = window.setTimeout(cb, ms);
@@ -500,6 +511,41 @@ export default function Opening() {
       setPhase("idle");
     }
   }, [state?.kind, state?.season, state?.seasonNumber, state?.result, navigate, skipAnimations]);
+
+  useEffect(() => {
+    if (openingCardImageUrls.length === 0) return;
+
+    void preloadImages([currentPackImg, CARD_BACK, ...openingCardImageUrls.slice(0, 5)], {
+      concurrency: 4,
+      limit: 7,
+      priority: "high",
+      timeoutMs: 1600,
+    });
+
+    return runWhenIdle(() => {
+      const cacheBudget = isDisplayMode ? 96 : 16;
+      const preloadBudget = isDisplayMode ? 24 : 12;
+
+      void warmCardImageCache(openingCardImageUrls.slice(0, cacheBudget)).catch(() => undefined);
+      void preloadImages(openingCardImageUrls.slice(5, preloadBudget), {
+        concurrency: 2,
+        priority: "low",
+        timeoutMs: 2200,
+      });
+    }, 900);
+  }, [openingCardImageUrls, currentPackImg, isDisplayMode]);
+
+  useEffect(() => {
+    if (phase !== "reveal" || cards.length === 0) return;
+
+    const nextUrls = collectOpeningCardImageUrls({ cards: cards.slice(index, index + 4) }, resolveImg);
+    void preloadImages(nextUrls, {
+      concurrency: 3,
+      limit: 4,
+      priority: "high",
+      timeoutMs: 1400,
+    });
+  }, [cards, index, phase]);
 
   useEffect(() => {
     (async () => {
@@ -1119,10 +1165,12 @@ export default function Opening() {
 
             {showDisplayRemaining ? (
               <div className="displayRemainingPill">
-                <img
+                <SmartImage
                   src={remainingPillImg}
                   alt={currentDisplayBoosterIsGold ? "Booster Gold" : `Booster ${season}`}
                   className="displayRemainingPill__img"
+                  loading="eager"
+                  fetchPriority="high"
                 />
                 <div className="displayRemainingPill__text">
                   <span className="displayRemainingPill__label">Restants</span>
@@ -1154,11 +1202,13 @@ export default function Opening() {
                 aria-label={isDisplayMode && !displayStarted ? "Ouvrir la display" : "Ouvrir le booster"}
               >
                 {!isDisplayMode || displayStarted ? (
-                  <img
+                  <SmartImage
                     className={["emergingCard", phase === "opening" ? "is-emerging" : ""].join(" ")}
                     src={CARD_BACK}
                     alt="Carte (dos)"
                     draggable={false}
+                    loading="eager"
+                    fetchPriority="high"
                   />
                 ) : null}
               </div>
@@ -1176,12 +1226,12 @@ export default function Opening() {
           {phase === "display-intro" && (
             <div className="displayIntro">
               <div className="displayIntro__scene">
-                <img className="displayIntro__display" src={displayImg} alt={`Display ${season}`} />
-                <img className="displayIntro__booster displayIntro__booster--1" src={defaultBoosterImg} alt="" />
-                <img className="displayIntro__booster displayIntro__booster--2" src={defaultBoosterImg} alt="" />
-                <img className="displayIntro__booster displayIntro__booster--3" src={defaultBoosterImg} alt="" />
-                <img className="displayIntro__booster displayIntro__booster--4" src={defaultBoosterImg} alt="" />
-                <img className="displayIntro__booster displayIntro__booster--5" src={defaultBoosterImg} alt="" />
+                <SmartImage className="displayIntro__display" src={displayImg} alt={`Display ${season}`} loading="eager" fetchPriority="high" />
+                <SmartImage className="displayIntro__booster displayIntro__booster--1" src={defaultBoosterImg} alt="" loading="eager" fetchPriority="high" />
+                <SmartImage className="displayIntro__booster displayIntro__booster--2" src={defaultBoosterImg} alt="" loading="eager" fetchPriority="high" />
+                <SmartImage className="displayIntro__booster displayIntro__booster--3" src={defaultBoosterImg} alt="" loading="lazy" />
+                <SmartImage className="displayIntro__booster displayIntro__booster--4" src={defaultBoosterImg} alt="" loading="lazy" />
+                <SmartImage className="displayIntro__booster displayIntro__booster--5" src={defaultBoosterImg} alt="" loading="lazy" />
               </div>
 
               <div className="displayIntro__text">Les boosters sortent de la display…</div>
@@ -1218,9 +1268,9 @@ export default function Opening() {
               </div>
 
               <div className="stackArea">
-                <img className="stackBack stackBack--1" src={CARD_BACK} alt="" draggable={false} />
-                <img className="stackBack stackBack--2" src={CARD_BACK} alt="" draggable={false} />
-                <img className="stackBack stackBack--3" src={CARD_BACK} alt="" draggable={false} />
+                <SmartImage className="stackBack stackBack--1" src={CARD_BACK} alt="" draggable={false} loading="eager" fetchPriority="high" />
+                <SmartImage className="stackBack stackBack--2" src={CARD_BACK} alt="" draggable={false} loading="eager" fetchPriority="high" />
+                <SmartImage className="stackBack stackBack--3" src={CARD_BACK} alt="" draggable={false} loading="lazy" />
 
                 <div
                   key={`${displayBoosterIndex}-${index}-${current?.id ?? "card"}`}
@@ -1260,14 +1310,16 @@ export default function Opening() {
                   {isSurprise11 ? <span className="eleventhRibbon">11e carte</span> : null}
 
                   {current ? (
-                    <img
+                    <SmartImage
                       className="faceCard"
                       src={resolveImg(current.imageUrl ?? current.image ?? current.img ?? "")}
                       alt={current.name ?? "Carte"}
                       draggable={false}
+                      loading="eager"
+                      fetchPriority="high"
                     />
                   ) : (
-                    <img className="faceCard" src={CARD_BACK} alt="Carte" draggable={false} />
+                    <SmartImage className="faceCard" src={CARD_BACK} alt="Carte" draggable={false} loading="eager" fetchPriority="high" />
                   )}
                 </div>
               </div>
@@ -1317,7 +1369,7 @@ export default function Opening() {
                             isRareOrBetter(c) ? "is-hit" : "",
                           ].join(" ")}
                         >
-                          <img src={resolveImg(c.imageUrl ?? c.image ?? c.img ?? "")} alt={c?.name ?? "Carte"} draggable={false} />
+                          <SmartImage src={resolveImg(c.imageUrl ?? c.image ?? c.img ?? "")} alt={c?.name ?? "Carte"} draggable={false} />
                           <div>
                             <span>{isNew ? "Nouvelle carte" : getRarityHitLabel(rk)}</span>
                             <b>{c?.name ?? "Carte"}</b>
@@ -1358,7 +1410,7 @@ export default function Opening() {
                       {isNew ? <span className="summaryNewTag">NOUVELLE</span> : null}
                       <span className="summaryCreditTag">+{cc}</span>
 
-                      <img
+                      <SmartImage
                         className="summaryCard"
                         src={resolveImg(c.imageUrl ?? c.image ?? c.img ?? "")}
                         alt={c?.name ?? `Carte ${i + 1}`}
@@ -1441,7 +1493,7 @@ export default function Opening() {
                             isRareOrBetter(c) ? "is-hit" : "",
                           ].join(" ")}
                         >
-                          <img src={resolveImg(c.imageUrl ?? c.image ?? c.img ?? "")} alt={c?.name ?? "Carte"} draggable={false} />
+                          <SmartImage src={resolveImg(c.imageUrl ?? c.image ?? c.img ?? "")} alt={c?.name ?? "Carte"} draggable={false} />
                           <div>
                             <span>{isNew ? "Nouvelle carte" : getRarityHitLabel(rk)}</span>
                             <b>{c?.name ?? "Carte"}</b>
@@ -1482,7 +1534,7 @@ export default function Opening() {
                       {isNew ? <span className="summaryNewTag">NOUVELLE</span> : null}
                       <span className="summaryCreditTag">+{cc}</span>
 
-                      <img
+                      <SmartImage
                         className="summaryCard"
                         src={resolveImg(c.imageUrl ?? c.image ?? c.img ?? "")}
                         alt={c?.name ?? `Carte ${i + 1}`}

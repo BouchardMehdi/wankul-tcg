@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import "../styles/Nav.css";
 import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
 import { useAuth } from "../auth/AuthContext";
+import SmartImage from "./SmartImage";
 
 type NavPage =
   | "dashboard"
@@ -209,7 +210,13 @@ export default function AppNavbar({
     <header className="topbar">
       <div className="container topbar__inner">
         <Link to="/" className="topbar__brand" aria-label="Accueil Wankul TCG">
-          <img src={wankulLogo} className="topbar__logo" alt="Wankul" />
+          <SmartImage
+            src={wankulLogo}
+            className="topbar__logo"
+            alt="Wankul"
+            loading="eager"
+            fetchPriority="high"
+          />
         </Link>
 
         <nav

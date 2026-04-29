@@ -30,6 +30,17 @@ import { PushModule } from './modules/push/push.module';
       rootPath: join(__dirname, '..', 'public'),
       serveRoot: '/',
       exclude: ['/api', '/api/*rest'],
+      serveStaticOptions: {
+        maxAge: '7d',
+        setHeaders: (res, path) => {
+          if (/\.(avif|gif|jpe?g|png|svg|webp)$/i.test(path)) {
+            res.setHeader(
+              'Cache-Control',
+              'public, max-age=604800, stale-while-revalidate=86400',
+            );
+          }
+        },
+      },
     }),
 
     UsersModule,

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import "../styles/InAppNotifications.css";
 
+import SmartImage from "./SmartImage";
 import {
   emitInAppNotification,
   type InAppNotificationAction,
@@ -329,11 +330,11 @@ export default function InAppNotificationCenter() {
                   <div className="inAppNotificationCard__stamp">
                     {getStamp(item.payload)}
                   </div>
-                  <img src={item.payload.image} alt="" />
+                  <SmartImage src={item.payload.image} alt="" />
                 </div>
               ) : item.payload.icon ? (
                 <div className="inAppNotificationCard__iconTile">
-                  <img src={item.payload.icon} alt="" />
+                  <SmartImage src={item.payload.icon} alt="" />
                 </div>
               ) : null}
 

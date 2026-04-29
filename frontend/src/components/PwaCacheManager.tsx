@@ -3,20 +3,31 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { fetchOwnedCollection } from "../api/collection";
 import { readAppSettings, subscribeAppSettings } from "../utils/appSettings";
+import {
+  collectCardImageUrls,
+  runWhenIdle,
+  shouldAvoidAggressiveImagePreload,
+} from "../utils/imagePerformance";
 import { isPwaCacheSupported, warmCardImageCache } from "../utils/pwaCache";
 
 const AUTO_CACHE_KEY = "wankul_pwa_auto_card_cache_at";
 const AUTO_CACHE_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
-function getApiOrigin() {
-  const raw = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
-  return raw.replace(/\/api\/?$/, "");
-}
+function getRarityWeight(rarity?: string | null) {
+  const value = String(rarity ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 
-function toAbsoluteAssetUrl(url?: string | null) {
-  if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url;
-  return `${getApiOrigin()}${url}`;
+  if (value.includes("ticket")) return 100;
+  if (value.includes("booster gold")) return 90;
+  if (value.includes("legendaire") && value.includes("or")) return 80;
+  if (value.includes("legendaire") && value.includes("argent")) return 70;
+  if (value.includes("legendaire") && value.includes("bronze")) return 60;
+  if (value.includes("u2")) return 50;
+  if (value.includes("u1")) return 40;
+  if (value.includes("rare")) return 30;
+  return 10;
 }
 
 export default function PwaCacheManager() {
@@ -34,7 +45,13 @@ export default function PwaCacheManager() {
   );
 
   useEffect(() => {
-    if (!isAuthenticated || !autoCacheEnabled || !isPwaCacheSupported() || !navigator.onLine) {
+    if (
+      !isAuthenticated ||
+      !autoCacheEnabled ||
+      !isPwaCacheSupported() ||
+      !navigator.onLine ||
+      shouldAvoidAggressiveImagePreload()
+    ) {
       return;
     }
 
@@ -49,10 +66,15 @@ export default function PwaCacheManager() {
       try {
         const ownedRows = await fetchOwnedCollection();
         if (cancelled) return;
-        const urls = ownedRows
-          .map((row) => toAbsoluteAssetUrl(row.card.imageUrl))
-          .filter(Boolean)
-          .slice(0, 180);
+        const prioritizedCards = [...ownedRows]
+          .sort((a, b) => {
+            const rarityDiff = getRarityWeight(b.card.rarity) - getRarityWeight(a.card.rarity);
+            if (rarityDiff !== 0) return rarityDiff;
+            return Number(b.quantity ?? 0) - Number(a.quantity ?? 0);
+          })
+          .map((row) => row.card);
+
+        const urls = collectCardImageUrls(prioritizedCards).slice(0, 160);
 
         if (urls.length > 0) {
           await warmCardImageCache(urls);
@@ -63,10 +85,11 @@ export default function PwaCacheManager() {
       }
     }
 
-    cacheOwnedCards();
+    const cancelIdle = runWhenIdle(cacheOwnedCards, 1800);
 
     return () => {
       cancelled = true;
+      cancelIdle();
     };
   }, [autoCacheEnabled, isAuthenticated]);
 

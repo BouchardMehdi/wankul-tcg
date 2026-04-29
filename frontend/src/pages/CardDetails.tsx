@@ -11,6 +11,7 @@ import "../styles.css";
 import "../styles/CardDetails.css";
 
 import AppNavbar from "../components/AppNavbar";
+import SmartImage from "../components/SmartImage";
 import { fetchOwnedCollection } from "../api/collection";
 import { fetchAllCards, type CardDto } from "../api/cards";
 import {
@@ -819,7 +820,12 @@ function CardDetails() {
                 <div className="cardDetailsHero__mediaCol">
                   <div className="cardDetailsHero__media">
                     {imageSrc ? (
-                      <img src={imageSrc} alt={card.name} />
+                      <SmartImage
+                        src={imageSrc}
+                        alt={card.name}
+                        loading="eager"
+                        fetchPriority="high"
+                      />
                     ) : (
                       <div className="cardDetailsHero__placeholder">Aucune image</div>
                     )}
@@ -1094,7 +1100,7 @@ function CardDetails() {
                             >
                               <div className="cardDetailsVariantCard__image">
                                 {resolveImg(variant.imageUrl) ? (
-                                  <img src={resolveImg(variant.imageUrl)} alt={variant.name} />
+                                  <SmartImage src={resolveImg(variant.imageUrl)} alt={variant.name} />
                                 ) : (
                                   <span>?</span>
                                 )}

@@ -5,6 +5,7 @@ import "../styles/Collection.css";
 
 import AppNavbar from "../components/AppNavbar";
 import MarketPriceChart from "../components/MarketPriceChart";
+import SmartImage from "../components/SmartImage";
 
 import { fetchAllCards, type CardDto } from "../api/cards";
 import { fetchOwnedCollection, type OwnedCardRow } from "../api/collection";
@@ -1125,7 +1126,7 @@ export default function Collection() {
                             updateFilter("q", card.name ?? "");
                           }}
                         >
-                          <img src={resolveImg(card.imageUrl ?? card.image ?? card.img ?? "")} alt={card.name} />
+                          <SmartImage src={resolveImg(card.imageUrl ?? card.image ?? card.img ?? "")} alt={card.name} />
                           <span>{card.name}</span>
                         </button>
                       ))}
@@ -1149,7 +1150,7 @@ export default function Collection() {
                             updateFilter("q", card.name ?? "");
                           }}
                         >
-                          <img src={resolveImg(card.imageUrl ?? card.image ?? card.img ?? "")} alt={card.name} />
+                          <SmartImage src={resolveImg(card.imageUrl ?? card.image ?? card.img ?? "")} alt={card.name} />
                           <span>x{card.quantity} • {card.name}</span>
                         </button>
                       ))}
@@ -1332,9 +1333,10 @@ export default function Collection() {
               <div
                 className={`cardsGrid ${layoutClass} ${settings.disableHoloEffects ? "cardsGrid--noHolo" : ""}`}
               >
-                {pageItems.map((c: any) => {
+                {pageItems.map((c: any, index) => {
                   const owned = (c.quantity ?? 0) > 0;
                   const src = resolveImg(c.imageUrl ?? c.image ?? c.img ?? "");
+                  const priorityImage = index < 8;
                   const rk = normalizeRarity(c.rarity);
                   const rarityCls = rk ? `rarity-${rk}` : "";
 
@@ -1390,7 +1392,13 @@ export default function Collection() {
                             disabled={!isSellable}
                             onClick={() => handleSelectForMarket(Number(c.id), isSellable)}
                           >
-                            <img className="cardTile__img" src={src} alt={c.name} />
+                            <SmartImage
+                              className="cardTile__img"
+                              src={src}
+                              alt={c.name}
+                              loading={priorityImage ? "eager" : "lazy"}
+                              fetchPriority={priorityImage ? "high" : "low"}
+                            />
                           </button>
                         ) : quickSellMode ? (
                           <button
@@ -1399,7 +1407,13 @@ export default function Collection() {
                             disabled={!isSellable}
                             onClick={() => openQuickSellModal(c)}
                           >
-                            <img className="cardTile__img" src={src} alt={c.name} />
+                            <SmartImage
+                              className="cardTile__img"
+                              src={src}
+                              alt={c.name}
+                              loading={priorityImage ? "eager" : "lazy"}
+                              fetchPriority={priorityImage ? "high" : "low"}
+                            />
                           </button>
                         ) : owned ? (
                           <a
@@ -1409,10 +1423,22 @@ export default function Collection() {
                             data-caption={`${c.name}${c.rarity ? ` • ${c.rarity}` : ""}`}
                             data-terrain={isTerrain ? "1" : "0"}
                           >
-                            <img className="cardTile__img" src={src} alt={c.name} />
+                            <SmartImage
+                              className="cardTile__img"
+                              src={src}
+                              alt={c.name}
+                              loading={priorityImage ? "eager" : "lazy"}
+                              fetchPriority={priorityImage ? "high" : "low"}
+                            />
                           </a>
                         ) : (
-                          <img className="cardTile__img" src={src} alt={c.name} />
+                          <SmartImage
+                            className="cardTile__img"
+                            src={src}
+                            alt={c.name}
+                            loading={priorityImage ? "eager" : "lazy"}
+                            fetchPriority={priorityImage ? "high" : "low"}
+                          />
                         )}
 
                         {!owned && <div className="cardTile__dim" />}
@@ -1605,7 +1631,12 @@ export default function Collection() {
             <div className="collectionModal__body">
               <div className="collectionModal__media">
                 {quickSellImg ? (
-                  <img src={quickSellImg} alt={quickSellModal.card.name} />
+                  <SmartImage
+                    src={quickSellImg}
+                    alt={quickSellModal.card.name}
+                    loading="eager"
+                    fetchPriority="high"
+                  />
                 ) : (
                   <div className="collectionModal__placeholder">Aucune image</div>
                 )}

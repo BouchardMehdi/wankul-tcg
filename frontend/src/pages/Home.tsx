@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import "../styles/Home.css";
 
+import SmartImage from "../components/SmartImage";
 import { useAuth } from "../auth/AuthContext";
 import wankilLogo from "../assets/Wankil_Studio_Logo.png";
 import wankulLogo from "../assets/Wankul_Logo_Blanc.webp";
@@ -210,8 +211,8 @@ export default function Home() {
       <header className="homeTopbar homeShell">
         <Link to="/" className="homeBrand" aria-label="Accueil Wankul TCG">
           <div className="homeBrand__logos">
-            <img src={wankulLogo} alt="Wankul TCG" className="homeBrand__logo homeBrand__logo--main" />
-            <img src={wankilLogo} alt="Wankil Studio" className="homeBrand__logo homeBrand__logo--studio" />
+            <SmartImage src={wankulLogo} alt="Wankul TCG" className="homeBrand__logo homeBrand__logo--main" loading="eager" fetchPriority="high" />
+            <SmartImage src={wankilLogo} alt="Wankil Studio" className="homeBrand__logo homeBrand__logo--studio" loading="eager" fetchPriority="high" />
           </div>
           <div className="homeBrand__text">
             <span className="homeBrand__eyebrow">Fan-made collector app</span>
@@ -318,22 +319,26 @@ export default function Home() {
               <div className="homeShowcase__scene">
                 <div className="homeShowcase__halo" />
                 <div className="homeShowcase__fan" aria-hidden="true">
-                  <img
+                  <SmartImage
                     className="homeShowcase__booster homeShowcase__booster--one"
                     src={getSeasonBoosterImage(1)}
                     alt="Booster Origins"
+                    loading="eager"
+                    fetchPriority="high"
                   />
-                  <img
+                  <SmartImage
                     className="homeShowcase__booster homeShowcase__booster--two"
                     src={getSeasonBoosterImage(2)}
                     alt="Booster Campus"
+                    loading="eager"
+                    fetchPriority="high"
                   />
-                  <img
+                  <SmartImage
                     className="homeShowcase__booster homeShowcase__booster--three"
                     src={getSeasonBoosterImage(3)}
                     alt="Booster Battle"
                   />
-                  <img
+                  <SmartImage
                     className="homeShowcase__booster homeShowcase__booster--four"
                     src={getSeasonBoosterImage(4)}
                     alt="Booster Stellar"
@@ -355,7 +360,7 @@ export default function Home() {
 
               <div className="homeCreatorStrip">
                 <div className="homeCreatorCard">
-                  <img src={lainkImg} alt="Laink" />
+                  <SmartImage src={lainkImg} alt="Laink" />
                   <div>
                     <strong>Laink</strong>
                     <span>Il fait de belle photo de galaxie</span>
@@ -363,7 +368,7 @@ export default function Home() {
                 </div>
 
                 <div className="homeCreatorCard">
-                  <img src={terracidImg} alt="Terracid" />
+                  <SmartImage src={terracidImg} alt="Terracid" />
                   <div>
                     <strong>Terracid</strong>
                     <span>Il a payé 8 balles aau 118 218 pourr gagner un faux million</span>
@@ -512,7 +517,7 @@ export default function Home() {
             {SEASONS.map((season) => (
               <article key={season.number} className="homeSeasonCard">
                 <div className="homeSeasonCard__media">
-                  <img
+                  <SmartImage
                     src={getSeasonBoosterImage(season.number)}
                     alt={`Booster ${season.label}`}
                   />

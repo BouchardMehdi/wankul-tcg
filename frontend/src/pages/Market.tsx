@@ -5,6 +5,7 @@ import "../styles.css";
 import "../styles/Market.css";
 
 import AppNavbar from "../components/AppNavbar";
+import SmartImage from "../components/SmartImage";
 import { fetchOwnedCollection } from "../api/collection";
 import { fetchAllCards, type CardDto } from "../api/cards";
 import {
@@ -1258,7 +1259,7 @@ export default function Market() {
         <div className="marketListingCard__mediaWrap">
           <div className="marketListingCard__media">
             {cardImage ? (
-              <img src={cardImage} alt={listing.cardName} />
+              <SmartImage src={cardImage} alt={listing.cardName} />
             ) : (
               <div className="marketListingCard__placeholder">Aucune image</div>
             )}
@@ -1269,7 +1270,7 @@ export default function Market() {
               <span>Demandé</span>
               <div className="marketListingCard__wantedThumb">
                 {wantedCardImage ? (
-                  <img
+                  <SmartImage
                     src={wantedCardImage}
                     alt={listing.wantedCardName ?? "Carte demandée"}
                   />
@@ -1426,7 +1427,7 @@ export default function Market() {
       <article className="marketRewardCard" key={tx.id}>
         <div className="marketRewardCard__media">
           {soldCardImage ? (
-            <img src={soldCardImage} alt={tx.cardName} />
+            <SmartImage src={soldCardImage} alt={tx.cardName} />
           ) : (
             <div className="marketListingCard__placeholder">Aucune image</div>
           )}
@@ -1470,7 +1471,7 @@ export default function Market() {
               <span>Carte reçue</span>
               <div className="marketRewardCard__wantedThumb">
                 {rewardCardImage ? (
-                  <img src={rewardCardImage} alt={tx.pendingRewardCardName} />
+                  <SmartImage src={rewardCardImage} alt={tx.pendingRewardCardName} />
                 ) : (
                   <div className="marketListingCard__placeholder marketListingCard__placeholder--small">
                     ?
@@ -2057,7 +2058,7 @@ export default function Market() {
                     <article className="marketWatchlistCard" key={item.cardId}>
                       <div className="marketWatchlistCard__media">
                         {cardImage ? (
-                          <img src={cardImage} alt={item.cardName} />
+                          <SmartImage src={cardImage} alt={item.cardName} />
                         ) : (
                           <div className="marketListingCard__placeholder marketListingCard__placeholder--small">
                             Aucune image

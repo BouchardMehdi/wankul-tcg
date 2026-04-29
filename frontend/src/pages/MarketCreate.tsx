@@ -6,6 +6,7 @@ import "../styles/MarketCreate.css";
 
 import AppNavbar from "../components/AppNavbar";
 import MarketPriceChart from "../components/MarketPriceChart";
+import SmartImage from "../components/SmartImage";
 import { fetchAllCards, type CardDto } from "../api/cards";
 import {
   createMarketListing,
@@ -359,7 +360,12 @@ export default function MarketCreate() {
                 <div className="marketCreateSelectedCard">
                   <div className="marketCreateSelectedCard__image">
                     {selectedCardImage ? (
-                      <img src={selectedCardImage} alt={selectedSellable.cardName} />
+                      <SmartImage
+                        src={selectedCardImage}
+                        alt={selectedSellable.cardName}
+                        loading="eager"
+                        fetchPriority="high"
+                      />
                     ) : (
                       <div className="marketCreateSummary__placeholder">Aucune image</div>
                     )}
@@ -507,7 +513,12 @@ export default function MarketCreate() {
                   <div className="marketCreateSummary__visuals">
                     <div className="marketCreateSummary__cardImage">
                       {selectedCardImage ? (
-                        <img src={selectedCardImage} alt={selectedSellable.cardName} />
+                        <SmartImage
+                          src={selectedCardImage}
+                          alt={selectedSellable.cardName}
+                          loading="eager"
+                          fetchPriority="high"
+                        />
                       ) : (
                         <div className="marketCreateSummary__placeholder">
                           Aucune image
@@ -518,7 +529,7 @@ export default function MarketCreate() {
                     {selectedWantedCard && (
                       <div className="marketCreateSummary__cardImage marketCreateSummary__cardImage--wanted">
                         {wantedCardImage ? (
-                          <img src={wantedCardImage} alt={selectedWantedCard.name} />
+                          <SmartImage src={wantedCardImage} alt={selectedWantedCard.name} />
                         ) : (
                           <div className="marketCreateSummary__placeholder">?</div>
                         )}
