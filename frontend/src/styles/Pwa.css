@@ -1,0 +1,194 @@
+.pwaSplash {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(155, 92, 255, 0.22), transparent 34%),
+    radial-gradient(circle at 86% 12%, rgba(76, 201, 240, 0.18), transparent 34%),
+    radial-gradient(circle at 50% 100%, rgba(255, 77, 109, 0.14), transparent 42%),
+    var(--bg);
+}
+
+.pwaSplash__card {
+  width: min(520px, 100%);
+  padding: 28px;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(18, 24, 44, 0.94), rgba(9, 13, 26, 0.96));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+}
+
+.pwaSplash__pack {
+  width: 92px;
+  height: 92px;
+  position: relative;
+  margin-bottom: 22px;
+}
+
+.pwaSplash__pack span {
+  position: absolute;
+  inset: 10px 22px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(135deg, var(--a-pink), var(--a-violet));
+  box-shadow: 0 18px 44px rgba(155, 92, 255, 0.28);
+  animation: pwaSplashFloat 1.8s ease-in-out infinite;
+}
+
+.pwaSplash__pack span:nth-child(1) {
+  transform: rotate(-14deg) translateX(-16px);
+  background: linear-gradient(135deg, #4cc9f0, #9b5cff);
+}
+
+.pwaSplash__pack span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.pwaSplash__pack span:nth-child(3) {
+  transform: rotate(14deg) translateX(16px);
+  animation-delay: 240ms;
+  background: linear-gradient(135deg, #f6c945, #ff4d6d);
+}
+
+.pwaSplash__eyebrow {
+  margin: 0 0 8px;
+  color: rgba(246, 201, 69, 0.92);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pwaSplash h1 {
+  margin: 0;
+  font-size: clamp(32px, 7vw, 54px);
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+  font-weight: 950;
+}
+
+.pwaSplash__text {
+  margin: 14px 0 0;
+  color: var(--text2);
+  font-weight: 850;
+  line-height: 1.6;
+}
+
+.pwaSplash__bar {
+  height: 10px;
+  overflow: hidden;
+  margin-top: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pwaSplash__bar span {
+  display: block;
+  width: 45%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--a-pink), var(--a-violet), var(--a-cyan));
+  animation: pwaSplashLoad 1.35s ease-in-out infinite;
+}
+
+.pwaOfflinePanel {
+  position: fixed;
+  left: max(16px, var(--safe-left));
+  right: max(16px, var(--safe-right));
+  bottom: calc(18px + var(--safe-bottom));
+  z-index: 80;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  width: min(980px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 14px;
+  border-radius: 22px;
+  border: 1px solid rgba(246, 201, 69, 0.28);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(246, 201, 69, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(20, 24, 42, 0.96), rgba(9, 13, 24, 0.96));
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(14px);
+}
+
+.pwaOfflinePanel__mark {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #161006;
+  background: linear-gradient(135deg, #f6c945, #ffb35c);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.pwaOfflinePanel__content {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.pwaOfflinePanel__content strong {
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.pwaOfflinePanel__content span {
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.pwaOfflinePanel__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pwaOfflinePanel__actions a,
+.pwaOfflinePanel__actions button {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+@keyframes pwaSplashFloat {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -7px; }
+}
+
+@keyframes pwaSplashLoad {
+  0% { transform: translateX(-115%); }
+  100% { transform: translateX(230%); }
+}
+
+@media (max-width: 720px) {
+  .pwaOfflinePanel {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    bottom: calc(var(--mobile-nav-offset) + 10px);
+  }
+
+  .pwaOfflinePanel__mark {
+    width: 46px;
+    height: 46px;
+  }
+
+  .pwaOfflinePanel__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

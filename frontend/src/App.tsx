@@ -16,8 +16,12 @@ import MarketCreate from "./pages/MarketCreate";
 import QuickSell from "./pages/QuickSell";
 import Admin from "./pages/Admin";
 import CardDetails from "./pages/CardDetails";
+import PwaPreferences from "./pages/PwaPreferences";
 import PwaNotificationManager from "./components/PwaNotificationManager";
+import PwaCacheManager from "./components/PwaCacheManager";
 import InAppNotificationCenter from "./components/InAppNotificationCenter";
+import PwaSplash from "./components/PwaSplash";
+import PwaStatusOverlay from "./components/PwaStatusOverlay";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -47,13 +51,15 @@ export default function App() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div>Chargement...</div>;
+    return <PwaSplash />;
   }
 
   return (
     <>
       <PwaNotificationManager />
+      <PwaCacheManager />
       <InAppNotificationCenter />
+      <PwaStatusOverlay />
 
       <Routes>
         <Route
@@ -122,6 +128,14 @@ export default function App() {
           element={
             <PrivateRoute>
               <Settings />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/pwa-preferences"
+          element={
+            <PrivateRoute>
+              <PwaPreferences />
             </PrivateRoute>
           }
         />

@@ -139,6 +139,31 @@
   justify-content: flex-end;
 }
 
+.settingsPwaShortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(246, 201, 69, 0.18);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(246, 201, 69, 0.12), transparent 34%),
+    rgba(255,255,255,0.035);
+}
+
+.settingsPwaShortcut__title {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.settingsPwaShortcut__desc {
+  margin-top: 6px;
+  color: rgba(255,255,255,0.7);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .settingsSupportCard {
   display: grid;
   gap: 18px;
@@ -585,6 +610,15 @@
   .settingsRow {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .settingsPwaShortcut {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settingsPwaShortcut .btn {
+    width: 100%;
   }
 
   .settingsRow__control,

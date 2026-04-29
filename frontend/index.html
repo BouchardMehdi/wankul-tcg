@@ -16,6 +16,26 @@
       name="description"
       content="Wankul TCG, l'experience de collection, d'ouverture et de market en PWA."
     />
+    <style>
+      #root:empty {
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 18% 10%, rgba(155, 92, 255, 0.22), transparent 34%),
+          radial-gradient(circle at 86% 12%, rgba(76, 201, 240, 0.18), transparent 34%),
+          #070a12;
+      }
+      #root:empty::before {
+        content: "Wankul TCG";
+        padding: 18px 22px;
+        border-radius: 22px;
+        color: rgba(240,245,255,0.96);
+        font: 950 22px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: linear-gradient(135deg, rgba(255,77,109,0.95), rgba(155,92,255,0.95));
+        box-shadow: 0 22px 60px rgba(0,0,0,0.36);
+      }
+    </style>
     <title>Wankul TCG</title>
   </head>
   <body>

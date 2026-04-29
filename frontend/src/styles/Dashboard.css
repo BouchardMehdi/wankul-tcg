@@ -375,6 +375,7 @@
 }
 
 .donutSlice {
+  outline: none;
   cursor: pointer;
   transition:
     filter var(--t-fast) var(--ease),
@@ -382,8 +383,17 @@
     stroke-width var(--t-fast) var(--ease);
 }
 
+.donutSlice:focus,
+.donutSlice:focus-visible {
+  outline: none;
+}
+
 .donutSlice.is-active {
   filter: brightness(1.18) drop-shadow(0 0 10px rgba(255,255,255,0.12));
+}
+
+.donutSlice.is-pinned {
+  filter: brightness(1.25) drop-shadow(0 0 14px rgba(255,255,255,0.20));
 }
 
 .donutSlice.is-dimmed {
@@ -449,6 +459,7 @@
 }
 
 .legendRow {
+  outline: none;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -462,10 +473,20 @@
   cursor: pointer;
 }
 
+.legendRow:focus,
+.legendRow:focus-visible {
+  outline: none;
+}
+
 .legendRow:hover,
 .legendRow.is-active {
   background: rgba(255,255,255,0.04);
   transform: translateX(2px);
+}
+
+.legendRow.is-pinned {
+  background: linear-gradient(90deg, rgba(255, 91, 140, 0.14), rgba(174, 91, 255, 0.10));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10);
 }
 
 .legendRow.is-dimmed {

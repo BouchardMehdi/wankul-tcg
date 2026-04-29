@@ -37,13 +37,17 @@ function Donut({
   thickness = 32,
   slices,
   activeIndex,
-  setActiveIndex,
+  pinnedIndex,
+  setHoverIndex,
+  togglePinnedIndex,
 }: {
   size?: number;
   thickness?: number;
   slices: DonutSlice[];
   activeIndex: number | null;
-  setActiveIndex: (index: number | null) => void;
+  pinnedIndex: number | null;
+  setHoverIndex: (index: number | null) => void;
+  togglePinnedIndex: (index: number) => void;
 }) {
   const total = slices.reduce((a, s) => a + s.value, 0) || 1;
   const r = (size - thickness) / 2;
@@ -75,6 +79,7 @@ function Donut({
 
             const isActive = activeIndex === i;
             const isDimmed = activeIndex !== null && activeIndex !== i;
+            const isPinned = pinnedIndex === i;
 
             return (
               <circle
@@ -83,6 +88,7 @@ function Donut({
                   "donutSlice",
                   isActive ? "is-active" : "",
                   isDimmed ? "is-dimmed" : "",
+                  isPinned ? "is-pinned" : "",
                 ].join(" ")}
                 cx={size / 2}
                 cy={size / 2}
@@ -95,8 +101,20 @@ function Donut({
                 strokeDashoffset={offset}
                 transform={`rotate(-90 ${size / 2} ${size / 2})`}
                 pointerEvents="stroke"
-                onMouseEnter={() => setActiveIndex(i)}
-                onMouseLeave={() => setActiveIndex(null)}
+                role="button"
+                tabIndex={0}
+                data-loot-pick="true"
+                aria-pressed={isPinned}
+                aria-label={`${s.label}, ${formatPercent(s.percent)}`}
+                onClick={() => togglePinnedIndex(i)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    togglePinnedIndex(i);
+                  }
+                }}
+                onMouseEnter={() => setHoverIndex(i)}
+                onMouseLeave={() => setHoverIndex(null)}
               >
                 <title>
                   {s.label} — {formatPercent(s.percent)}
@@ -184,7 +202,8 @@ export default function Dashboard() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeDonutIndex, setActiveDonutIndex] = useState<number | null>(null);
+  const [hoverDonutIndex, setHoverDonutIndex] = useState<number | null>(null);
+  const [pinnedDonutIndex, setPinnedDonutIndex] = useState<number | null>(null);
   const [settings, setSettings] = useState(() => readAppSettings());
   const [lootSeason, setLootSeason] = useState<LootSeasonFilter>("global");
 
@@ -256,8 +275,28 @@ export default function Dashboard() {
     return stats.raritiesBySeason?.[lootSeason] ?? {};
   }, [stats, lootSeason]);
 
+  const activeDonutIndex = pinnedDonutIndex ?? hoverDonutIndex;
+
+  const togglePinnedDonutIndex = (index: number) => {
+    setPinnedDonutIndex((current) => (current === index ? null : index));
+  };
+
   useEffect(() => {
-    setActiveDonutIndex(null);
+    const clearDonutSelection = (event: PointerEvent) => {
+      if (!(event.target instanceof Element)) return;
+      if (event.target.closest('[data-loot-pick="true"]')) return;
+
+      setHoverDonutIndex(null);
+      setPinnedDonutIndex(null);
+    };
+
+    document.addEventListener("pointerdown", clearDonutSelection);
+    return () => document.removeEventListener("pointerdown", clearDonutSelection);
+  }, []);
+
+  useEffect(() => {
+    setHoverDonutIndex(null);
+    setPinnedDonutIndex(null);
   }, [lootSeason]);
 
   const donutSlices: DonutSlice[] = useMemo(() => {
@@ -446,7 +485,9 @@ export default function Dashboard() {
                       <Donut
                         slices={donutSlices}
                         activeIndex={activeDonutIndex}
-                        setActiveIndex={setActiveDonutIndex}
+                        pinnedIndex={pinnedDonutIndex}
+                        setHoverIndex={setHoverDonutIndex}
+                        togglePinnedIndex={togglePinnedDonutIndex}
                       />
 
                       <div className="legend legend--wide">
@@ -456,6 +497,7 @@ export default function Dashboard() {
                           donutSlices.map((s, i) => {
                             const isActive = activeDonutIndex === i;
                             const isDimmed = activeDonutIndex !== null && activeDonutIndex !== i;
+                            const isPinned = pinnedDonutIndex === i;
 
                             return (
                               <div
@@ -463,10 +505,22 @@ export default function Dashboard() {
                                   "legendRow",
                                   isActive ? "is-active" : "",
                                   isDimmed ? "is-dimmed" : "",
+                                  isPinned ? "is-pinned" : "",
                                 ].join(" ")}
                                 key={s.label}
-                                onMouseEnter={() => setActiveDonutIndex(i)}
-                                onMouseLeave={() => setActiveDonutIndex(null)}
+                                role="button"
+                                tabIndex={0}
+                                data-loot-pick="true"
+                                aria-pressed={isPinned}
+                                onClick={() => togglePinnedDonutIndex(i)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    togglePinnedDonutIndex(i);
+                                  }
+                                }}
+                                onMouseEnter={() => setHoverDonutIndex(i)}
+                                onMouseLeave={() => setHoverDonutIndex(null)}
                               >
                                 <div className="legendRow__left">
                                   <span className="legendDot" style={{ background: s.color }} />

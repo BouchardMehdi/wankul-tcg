@@ -13,6 +13,8 @@ export type AppSettings = {
   autoHighlightNewCards: boolean;
   showDropRates: boolean;
   confirmPurchases: boolean;
+  pwaAutoCacheCardImages: boolean;
+  pwaOfflineHints: boolean;
 
   /* Market */
   autoClaimMarketRewards: boolean;
@@ -45,6 +47,8 @@ export const APP_SETTINGS_DEFAULTS: AppSettings = {
   autoHighlightNewCards: true,
   showDropRates: true,
   confirmPurchases: true,
+  pwaAutoCacheCardImages: true,
+  pwaOfflineHints: true,
 
   autoClaimMarketRewards: false,
   confirmQuickSell: true,
@@ -110,6 +114,16 @@ function migrateSettings(raw: Partial<AppSettings> | null | undefined): AppSetti
     typeof base.confirmAboveMarketSale === "boolean"
       ? base.confirmAboveMarketSale
       : APP_SETTINGS_DEFAULTS.confirmAboveMarketSale;
+
+  base.pwaAutoCacheCardImages =
+    typeof base.pwaAutoCacheCardImages === "boolean"
+      ? base.pwaAutoCacheCardImages
+      : APP_SETTINGS_DEFAULTS.pwaAutoCacheCardImages;
+
+  base.pwaOfflineHints =
+    typeof base.pwaOfflineHints === "boolean"
+      ? base.pwaOfflineHints
+      : APP_SETTINGS_DEFAULTS.pwaOfflineHints;
 
   return base;
 }

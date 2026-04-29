@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import "../styles.css";
 import "../styles/Dashboard.css";
@@ -631,6 +631,19 @@ export default function Settings() {
 
                 <div className="settingsList">
                   {generalRows.map(renderRow)}
+                </div>
+
+                <div className="settingsPwaShortcut">
+                  <div>
+                    <div className="settingsPwaShortcut__title">Preferences PWA premium</div>
+                    <div className="settingsPwaShortcut__desc">
+                      Installation, cache images de cartes, offline utile et notifications par type.
+                    </div>
+                  </div>
+
+                  <Link className="btn" to="/pwa-preferences">
+                    Ouvrir
+                  </Link>
                 </div>
               </div>
 

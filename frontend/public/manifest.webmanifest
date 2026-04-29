@@ -5,9 +5,31 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#070a12",
   "theme_color": "#070a12",
+  "categories": ["games", "entertainment"],
+  "shortcuts": [
+    {
+      "name": "Ouvrir un booster",
+      "short_name": "Booster",
+      "url": "/booster",
+      "icons": [{ "src": "/pwa-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Market",
+      "short_name": "Market",
+      "url": "/market",
+      "icons": [{ "src": "/pwa-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Preferences PWA",
+      "short_name": "PWA",
+      "url": "/pwa-preferences",
+      "icons": [{ "src": "/pwa-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "/pwa-192.png",
