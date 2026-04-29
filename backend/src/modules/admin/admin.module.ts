@@ -11,12 +11,14 @@ import { User } from '../users/user.entity';
 import { BugReport } from '../report/bug-report.entity';
 import { BugReportStatusHistory } from '../report/bug-report-status-history.entity';
 import { EconomyAnalyticsModule } from '../economy/economy-analytics.module';
+import { SecurityModule } from '../security/security.module';
 
 @Module({
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([User, BugReport, BugReportStatusHistory]),
     EconomyAnalyticsModule,
+    SecurityModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

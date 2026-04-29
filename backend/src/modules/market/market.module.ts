@@ -16,6 +16,7 @@ import { Card } from '../cards/card.entity';
 
 import { EconomyAnalyticsModule } from '../economy/economy-analytics.module';
 import { PushModule } from '../push/push.module';
+import { SecurityModule } from '../security/security.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { PushModule } from '../push/push.module';
     ]),
     EconomyAnalyticsModule,
     PushModule,
+    SecurityModule,
   ],
   controllers: [MarketController],
   providers: [

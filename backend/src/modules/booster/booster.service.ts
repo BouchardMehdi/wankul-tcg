@@ -10,6 +10,7 @@ import {
 import { BoosterOpening } from './booster-opening.entity';
 import { DisplayOpening } from './display-opening.entity';
 import { EconomyAnalyticsService } from '../economy/economy-analytics.service';
+import { AntiAbuseService } from '../security/anti-abuse.service';
 
 type NewCardsMeta = {
   newCardIds: number[];
@@ -60,6 +61,7 @@ export class BoosterService {
     private readonly users: UsersService,
     private readonly economy: EconomyService,
     private readonly economyAnalyticsService: EconomyAnalyticsService,
+    private readonly antiAbuseService: AntiAbuseService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -745,6 +747,8 @@ export class BoosterService {
   }
 
   async openBooster(userId: number, seasonNumber: number) {
+    await this.antiAbuseService.assertRateLimit(userId, 'OPEN_BOOSTER');
+
     const payment = await this.economy.consumeOpen(userId, 'booster');
 
     const pools = await this.loadPools(seasonNumber);
@@ -811,15 +815,33 @@ export class BoosterService {
     });
 
     await this.economyAnalyticsService.incrementBooster();
-    await this.economyAnalyticsService.addCreditsSpent(200);
+    await this.economyAnalyticsService.addCreditsSpent(result.payment?.cost ?? 0);
     await this.economyAnalyticsService.addOpeningReward(
       result.creditsEarnedTotal,
     );
+    await this.antiAbuseService.logAction({
+      userId,
+      action: 'OPEN_BOOSTER',
+      status: 'allowed',
+      severity: 'info',
+      targetType: 'season',
+      targetId: seasonNumber,
+      valueCredits: result.creditsEarnedTotal,
+      metadata: {
+        season: result.season,
+        seasonNumber,
+        payment: result.payment,
+        newCardCount: result.newCardIds?.length ?? 0,
+        flags: result.flags,
+      },
+    });
 
     return result;
   }
 
   async openDisplay(userId: number, seasonNumber: number) {
+    await this.antiAbuseService.assertRateLimit(userId, 'OPEN_DISPLAY');
+
     const payment = await this.economy.consumeOpen(userId, 'display');
 
     const pools = await this.loadPools(seasonNumber);
@@ -950,10 +972,28 @@ export class BoosterService {
     });
 
     await this.economyAnalyticsService.incrementDisplay();
-    await this.economyAnalyticsService.addCreditsSpent(4800);
+    await this.economyAnalyticsService.addCreditsSpent(result.payment?.cost ?? 0);
     await this.economyAnalyticsService.addOpeningReward(
       result.creditsEarnedTotal,
     );
+    await this.antiAbuseService.logAction({
+      userId,
+      action: 'OPEN_DISPLAY',
+      status: 'allowed',
+      severity: hasGoldBooster ? 'watch' : 'info',
+      targetType: 'season',
+      targetId: seasonNumber,
+      valueCredits: result.creditsEarnedTotal,
+      metadata: {
+        season: result.season,
+        seasonNumber,
+        payment: result.payment,
+        newCardCount: result.newCardIds?.length ?? 0,
+        hasGoldBooster,
+        goldIndex: hasGoldBooster ? goldIndex : null,
+        forcedLegendaryIndex,
+      },
+    });
 
     return result;
   }

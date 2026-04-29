@@ -23,6 +23,7 @@ import { BuyListingDto } from './dto/buy-listing.dto';
 import { MarketPricePosition } from './market-price-position.enum';
 import { EconomyAnalyticsService } from '../economy/economy-analytics.service';
 import { PushService } from '../push/push.service';
+import { AntiAbuseService } from '../security/anti-abuse.service';
 
 export interface QuickSellResult {
   success: true;
@@ -58,6 +59,7 @@ export class MarketService {
     private readonly marketPriceHistoryService: MarketPriceHistoryService,
     private readonly economyAnalyticsService: EconomyAnalyticsService,
     private readonly pushService: PushService,
+    private readonly antiAbuseService: AntiAbuseService,
 
     @InjectRepository(UserCard)
     private readonly userCardsRepository: Repository<UserCard>,
@@ -142,6 +144,8 @@ export class MarketService {
     cardId: number,
     quantity: number,
   ): Promise<QuickSellResult> {
+    await this.antiAbuseService.assertRateLimit(userId, 'QUICK_SELL');
+
     if (!Number.isInteger(quantity) || quantity < 1) {
       throw new BadRequestException(
         'Quantity must be an integer greater than or equal to 1.',
@@ -234,11 +238,30 @@ export class MarketService {
 
     await this.economyAnalyticsService.addQuickSell(result.creditsEarned);
     await this.snapshotCards([cardId], 'quick_sell');
+    await this.antiAbuseService.logAction({
+      userId,
+      action: 'QUICK_SELL',
+      status: 'allowed',
+      targetType: 'card',
+      targetId: cardId,
+      valueCredits: result.creditsEarned,
+      metadata: {
+        quantity,
+        marketPrice: result.marketPrice,
+        quickSellRate: result.quickSellRate,
+        remainingQuantity: result.remainingQuantity,
+      },
+    });
 
     return result;
   }
 
   async createListing(userId: number, input: CreateListingInput) {
+    await this.antiAbuseService.assertRateLimit(
+      userId,
+      'MARKET_LISTING_CREATE',
+    );
+
     const normalized = this.normalizeCreateListingInput(input);
 
     const card = await this.cardsRepository.findOne({
@@ -281,6 +304,35 @@ export class MarketService {
       );
       wantedCardMarketPriceSnapshot = wantedCardPricing.finalPrice;
     }
+
+    const referenceListedValue = this.computeReferenceListedValue(
+      soldCardPricing.finalPrice,
+      normalized.quantity,
+      normalized.listingMode,
+    );
+    const referenceRequestedValue = this.computeReferenceRequestedValue(
+      normalized.priceCredits,
+      wantedCardMarketPriceSnapshot,
+      normalized.wantedCardQuantity ?? 0,
+    );
+    const priceDecision =
+      await this.antiAbuseService.assertListingPriceGuard({
+        userId,
+        action: 'MARKET_LISTING_CREATE',
+        cardId: normalized.cardId,
+        referenceValue: referenceListedValue,
+        requestedValue: referenceRequestedValue,
+        quantity: normalized.quantity,
+        metadata: {
+          listingMode: normalized.listingMode,
+          offerType: normalized.offerType,
+          priceCredits: normalized.priceCredits,
+          wantedCardId: normalized.wantedCardId ?? null,
+          wantedCardQuantity: normalized.wantedCardQuantity ?? 0,
+          marketPriceSnapshot: soldCardPricing.finalPrice,
+          wantedCardMarketPriceSnapshot,
+        },
+      });
 
     const result = await this.dataSource.transaction(async (manager) => {
       const userCardRepo = manager.getRepository(UserCard);
@@ -371,6 +423,25 @@ export class MarketService {
       ),
       'listing_created',
     );
+    if (priceDecision.status === 'allowed') {
+      await this.antiAbuseService.logAction({
+        userId,
+        action: 'MARKET_LISTING_CREATE',
+        status: 'allowed',
+        targetType: 'listing',
+        targetId: result.listing.id,
+        valueCredits: Math.round(referenceRequestedValue),
+        metadata: {
+          cardId: normalized.cardId,
+          quantity: normalized.quantity,
+          listingMode: normalized.listingMode,
+          offerType: normalized.offerType,
+          referenceListedValue,
+          referenceRequestedValue,
+          priceDecision,
+        },
+      });
+    }
 
     return result;
   }
@@ -438,6 +509,11 @@ export class MarketService {
   }
 
   async cancelListing(userId: number, listingId: number) {
+    await this.antiAbuseService.assertRateLimit(
+      userId,
+      'MARKET_LISTING_CANCEL',
+    );
+
     const result = await this.dataSource.transaction(async (manager) => {
       const listingRepo = manager.getRepository(MarketListing);
       const userCardRepo = manager.getRepository(UserCard);
@@ -508,6 +584,19 @@ export class MarketService {
       ),
       'listing_cancelled',
     );
+    await this.antiAbuseService.logAction({
+      userId,
+      action: 'MARKET_LISTING_CANCEL',
+      status: 'allowed',
+      targetType: 'listing',
+      targetId: result.listingId,
+      metadata: {
+        cardId: result.cardId,
+        wantedCardId: result.wantedCardId,
+        unlockedQuantity: result.unlockedQuantity,
+        closedAt: result.closedAt,
+      },
+    });
 
     return {
       success: true,
@@ -519,6 +608,8 @@ export class MarketService {
   }
 
   async buyListing(userId: number, listingId: number, dto: BuyListingDto) {
+    await this.antiAbuseService.assertRateLimit(userId, 'MARKET_BUY');
+
     if (!Number.isInteger(dto.quantity) || dto.quantity < 1) {
       throw new BadRequestException('Quantity must be at least 1.');
     }
@@ -563,6 +654,27 @@ export class MarketService {
         listing,
         purchaseQuantity,
       );
+      const referencePurchasedValue = this.computePurchasedReferenceValue(
+        listing,
+        purchaseQuantity,
+      );
+      const requestedPurchasedValue = this.computeReferenceRequestedValue(
+        requiredCredits,
+        listing.wantedCardMarketPriceSnapshot,
+        requiredWantedCardQuantity,
+      );
+
+      const purchaseRiskDecision =
+        await this.antiAbuseService.assertPurchaseRisk({
+          buyerId: userId,
+          sellerId: listing.seller.id,
+          listingId: listing.id,
+          cardId: listing.card.id,
+          quantity: purchaseQuantity,
+          referenceValue: referencePurchasedValue,
+          requestedValue: requestedPurchasedValue,
+          totalPriceCredits: requiredCredits,
+        });
 
       let buyerOfferedCard: Card | null = null;
       let buyerPaymentCard: UserCard | null = null;
@@ -793,10 +905,30 @@ export class MarketService {
               sellerCredits: sellerEconomy?.credits ?? null,
             }
           : null,
+        abuseDecision: purchaseRiskDecision,
       };
     });
 
     await this.snapshotCards(result.snapshotCardIds, 'listing_bought');
+    if (result.abuseDecision?.status === 'allowed') {
+      await this.antiAbuseService.logAction({
+        userId,
+        action: 'MARKET_BUY',
+        status: 'allowed',
+        targetType: 'listing',
+        targetId: listingId,
+        valueCredits: result.settlement.creditsPaid,
+        metadata: {
+          transactionId: result.transaction.id,
+          sellerId: result.transaction.sellerId,
+          cardId: result.transaction.cardId,
+          quantity: result.transaction.quantity,
+          offerType: result.transaction.offerType,
+          listingMode: result.transaction.listingMode,
+          abuseDecision: result.abuseDecision,
+        },
+      });
+    }
     await this.pushService
       .notifySaleRewardAvailable({
         sellerId: result.transaction.sellerId,
@@ -818,6 +950,8 @@ export class MarketService {
   }
 
   async claimTransactionReward(userId: number, transactionId: number) {
+    await this.antiAbuseService.assertRateLimit(userId, 'MARKET_REWARD_CLAIM');
+
     const result = await this.dataSource.transaction(async (manager) => {
       const transactionRepo = manager.getRepository(MarketTransaction);
       const userEconomyRepo = manager.getRepository(UserEconomy);
@@ -925,6 +1059,18 @@ export class MarketService {
     }
 
     await this.snapshotCards(result.snapshotCardIds, 'reward_claimed');
+    await this.antiAbuseService.logAction({
+      userId,
+      action: 'MARKET_REWARD_CLAIM',
+      status: 'allowed',
+      targetType: 'transaction',
+      targetId: result.transactionId,
+      valueCredits: result.rewards.credits,
+      metadata: {
+        rewards: result.rewards,
+        claimedAt: result.claimedAt,
+      },
+    });
 
     return {
       success: result.success,
@@ -1127,6 +1273,42 @@ export class MarketService {
     }
 
     return listing.wantedCardQuantity * purchaseQuantity;
+  }
+
+  private computeReferenceListedValue(
+    unitMarketPrice: number,
+    quantity: number,
+    listingMode: MarketListingMode,
+  ) {
+    if (listingMode === MarketListingMode.LOT) {
+      return Math.max(1, unitMarketPrice * quantity);
+    }
+
+    return Math.max(1, unitMarketPrice);
+  }
+
+  private computePurchasedReferenceValue(
+    listing: MarketListing,
+    purchaseQuantity: number,
+  ) {
+    if (listing.listingMode === MarketListingMode.LOT) {
+      return Math.max(1, listing.marketPriceSnapshot * listing.quantity);
+    }
+
+    return Math.max(1, listing.marketPriceSnapshot * purchaseQuantity);
+  }
+
+  private computeReferenceRequestedValue(
+    credits: number,
+    wantedCardMarketPriceSnapshot: number,
+    wantedCardQuantity: number,
+  ) {
+    return Math.max(
+      0,
+      Math.round(
+        credits + wantedCardMarketPriceSnapshot * wantedCardQuantity,
+      ),
+    );
   }
 
   private applyListingFilters(

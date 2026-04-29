@@ -252,6 +252,33 @@ export type AdminEconomyOverviewResponse = {
       highDeviationTrades: number;
     }>;
   };
+  security?: {
+    totals: {
+      allowed: number;
+      flagged: number;
+      blocked: number;
+      danger: number;
+    };
+    byAction: Array<{
+      action: string;
+      status: 'allowed' | 'flagged' | 'blocked';
+      severity: 'info' | 'watch' | 'danger';
+      count: number;
+    }>;
+    recentEvents: Array<{
+      id: number;
+      userId: number | null;
+      action: string;
+      status: 'allowed' | 'flagged' | 'blocked';
+      severity: 'info' | 'watch' | 'danger';
+      targetType: string | null;
+      targetId: number | null;
+      valueCredits: number;
+      reason: string | null;
+      metadata: Record<string, any> | null;
+      createdAt: string;
+    }>;
+  };
 };
 
 export async function login(dto: LoginDto) {

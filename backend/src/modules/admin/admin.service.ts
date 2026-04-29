@@ -13,6 +13,7 @@ import { BugReport } from '../report/bug-report.entity';
 import { BugReportStatusHistory } from '../report/bug-report-status-history.entity';
 import { BugReportStatus } from '../report/bug-report.entity';
 import { EconomyAnalyticsService } from '../economy/economy-analytics.service';
+import { AntiAbuseService } from '../security/anti-abuse.service';
 
 type GetAllTicketsParams = {
   status?: BugReportStatus | '';
@@ -30,6 +31,7 @@ export class AdminService {
     private readonly historyRepo: Repository<BugReportStatusHistory>,
     private readonly jwt: JwtService,
     private readonly economyAnalyticsService: EconomyAnalyticsService,
+    private readonly antiAbuseService: AntiAbuseService,
   ) {}
 
   private formatReport(report: BugReport) {
@@ -253,6 +255,14 @@ export class AdminService {
   }
 
   async getEconomyOverview(days = 7) {
-    return this.economyAnalyticsService.getOverview(days);
+    const [overview, security] = await Promise.all([
+      this.economyAnalyticsService.getOverview(days),
+      this.antiAbuseService.getOverview(days),
+    ]);
+
+    return {
+      ...overview,
+      security,
+    };
   }
 }

@@ -316,6 +316,97 @@
   font-size: 18px;
 }
 
+.adminSecurityPanel {
+  display: grid;
+  gap: 16px;
+}
+
+.adminSecurityStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.adminSecurityPill {
+  padding: 13px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+}
+
+.adminSecurityPill.is-ok {
+  border-color: rgba(86, 214, 144, 0.22);
+  background: rgba(86, 214, 144, 0.08);
+}
+
+.adminSecurityPill.is-watch {
+  border-color: rgba(255, 204, 102, 0.26);
+  background: rgba(255, 204, 102, 0.1);
+}
+
+.adminSecurityPill.is-danger {
+  border-color: rgba(255, 97, 123, 0.3);
+  background: rgba(255, 97, 123, 0.1);
+}
+
+.adminSecurityPill span {
+  display: block;
+  color: rgba(255,255,255,0.66);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.adminSecurityPill strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.adminSecurityEvents {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.adminSecurityEvent {
+  padding: 12px 14px;
+  border-radius: 15px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.035);
+}
+
+.adminSecurityEvent.is-watch {
+  border-color: rgba(255, 204, 102, 0.22);
+}
+
+.adminSecurityEvent.is-danger {
+  border-color: rgba(255, 97, 123, 0.28);
+  background: rgba(255, 97, 123, 0.07);
+}
+
+.adminSecurityEvent strong,
+.adminSecurityEvent span,
+.adminSecurityEvent time {
+  display: block;
+}
+
+.adminSecurityEvent strong {
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.adminSecurityEvent span,
+.adminSecurityEvent time,
+.adminSecurityEvent p {
+  margin: 5px 0 0;
+  color: rgba(255,255,255,0.66);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .adminBarChart {
   display: grid;
   gap: 12px;
@@ -879,7 +970,9 @@
   }
 
   .adminRiskStrip,
-  .adminRiskStrip__metrics {
+  .adminRiskStrip__metrics,
+  .adminSecurityStats,
+  .adminSecurityEvents {
     grid-template-columns: 1fr;
   }
 

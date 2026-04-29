@@ -80,6 +80,33 @@ function getRiskLabel(level?: string) {
   return "Stable";
 }
 
+function getSecurityActionLabel(action?: string) {
+  switch (action) {
+    case "OPEN_BOOSTER":
+      return "Opening booster";
+    case "OPEN_DISPLAY":
+      return "Opening display";
+    case "QUICK_SELL":
+      return "Quick sell";
+    case "MARKET_LISTING_CREATE":
+      return "Creation annonce";
+    case "MARKET_LISTING_CANCEL":
+      return "Annulation annonce";
+    case "MARKET_BUY":
+      return "Achat market";
+    case "MARKET_REWARD_CLAIM":
+      return "Claim vente";
+    default:
+      return action || "Action";
+  }
+}
+
+function getSecurityStatusLabel(status?: string) {
+  if (status === "blocked") return "Bloque";
+  if (status === "flagged") return "Signale";
+  return "OK";
+}
+
 const PAGE_SIZE = 5;
 
 export default function Admin() {
@@ -247,6 +274,14 @@ export default function Admin() {
   const rarityProfitability = advanced?.rarityProfitability ?? [];
   const manipulatedCards = advanced?.manipulatedCards ?? [];
   const suspiciousUsers = advanced?.suspiciousUsers ?? [];
+  const security = ecoOverview?.security ?? null;
+  const securityTotals = security?.totals ?? {
+    allowed: 0,
+    flagged: 0,
+    blocked: 0,
+    danger: 0,
+  };
+  const recentSecurityEvents = security?.recentEvents ?? [];
 
   async function handleAdminLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -481,6 +516,58 @@ export default function Admin() {
                         </div>
                       </div>
                     </div>
+
+                    <section className="adminDashboardPanel adminSecurityPanel">
+                      <div className="adminDashboardPanel__head">
+                        <h3>Securite anti-abus</h3>
+                        <p className="small">
+                          Rate limits, prix hors cadre et transactions suspectes sur la periode.
+                        </p>
+                      </div>
+
+                      <div className="adminSecurityStats">
+                        <div className="adminSecurityPill is-ok">
+                          <span>Actions OK</span>
+                          <strong>{formatNumber(securityTotals.allowed)}</strong>
+                        </div>
+                        <div className="adminSecurityPill is-watch">
+                          <span>Signalees</span>
+                          <strong>{formatNumber(securityTotals.flagged)}</strong>
+                        </div>
+                        <div className="adminSecurityPill is-danger">
+                          <span>Bloquees</span>
+                          <strong>{formatNumber(securityTotals.blocked)}</strong>
+                        </div>
+                        <div className="adminSecurityPill">
+                          <span>Critiques</span>
+                          <strong>{formatNumber(securityTotals.danger)}</strong>
+                        </div>
+                      </div>
+
+                      <div className="adminSecurityEvents">
+                        {recentSecurityEvents.length > 0 ? (
+                          recentSecurityEvents.map((event) => (
+                            <article
+                              className={`adminSecurityEvent is-${event.severity}`}
+                              key={event.id}
+                            >
+                              <div>
+                                <strong>{getSecurityActionLabel(event.action)}</strong>
+                                <span>
+                                  {getSecurityStatusLabel(event.status)}
+                                  {event.userId ? ` par user #${event.userId}` : ""}
+                                  {event.valueCredits ? ` - ${formatNumber(event.valueCredits)} credits` : ""}
+                                </span>
+                              </div>
+                              <time>{formatDate(event.createdAt)}</time>
+                              {event.reason ? <p>{event.reason}</p> : null}
+                            </article>
+                          ))
+                        ) : (
+                          <div className="adminEmpty">Aucun signal anti-abus sur cette periode.</div>
+                        )}
+                      </div>
+                    </section>
 
                     <div className="adminDashboardGrid">
                       <section className="adminDashboardPanel">
