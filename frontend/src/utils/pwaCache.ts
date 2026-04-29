@@ -4,6 +4,7 @@ export type PwaCacheStatus = {
   cardImageEntries: number;
   cardImageLimit: number;
   version: string;
+  timestamp?: number;
 };
 
 export type PwaCacheProgress = {

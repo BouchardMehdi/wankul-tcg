@@ -85,6 +85,168 @@
   white-space: nowrap;
 }
 
+.pwaStatusPanel,
+.pwaInstallGuide {
+  margin-top: 16px;
+  padding: 22px;
+  border-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(76, 201, 240, 0.12), transparent 32%),
+    linear-gradient(180deg, rgba(18, 24, 44, 0.86), rgba(9, 13, 26, 0.90));
+  box-shadow: var(--shadow-md);
+}
+
+.pwaStatusPanel__head,
+.pwaInstallGuide {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.pwaStatusPanel__head span,
+.pwaInstallGuide span {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: rgba(246, 201, 69, 0.9);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pwaStatusPanel__head h2,
+.pwaInstallGuide h2 {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 38px);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  font-weight: 950;
+}
+
+.pwaStatusPanel__head p,
+.pwaInstallGuide p {
+  max-width: 720px;
+  margin: 10px 0 0;
+  color: var(--text2);
+  line-height: 1.55;
+  font-weight: 850;
+}
+
+.pwaStatusGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.pwaStatusCard {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pwaStatusCard.is-good {
+  border-color: rgba(96, 255, 145, 0.22);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(96, 255, 145, 0.12), transparent 36%),
+    rgba(255, 255, 255, 0.04);
+}
+
+.pwaStatusCard.is-warn {
+  border-color: rgba(246, 201, 69, 0.26);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(246, 201, 69, 0.14), transparent 36%),
+    rgba(255, 255, 255, 0.04);
+}
+
+.pwaStatusCard span,
+.pwaStatusCard em {
+  display: block;
+  color: var(--text2);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.pwaStatusCard strong {
+  display: block;
+  margin: 8px 0 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(20px, 2.6vw, 30px);
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.pwaSyncBanner {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(76, 201, 240, 0.18);
+  background:
+    linear-gradient(135deg, rgba(76, 201, 240, 0.10), rgba(155, 92, 255, 0.08));
+}
+
+.pwaSyncBanner strong,
+.pwaSyncBanner span {
+  display: block;
+}
+
+.pwaSyncBanner strong {
+  font-weight: 950;
+}
+
+.pwaSyncBanner span {
+  margin-top: 4px;
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.pwaSyncBanner__chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pwaSyncBanner__chips span {
+  margin: 0;
+  padding: 6px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.pwaInstallGuide {
+  align-items: center;
+  background:
+    radial-gradient(circle at 88% 0%, rgba(246, 201, 69, 0.14), transparent 32%),
+    linear-gradient(180deg, rgba(18, 24, 44, 0.86), rgba(9, 13, 26, 0.90));
+}
+
+.pwaInstallGuide ol {
+  flex: 0 0 min(420px, 100%);
+  margin: 0;
+  padding-left: 22px;
+  color: var(--text2);
+  font-weight: 850;
+  line-height: 1.65;
+}
+
 .pwaPreferencesSection {
   margin-top: 16px;
   padding: 22px;
@@ -323,8 +485,57 @@
   font-size: 12px;
 }
 
+[data-theme="light"] .pwaPreferencesHero,
+[data-theme="light"] .pwaPreferencesSection,
+[data-theme="light"] .pwaPremiumCard,
+[data-theme="light"] .pwaStatusPanel,
+[data-theme="light"] .pwaInstallGuide {
+  border-color: rgba(42, 35, 54, 0.12);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(0, 144, 169, 0.08), transparent 32%),
+    linear-gradient(180deg, rgba(255, 252, 244, 0.90), rgba(244, 233, 213, 0.76));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.66),
+    0 18px 48px rgba(94, 68, 41, 0.12);
+}
+
+[data-theme="light"] .pwaStatusCard,
+[data-theme="light"] .pwaPreferenceRow {
+  border-color: rgba(42, 35, 54, 0.12);
+  background: rgba(255, 250, 239, 0.66);
+}
+
+[data-theme="light"] .pwaStatusCard.is-good {
+  border-color: rgba(22, 101, 58, 0.22);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(22, 101, 58, 0.10), transparent 36%),
+    rgba(255, 250, 239, 0.66);
+}
+
+[data-theme="light"] .pwaStatusCard.is-warn {
+  border-color: rgba(201, 138, 24, 0.24);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(201, 138, 24, 0.12), transparent 36%),
+    rgba(255, 250, 239, 0.66);
+}
+
+[data-theme="light"] .pwaSyncBanner {
+  border-color: rgba(0, 144, 169, 0.16);
+  background:
+    linear-gradient(135deg, rgba(0, 144, 169, 0.08), rgba(113, 85, 217, 0.07));
+}
+
+[data-theme="light"] .pwaSyncBanner__chips span {
+  border-color: rgba(42, 35, 54, 0.12);
+  background: rgba(255, 250, 239, 0.74);
+}
+
 @media (max-width: 1040px) {
   .pwaPreferencesGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pwaStatusGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -337,7 +548,10 @@
 
   .pwaPreferencesHero,
   .pwaPreferencesSection__head,
-  .pwaPreferenceRow {
+  .pwaPreferenceRow,
+  .pwaStatusPanel__head,
+  .pwaSyncBanner,
+  .pwaInstallGuide {
     flex-direction: column;
     align-items: stretch;
   }
@@ -349,6 +563,10 @@
   }
 
   .pwaPreferencesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pwaStatusGrid {
     grid-template-columns: 1fr;
   }
 

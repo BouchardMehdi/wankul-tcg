@@ -158,6 +158,21 @@
   backdrop-filter: blur(14px);
 }
 
+.pwaOfflinePanel--expanded {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+[data-theme="light"] .pwaOfflinePanel,
+[data-theme="light"] .pwaSyncPanel {
+  border-color: rgba(201, 138, 24, 0.28);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(201, 138, 24, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(255, 252, 244, 0.96), rgba(244, 233, 213, 0.94));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.70),
+    0 22px 60px rgba(94, 68, 41, 0.18);
+}
+
 .pwaOfflinePanel__mark {
   width: 52px;
   height: 52px;
@@ -170,13 +185,37 @@
   font-weight: 950;
 }
 
+.pwaSyncPanel__mark {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #06160c;
+  background: linear-gradient(135deg, #65e6a2, #4cc9f0);
+  font-size: 13px;
+  font-weight: 950;
+  box-shadow: 0 16px 34px rgba(76, 201, 240, 0.18);
+}
+
 .pwaOfflinePanel__content {
   min-width: 0;
   display: grid;
   gap: 4px;
 }
 
+.pwaSyncPanel__content {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
 .pwaOfflinePanel__content strong {
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.pwaSyncPanel__content strong {
   font-size: 15px;
   font-weight: 950;
 }
@@ -188,6 +227,39 @@
   line-height: 1.45;
 }
 
+.pwaSyncPanel__content span,
+.pwaSyncPanel__content em {
+  color: var(--text2);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.pwaOfflinePanel__stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.pwaOfflinePanel__stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+[data-theme="light"] .pwaOfflinePanel__stats span {
+  border-color: rgba(42, 35, 54, 0.12);
+  background: rgba(255, 250, 239, 0.66);
+}
+
 .pwaOfflinePanel__actions {
   display: flex;
   gap: 8px;
@@ -196,7 +268,8 @@
 }
 
 .pwaOfflinePanel__actions a,
-.pwaOfflinePanel__actions button {
+.pwaOfflinePanel__actions button,
+.pwaSyncPanel button {
   min-height: 38px;
   padding: 0 12px;
   border-radius: 13px;
@@ -207,6 +280,28 @@
   font-size: 12px;
   font-weight: 950;
   cursor: pointer;
+}
+
+.pwaSyncPanel {
+  position: fixed;
+  left: max(16px, var(--safe-left));
+  right: max(16px, var(--safe-right));
+  bottom: calc(18px + var(--safe-bottom));
+  z-index: 82;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  width: min(760px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 14px;
+  border-radius: 22px;
+  border: 1px solid rgba(96, 255, 145, 0.24);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(96, 255, 145, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(20, 24, 42, 0.96), rgba(9, 13, 24, 0.96));
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(14px);
 }
 
 @keyframes pwaSplashFloat {
@@ -226,6 +321,12 @@
     bottom: calc(var(--mobile-nav-offset) + 10px);
   }
 
+  .pwaSyncPanel {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    bottom: calc(var(--mobile-nav-offset) + 10px);
+  }
+
   .pwaOfflinePanel__mark {
     width: 46px;
     height: 46px;
@@ -234,5 +335,9 @@
   .pwaOfflinePanel__actions {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .pwaSyncPanel button {
+    width: 100%;
   }
 }

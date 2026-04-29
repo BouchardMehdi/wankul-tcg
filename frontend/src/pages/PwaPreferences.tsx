@@ -41,6 +41,19 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
+type NavigatorWithConnection = Navigator & {
+  connection?: {
+    downlink?: number;
+    effectiveType?: string;
+    saveData?: boolean;
+  };
+};
+
+type BrowserStorageEstimate = {
+  quota?: number;
+  usage?: number;
+};
+
 const NOTIFICATION_ROWS: Array<{
   key: keyof PushNotificationPreferences;
   title: string;
@@ -132,16 +145,38 @@ function isStandaloneDisplay() {
   );
 }
 
+function formatBytes(value?: number) {
+  if (!value || Number.isNaN(value)) return "En attente";
+  if (value >= 1024 * 1024 * 1024) return `${(value / (1024 * 1024 * 1024)).toFixed(1)} Go`;
+  if (value >= 1024 * 1024) return `${Math.round(value / (1024 * 1024))} Mo`;
+  return `${Math.round(value / 1024)} Ko`;
+}
+
+function formatStatusTime(timestamp?: number) {
+  if (!timestamp) return "Jamais";
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(new Date(timestamp));
+}
+
 export default function PwaPreferences() {
   const { token } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(() => readAppSettings());
   const [online, setOnline] = useState(() => navigator.onLine);
+  const [serviceWorkerReady, setServiceWorkerReady] = useState(
+    () => Boolean(navigator.serviceWorker?.controller),
+  );
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installFeedback, setInstallFeedback] = useState("");
   const [cacheStatus, setCacheStatus] = useState<PwaCacheStatus | null>(null);
   const [cacheProgress, setCacheProgress] = useState<PwaCacheProgress | null>(null);
   const [cacheBusy, setCacheBusy] = useState(false);
   const [cacheFeedback, setCacheFeedback] = useState("");
+  const [lastStatusAt, setLastStatusAt] = useState(0);
+  const [storageEstimate, setStorageEstimate] = useState<BrowserStorageEstimate | null>(null);
   const [pushPrefs, setPushPrefs] = useState<PushNotificationPreferences | null>(null);
   const [pushPrefsLoading, setPushPrefsLoading] = useState(true);
   const [pushPrefsSaving, setPushPrefsSaving] = useState(false);
@@ -153,6 +188,17 @@ export default function PwaPreferences() {
 
   const installed = isStandaloneDisplay();
   const cacheSupported = isPwaCacheSupported();
+  const connection = (navigator as NavigatorWithConnection).connection;
+  const connectionLabel = online
+    ? connection?.effectiveType
+      ? `En ligne - ${connection.effectiveType.toUpperCase()}`
+      : "En ligne"
+    : "Hors ligne";
+  const serviceWorkerLabel = cacheSupported
+    ? serviceWorkerReady
+      ? "Actif"
+      : "En activation"
+    : "Non supporte";
 
   useEffect(
     () =>
@@ -168,15 +214,24 @@ export default function PwaPreferences() {
       event.preventDefault();
       setInstallPrompt(event as BeforeInstallPromptEvent);
     };
+    const onAppInstalled = () => {
+      setInstallPrompt(null);
+      setInstallFeedback("Installation terminee. Wankul TCG est maintenant lanceable comme une app.");
+    };
+    const onControllerChange = () => setServiceWorkerReady(true);
 
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOnline);
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    window.addEventListener("appinstalled", onAppInstalled);
+    navigator.serviceWorker?.addEventListener("controllerchange", onControllerChange);
 
     return () => {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOnline);
       window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", onAppInstalled);
+      navigator.serviceWorker?.removeEventListener("controllerchange", onControllerChange);
     };
   }, []);
 
@@ -184,6 +239,7 @@ export default function PwaPreferences() {
     const unsubStatus = subscribePwaCacheStatus((status) => {
       setCacheStatus(status);
       setCacheBusy(false);
+      setLastStatusAt(Date.now());
     });
     const unsubProgress = subscribePwaCacheProgress((progress) => {
       setCacheProgress(progress);
@@ -198,6 +254,22 @@ export default function PwaPreferences() {
       unsubProgress();
     };
   }, [cacheSupported]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStorageEstimate() {
+      if (!navigator.storage?.estimate) return;
+      const estimate = await navigator.storage.estimate();
+      if (!cancelled) setStorageEstimate(estimate);
+    }
+
+    loadStorageEstimate().catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cacheStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -233,6 +305,11 @@ export default function PwaPreferences() {
     );
   }, [cacheStatus]);
 
+  const storageFillPercent = useMemo(() => {
+    if (!storageEstimate?.quota || !storageEstimate?.usage) return 0;
+    return Math.min(100, Math.round((storageEstimate.usage / storageEstimate.quota) * 100));
+  }, [storageEstimate]);
+
   function updateLocalSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
     setSettings((current) => ({ ...current, [key]: value }));
     writeAppSettings({ [key]: value });
@@ -257,6 +334,22 @@ export default function PwaPreferences() {
         ? "Installation lancee. Bienvenue dans la vraie app."
         : "Installation annulee, tu pourras retenter plus tard.",
     );
+  }
+
+  async function refreshPwaStatus() {
+    setCacheFeedback("");
+    setLastStatusAt(Date.now());
+
+    if (cacheSupported) {
+      await requestPwaCacheStatus().catch(() => {
+        setCacheFeedback("Service worker pas encore pret, reessaie dans quelques secondes.");
+      });
+    }
+
+    if (navigator.storage?.estimate) {
+      const estimate = await navigator.storage.estimate().catch(() => null);
+      if (estimate) setStorageEstimate(estimate);
+    }
   }
 
   async function enableNotifications() {
@@ -416,6 +509,79 @@ export default function PwaPreferences() {
             <strong>{cacheSupported ? "Pret" : "Non supporte"}</strong>
             <em>{cacheStatus?.version ?? "Statut en attente"}</em>
           </article>
+        </section>
+
+        <section className="pwaStatusPanel">
+          <div className="pwaStatusPanel__head">
+            <div>
+              <span>Statut reseau/cache</span>
+              <h2>Donnees synchronisees</h2>
+              <p>
+                Une lecture rapide de ce que la PWA peut faire maintenant :
+                connexion, service worker, cache et stockage navigateur.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="pwaPreferencesBtn pwaPreferencesBtn--ghost"
+              onClick={() => void refreshPwaStatus()}
+            >
+              Resynchroniser
+            </button>
+          </div>
+
+          <div className="pwaStatusGrid">
+            <article className={["pwaStatusCard", online ? "is-good" : "is-warn"].join(" ")}>
+              <span>Connexion</span>
+              <strong>{connectionLabel}</strong>
+              <em>{connection?.saveData ? "Mode economie de donnees detecte" : "Pret pour market et openings"}</em>
+            </article>
+            <article className={["pwaStatusCard", serviceWorkerReady ? "is-good" : "is-warn"].join(" ")}>
+              <span>Service worker</span>
+              <strong>{serviceWorkerLabel}</strong>
+              <em>{cacheStatus?.version ?? "Version cache en attente"}</em>
+            </article>
+            <article className="pwaStatusCard">
+              <span>Cache app</span>
+              <strong>{(cacheStatus?.shellEntries ?? 0) + (cacheStatus?.runtimeEntries ?? 0)}</strong>
+              <em>{cacheStatus?.shellEntries ?? 0} shell + {cacheStatus?.runtimeEntries ?? 0} assets</em>
+            </article>
+            <article className="pwaStatusCard">
+              <span>Stockage navigateur</span>
+              <strong>{storageFillPercent}%</strong>
+              <em>{formatBytes(storageEstimate?.usage)} utilises sur {formatBytes(storageEstimate?.quota)}</em>
+            </article>
+          </div>
+
+          <div className="pwaSyncBanner">
+            <div>
+              <strong>Derniere verification : {formatStatusTime(lastStatusAt || cacheStatus?.timestamp)}</strong>
+              <span>
+                Si tu passes hors ligne, garde surtout les pages deja ouvertes et les images de cartes cachees.
+              </span>
+            </div>
+            <div className="pwaSyncBanner__chips">
+              <span>{cacheStatus?.cardImageEntries ?? 0} cartes</span>
+              <span>{cacheStatus?.runtimeEntries ?? 0} assets</span>
+              <span>{online ? "Serveur joignable" : "Mode lecture locale"}</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="pwaInstallGuide">
+          <div>
+            <span>Installation</span>
+            <h2>Un raccourci propre, comme une vraie app.</h2>
+            <p>
+              Le bouton automatique apparait quand le navigateur autorise
+              l'installation. Sinon, passe par le menu du navigateur.
+            </p>
+          </div>
+          <ol>
+            <li>Chrome/Edge : bouton Installer ou menu puis Installer l'application.</li>
+            <li>Android : ajoute l'app a l'ecran d'accueil pour ouvrir en plein ecran.</li>
+            <li>iPhone/iPad : menu Partager puis Sur l'ecran d'accueil.</li>
+          </ol>
         </section>
 
         <section className="pwaPreferencesSection">

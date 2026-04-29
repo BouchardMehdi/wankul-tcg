@@ -1,4 +1,4 @@
-const SHELL_CACHE = "wankul-shell-v4";
+const SHELL_CACHE = "wankul-shell-v5";
 const RUNTIME_CACHE = "wankul-runtime-v2";
 const CARD_IMAGE_CACHE = "wankul-card-images-v1";
 const CARD_IMAGE_CACHE_LIMIT = 260;
@@ -59,6 +59,7 @@ async function getCacheStatus() {
     cardImageEntries: cardKeys.length,
     cardImageLimit: CARD_IMAGE_CACHE_LIMIT,
     version: SHELL_CACHE,
+    timestamp: Date.now(),
   };
 }
 
