@@ -28,6 +28,7 @@ import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
 const PAGE_SIZE = 25;
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const COLLECTION_META_KEY = "wankul_collection_meta_v1";
 
 type Filters = {
   q: string;
@@ -35,7 +36,17 @@ type Filters = {
   rarity: string;
   type: string;
   artist: string;
+  tag: string;
   ownedOnly: boolean;
+};
+
+type CollectionView = "all" | "objective" | "missing" | "duplicates" | "favorites";
+type CollectionPanel = "cards" | "stats";
+
+type CollectionMeta = {
+  favoriteIds: number[];
+  objectiveIds: number[];
+  tagsById: Record<string, string[]>;
 };
 
 type QuickSellModalState = {
@@ -47,10 +58,112 @@ type QuickSellModalState = {
   error: string;
 };
 
+type TagModalState = {
+  open: boolean;
+  card: any | null;
+  value: string;
+};
+
 function uniqSorted(values: Array<string | null | undefined>) {
   return Array.from(
     new Set(values.filter((v): v is string => !!v && v.trim().length > 0)),
   ).sort((a, b) => a.localeCompare(b));
+}
+
+function uniqueNumbers(values: unknown): number[] {
+  if (!Array.isArray(values)) return [];
+  return Array.from(
+    new Set(
+      values
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value > 0),
+    ),
+  );
+}
+
+function uniqueTags(values: unknown): string[] {
+  if (!Array.isArray(values)) return [];
+
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const value of values) {
+    const tag = String(value ?? "").trim().replace(/\s+/g, " ");
+    if (!tag) continue;
+
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(tag.slice(0, 24));
+  }
+
+  return out.slice(0, 8);
+}
+
+function readCollectionMeta(): CollectionMeta {
+  try {
+    const raw = JSON.parse(localStorage.getItem(COLLECTION_META_KEY) || "{}");
+    const tagsById: Record<string, string[]> = {};
+
+    for (const [id, tags] of Object.entries(raw?.tagsById ?? {})) {
+      const numericId = Number(id);
+      if (!Number.isInteger(numericId) || numericId <= 0) continue;
+      tagsById[String(numericId)] = uniqueTags(tags);
+    }
+
+    return {
+      favoriteIds: uniqueNumbers(raw?.favoriteIds),
+      objectiveIds: uniqueNumbers(raw?.objectiveIds),
+      tagsById,
+    };
+  } catch {
+    return {
+      favoriteIds: [],
+      objectiveIds: [],
+      tagsById: {},
+    };
+  }
+}
+
+function writeCollectionMeta(meta: CollectionMeta) {
+  localStorage.setItem(COLLECTION_META_KEY, JSON.stringify(meta));
+}
+
+function rarityRankLabel(rarity?: string | null) {
+  const raw = String(rarity ?? "");
+  const key = normalizeRarity(raw);
+
+  switch (key) {
+    case "starter":
+      return 0;
+    case "u1":
+      return 4;
+    case "u2":
+      return 5;
+    case "leg-bronze":
+      return 6;
+    case "leg-silver":
+      return 7;
+    case "leg-gold":
+      return 8;
+    case "booster-gold":
+      return 9;
+    default:
+      break;
+  }
+
+  const s = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (s.includes("terrain")) return 1;
+  if (s.includes("commune") && s.includes("peu")) return 3;
+  if (s.includes("commune")) return 2;
+  if (s.includes("rare")) return 4;
+  if (s.includes("ticket")) return 10;
+  return 99;
+}
+
+function percent(part: number, total: number) {
+  if (!total) return 0;
+  return Math.round((part / total) * 100);
 }
 
 function uniqSeasonOptions(cards: any[]) {
@@ -137,7 +250,7 @@ function normalizeRarity(raw?: string | null) {
   const isLegendary = s.includes("legendaire") || s.includes("legendary") || s.startsWith("leg ");
   if (isLegendary && s.includes("bronze")) return "leg-bronze";
   if (isLegendary && (s.includes("argent") || s.includes("silver"))) return "leg-silver";
-  if (isLegendary && (s.includes("or") || s.includes("gold"))) return "leg-gold";
+  if (isLegendary && (s.includes("or") || s.includes("gold") || s.includes("doree"))) return "leg-gold";
 
   return "";
 }
@@ -256,10 +369,15 @@ export default function Collection() {
   const [globalFeedback, setGlobalFeedback] = useState("");
   const [page, setPage] = useState(1);
   const [pageInput, setPageInput] = useState("1");
+  const [activePanel, setActivePanel] = useState<CollectionPanel>("cards");
+  const [activeView, setActiveView] = useState<CollectionView>("all");
 
   const [allCards, setAllCards] = useState<CardDto[]>([]);
   const [ownedRows, setOwnedRows] = useState<OwnedCardRow[]>([]);
   const [sellableRows, setSellableRows] = useState<SellableCardRow[]>([]);
+  const [collectionMeta, setCollectionMeta] = useState<CollectionMeta>(() =>
+    readCollectionMeta(),
+  );
 
   const [filters, setFilters] = useState<Filters>({
     q: "",
@@ -267,6 +385,7 @@ export default function Collection() {
     rarity: "",
     type: "",
     artist: "",
+    tag: "",
     ownedOnly: selectForMarket || quickSellMode,
   });
   const [settings, setSettings] = useState(() => readAppSettings());
@@ -283,11 +402,22 @@ export default function Collection() {
     error: "",
   });
 
+  const [tagModal, setTagModal] = useState<TagModalState>({
+    open: false,
+    card: null,
+    value: "",
+  });
+
   useEffect(() => subscribeAppSettings(() => setSettings(readAppSettings())), []);
+
+  useEffect(() => {
+    writeCollectionMeta(collectionMeta);
+  }, [collectionMeta]);
 
   useEffect(() => {
     if (selectForMarket || quickSellMode) {
       setFilters((prev) => ({ ...prev, ownedOnly: true }));
+      setActivePanel("cards");
     }
   }, [selectForMarket, quickSellMode]);
 
@@ -364,7 +494,7 @@ export default function Collection() {
       const [cardsRes, ownedRes, sellableRes] = await Promise.all([
         fetchAllCards(),
         fetchOwnedCollection(),
-        selectForMarket || quickSellMode ? getMySellableCards() : Promise.resolve([]),
+        getMySellableCards().catch(() => []),
       ]);
 
       setAllCards(Array.isArray(cardsRes) ? cardsRes : []);
@@ -399,23 +529,43 @@ export default function Collection() {
     return m;
   }, [ownedRows]);
 
+  const favoriteIds = useMemo(
+    () => new Set(collectionMeta.favoriteIds),
+    [collectionMeta.favoriteIds],
+  );
+
+  const objectiveIds = useMemo(
+    () => new Set(collectionMeta.objectiveIds),
+    [collectionMeta.objectiveIds],
+  );
+
+  function getCardTags(cardId: number) {
+    return collectionMeta.tagsById[String(cardId)] ?? [];
+  }
+
   const merged: any[] = useMemo(() => {
     const list = (allCards as any[]).map((c) => ({
       ...c,
       quantity: ownedMap.get(c.id) ?? 0,
       isSellable: sellableMap.has(Number(c.id)),
       sellableRow: sellableMap.get(Number(c.id)) ?? null,
+      isFavorite: favoriteIds.has(Number(c.id)),
+      isObjective: objectiveIds.has(Number(c.id)),
+      personalTags: collectionMeta.tagsById[String(c.id)] ?? [],
     }));
     list.sort(compareCards);
     return list;
-  }, [allCards, ownedMap, sellableMap]);
+  }, [allCards, ownedMap, sellableMap, favoriteIds, objectiveIds, collectionMeta.tagsById]);
 
   const options = useMemo(() => {
     const seasons = uniqSeasonOptions(merged);
     const rarities = uniqSorted(merged.map((c) => c.rarity));
     const types = uniqSorted(merged.map((c) => c.type ?? ""));
     const artists = uniqSorted(merged.map((c) => c.artist ?? ""));
-    return { seasons, rarities, types, artists };
+    const tags = uniqSorted(
+      merged.flatMap((c) => (Array.isArray(c.personalTags) ? c.personalTags : [])),
+    );
+    return { seasons, rarities, types, artists, tags };
   }, [merged]);
 
   const filtered = useMemo(() => {
@@ -423,22 +573,145 @@ export default function Collection() {
 
     return merged.filter((c) => {
       const owned = (c.quantity ?? 0) > 0;
+      const isDuplicate = (c.quantity ?? 0) > 1;
+      const usefulDuplicate =
+        Number(c.sellableRow?.sellableQuantity ?? 0) > 0 || isDuplicate;
 
-      if ((filters.ownedOnly || settings.hideMissingCards) && !owned) return false;
+      if (
+        activeView !== "missing" &&
+        activeView !== "objective" &&
+        (filters.ownedOnly || settings.hideMissingCards) &&
+        !owned
+      ) {
+        return false;
+      }
+      if (activeView === "missing" && owned) return false;
+      if (activeView === "duplicates" && !usefulDuplicate) return false;
+      if (activeView === "favorites" && !c.isFavorite) return false;
+      if (activeView === "objective" && !c.isObjective) return false;
+
       if (filters.season && (c.season ?? c.extension ?? "") !== filters.season) return false;
       if (filters.rarity && (c.rarity ?? "") !== filters.rarity) return false;
       if (filters.type && (c.type ?? "") !== filters.type) return false;
       if (filters.artist && (c.artist ?? "") !== filters.artist) return false;
+      if (filters.tag && !(c.personalTags ?? []).some((tag: string) => tag === filters.tag)) {
+        return false;
+      }
 
       if (q) {
         const hay =
-          `${c.name} ${c.key ?? ""} ${c.number ?? ""} ${c.rarity ?? ""} ${c.type ?? ""} ${c.artist ?? ""}`.toLowerCase();
+          `${c.name} ${c.key ?? ""} ${c.number ?? ""} ${c.rarity ?? ""} ${c.type ?? ""} ${c.artist ?? ""} ${(c.personalTags ?? []).join(" ")}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
 
       return true;
     });
-  }, [merged, filters, settings.hideMissingCards]);
+  }, [merged, filters, activeView, settings.hideMissingCards]);
+
+  const collectionStats = useMemo(() => {
+    const totalCards = merged.length;
+    const ownedCards = merged.filter((card) => (card.quantity ?? 0) > 0);
+    const missingCards = merged.filter((card) => (card.quantity ?? 0) <= 0);
+    const duplicateCards = merged.filter((card) => (card.quantity ?? 0) > 1);
+    const sellableDuplicateCards = merged.filter(
+      (card) => Number(card.sellableRow?.sellableQuantity ?? 0) > 0,
+    );
+    const objectiveCards = merged.filter((card) => card.isObjective);
+    const objectiveOwned = objectiveCards.filter((card) => (card.quantity ?? 0) > 0);
+
+    return {
+      totalCards,
+      ownedUnique: ownedCards.length,
+      missing: missingCards.length,
+      completion: percent(ownedCards.length, totalCards),
+      totalCopies: ownedCards.reduce((sum, card) => sum + Number(card.quantity ?? 0), 0),
+      duplicateUnique: duplicateCards.length,
+      duplicateCopies: duplicateCards.reduce(
+        (sum, card) => sum + Math.max(0, Number(card.quantity ?? 0) - 1),
+        0,
+      ),
+      usefulDuplicates: sellableDuplicateCards.length || duplicateCards.length,
+      favorites: collectionMeta.favoriteIds.length,
+      objectives: objectiveCards.length,
+      objectiveOwned: objectiveOwned.length,
+      objectiveCompletion: percent(objectiveOwned.length, objectiveCards.length),
+    };
+  }, [merged, collectionMeta.favoriteIds.length]);
+
+  const seasonProgress = useMemo(() => {
+    const map = new Map<
+      string,
+      { label: string; season?: string | null; extension?: string | null; seasonNumber?: number | null; total: number; owned: number }
+    >();
+
+    for (const card of merged) {
+      const label = card.season ?? card.extension ?? "Hors serie";
+      const entry =
+        map.get(label) ??
+        {
+          label,
+          season: card.season ?? null,
+          extension: card.extension ?? null,
+          seasonNumber: card.seasonNumber ?? null,
+          total: 0,
+          owned: 0,
+        };
+      entry.total += 1;
+      if ((card.quantity ?? 0) > 0) entry.owned += 1;
+      map.set(label, entry);
+    }
+
+    return Array.from(map.values()).sort((a, b) => {
+      const rank = seasonRank(a.season, a.extension, a.seasonNumber) - seasonRank(b.season, b.extension, b.seasonNumber);
+      if (rank !== 0) return rank;
+      return a.label.localeCompare(b.label);
+    });
+  }, [merged]);
+
+  const rarityProgress = useMemo(() => {
+    const source = filters.season
+      ? merged.filter((card) => (card.season ?? card.extension ?? "") === filters.season)
+      : merged;
+    const map = new Map<string, { rarity: string; total: number; owned: number }>();
+
+    for (const card of source) {
+      const rarity = card.rarity ?? "Inconnue";
+      const entry = map.get(rarity) ?? { rarity, total: 0, owned: 0 };
+      entry.total += 1;
+      if ((card.quantity ?? 0) > 0) entry.owned += 1;
+      map.set(rarity, entry);
+    }
+
+    return Array.from(map.values()).sort((a, b) => {
+      const rank = rarityRankLabel(a.rarity) - rarityRankLabel(b.rarity);
+      if (rank !== 0) return rank;
+      return a.rarity.localeCompare(b.rarity);
+    });
+  }, [merged, filters.season]);
+
+  const missingHighlights = useMemo(() => {
+    return merged
+      .filter((card) => (card.quantity ?? 0) <= 0)
+      .sort((a, b) => {
+        const rarity = rarityRankLabel(b.rarity) - rarityRankLabel(a.rarity);
+        if (rarity !== 0) return rarity;
+        return compareCards(a, b);
+      })
+      .slice(0, 6);
+  }, [merged]);
+
+  const usefulDuplicateHighlights = useMemo(() => {
+    return merged
+      .filter((card) => (card.quantity ?? 0) > 1)
+      .sort((a, b) => {
+        const value =
+          Number(b.sellableRow?.quickSellTotalPrice ?? 0) -
+          Number(a.sellableRow?.quickSellTotalPrice ?? 0);
+        if (value !== 0) return value;
+        return Number(b.quantity ?? 0) - Number(a.quantity ?? 0);
+      })
+      .slice(0, 6);
+  }, [merged]);
 
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -486,6 +759,91 @@ export default function Collection() {
       : settings.collectionLayout === "large"
         ? "cardsGrid--large"
         : "cardsGrid--standard";
+
+  function resetPaging() {
+    setPage(1);
+    setPageInput("1");
+  }
+
+  function switchCollectionPanel(panel: CollectionPanel) {
+    void primeSound();
+    setActivePanel(panel);
+    resetPaging();
+  }
+
+  function setCollectionView(view: CollectionView, openCards = true) {
+    void primeSound();
+    setActiveView(view);
+    if (openCards) setActivePanel("cards");
+    resetPaging();
+  }
+
+  function toggleFavorite(cardId: number) {
+    void primeSound();
+    setCollectionMeta((prev) => {
+      const ids = new Set(prev.favoriteIds);
+      if (ids.has(cardId)) ids.delete(cardId);
+      else ids.add(cardId);
+
+      return {
+        ...prev,
+        favoriteIds: Array.from(ids).sort((a, b) => a - b),
+      };
+    });
+  }
+
+  function toggleObjective(cardId: number) {
+    void primeSound();
+    setCollectionMeta((prev) => {
+      const ids = new Set(prev.objectiveIds);
+      if (ids.has(cardId)) ids.delete(cardId);
+      else ids.add(cardId);
+
+      return {
+        ...prev,
+        objectiveIds: Array.from(ids).sort((a, b) => a - b),
+      };
+    });
+  }
+
+  function openTagModal(card: any) {
+    void primeSound();
+    setTagModal({
+      open: true,
+      card,
+      value: getCardTags(Number(card.id)).join(", "),
+    });
+  }
+
+  function closeTagModal() {
+    setTagModal({ open: false, card: null, value: "" });
+  }
+
+  function saveTagModal() {
+    if (!tagModal.card) return;
+    void primeSound();
+
+    const cardId = Number(tagModal.card.id);
+    const tags = uniqueTags(
+      tagModal.value
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean),
+    );
+
+    setCollectionMeta((prev) => {
+      const tagsById = { ...prev.tagsById };
+      if (tags.length) tagsById[String(cardId)] = tags;
+      else delete tagsById[String(cardId)];
+
+      return {
+        ...prev,
+        tagsById,
+      };
+    });
+
+    closeTagModal();
+  }
 
   function handleSelectForMarket(cardId: number, isSellable: boolean) {
     if (!selectForMarket || !isSellable) return;
@@ -575,6 +933,8 @@ export default function Collection() {
       quickSellModal.card?.img ??
       "",
   );
+  const showCollectionPanels = !selectForMarket && !quickSellMode;
+  const showCardsPanel = !showCollectionPanels || activePanel === "cards";
 
   return (
     <div className="app-shell">
@@ -617,6 +977,189 @@ export default function Collection() {
               </div>
             )}
 
+            {!loading && !error && showCollectionPanels && (
+              <div className="collectionPanelSwitch" role="tablist" aria-label="Panneaux collection">
+                <button
+                  type="button"
+                  className={["collectionPanelSwitch__btn", activePanel === "cards" ? "is-active" : ""].join(" ")}
+                  onClick={() => switchCollectionPanel("cards")}
+                  role="tab"
+                  aria-selected={activePanel === "cards"}
+                >
+                  Collection
+                  <span>{total}</span>
+                </button>
+                <button
+                  type="button"
+                  className={["collectionPanelSwitch__btn", activePanel === "stats" ? "is-active" : ""].join(" ")}
+                  onClick={() => switchCollectionPanel("stats")}
+                  role="tab"
+                  aria-selected={activePanel === "stats"}
+                >
+                  Stats & objectifs
+                  <span>{collectionStats.completion}%</span>
+                </button>
+              </div>
+            )}
+
+            {!loading && !error && showCollectionPanels && activePanel === "stats" && (
+              <div className="collectionQualityPanel">
+                <div className="collectionQualityHero">
+                  <div>
+                    <span className="collectionQualityHero__eyebrow">Objectif collection</span>
+                    <h3>{collectionStats.completion}% completee</h3>
+                    <p>
+                      {collectionStats.ownedUnique}/{collectionStats.totalCards} cartes uniques • {collectionStats.missing} manquantes • {collectionStats.duplicateCopies} doublons.
+                    </p>
+                  </div>
+                  <div className="collectionQualityHero__ring" style={{ ["--progress" as any]: `${collectionStats.completion}%` }}>
+                    <strong>{collectionStats.completion}%</strong>
+                    <span>global</span>
+                  </div>
+                </div>
+
+                <div className="collectionViewSwitch collectionViewSwitch--filters" role="tablist" aria-label="Vues de collection">
+                  {[
+                    { view: "all" as const, label: "Tout", count: collectionStats.totalCards },
+                    { view: "objective" as const, label: "Objectifs", count: collectionStats.objectives },
+                    { view: "missing" as const, label: "Manquantes", count: collectionStats.missing },
+                    { view: "duplicates" as const, label: "Doublons utiles", count: collectionStats.usefulDuplicates },
+                    { view: "favorites" as const, label: "Favoris", count: collectionStats.favorites },
+                  ].map(({ view, label, count }) => (
+                    <button
+                      key={view}
+                      type="button"
+                      className={["collectionViewSwitch__btn", activeView === view ? "is-active" : ""].join(" ")}
+                      onClick={() => setCollectionView(view, true)}
+                      role="tab"
+                      aria-selected={activeView === view}
+                    >
+                      {label}
+                      <span>{count}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="collectionStatsGrid">
+                  <div>
+                    <span>Copies totales</span>
+                    <b>{collectionStats.totalCopies}</b>
+                  </div>
+                  <div>
+                    <span>Objectifs valides</span>
+                    <b>{collectionStats.objectiveOwned}/{collectionStats.objectives}</b>
+                  </div>
+                  <div>
+                    <span>Favoris</span>
+                    <b>{collectionStats.favorites}</b>
+                  </div>
+                  <div>
+                    <span>Doublons vendables</span>
+                    <b>{collectionStats.usefulDuplicates}</b>
+                  </div>
+                </div>
+
+                <div className="collectionProgressGrid">
+                  <div className="collectionProgressCard">
+                    <div className="collectionProgressCard__head">
+                      <strong>Progression par saison</strong>
+                      <span>{seasonProgress.length} sets</span>
+                    </div>
+                    <div className="collectionProgressList">
+                      {seasonProgress.slice(0, 6).map((row) => (
+                        <button
+                          key={row.label}
+                          type="button"
+                          className="collectionProgressRow"
+                          onClick={() => {
+                            setActivePanel("cards");
+                            updateFilter("season", row.label);
+                          }}
+                        >
+                          <span>{row.label}</span>
+                          <b>{row.owned}/{row.total}</b>
+                          <i style={{ ["--progress" as any]: `${percent(row.owned, row.total)}%` }} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="collectionProgressCard">
+                    <div className="collectionProgressCard__head">
+                      <strong>Progression par rarete</strong>
+                      <span>{filters.season || "Global"}</span>
+                    </div>
+                    <div className="collectionProgressList">
+                      {rarityProgress.map((row) => (
+                        <button
+                          key={row.rarity}
+                          type="button"
+                          className="collectionProgressRow"
+                          onClick={() => {
+                            setActivePanel("cards");
+                            updateFilter("rarity", row.rarity);
+                          }}
+                        >
+                          <span>{row.rarity}</span>
+                          <b>{row.owned}/{row.total}</b>
+                          <i style={{ ["--progress" as any]: `${percent(row.owned, row.total)}%` }} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="collectionFocusCard">
+                    <div className="collectionProgressCard__head">
+                      <strong>Cartes a chasser</strong>
+                      <span>{missingHighlights.length}</span>
+                    </div>
+                    <div className="collectionMiniRail">
+                      {missingHighlights.map((card) => (
+                        <button
+                          key={`missing-${card.id}`}
+                          type="button"
+                          className="collectionMiniCard"
+                          onClick={() => {
+                            setActiveView("missing");
+                            setActivePanel("cards");
+                            updateFilter("q", card.name ?? "");
+                          }}
+                        >
+                          <img src={resolveImg(card.imageUrl ?? card.image ?? card.img ?? "")} alt={card.name} />
+                          <span>{card.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="collectionFocusCard">
+                    <div className="collectionProgressCard__head">
+                      <strong>Doublons utiles</strong>
+                      <span>{usefulDuplicateHighlights.length}</span>
+                    </div>
+                    <div className="collectionMiniRail">
+                      {usefulDuplicateHighlights.map((card) => (
+                        <button
+                          key={`duplicate-${card.id}`}
+                          type="button"
+                          className="collectionMiniCard"
+                          onClick={() => {
+                            setActiveView("duplicates");
+                            setActivePanel("cards");
+                            updateFilter("q", card.name ?? "");
+                          }}
+                        >
+                          <img src={resolveImg(card.imageUrl ?? card.image ?? card.img ?? "")} alt={card.name} />
+                          <span>x{card.quantity} • {card.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {showCardsPanel && (
             <div className="filterCard">
               <div className="filterRow">
                 <div className="filterGroup">
@@ -692,6 +1235,22 @@ export default function Collection() {
                     ))}
                   </select>
                 </div>
+
+                <div className="filterGroup">
+                  <label className="filterLabel">Tag perso</label>
+                  <select
+                    className="filterSelect"
+                    value={filters.tag}
+                    onChange={(e) => updateFilter("tag", e.target.value)}
+                  >
+                    <option value="">Tous</option>
+                    {options.tags.map((tag) => (
+                      <option key={tag} value={tag}>
+                        {tag}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="filterRow filterRow--bottom">
@@ -716,6 +1275,7 @@ export default function Collection() {
                         rarity: "",
                         type: "",
                         artist: "",
+                        tag: "",
                         ownedOnly: selectForMarket || quickSellMode ? true : false,
                       });
                       setPage(1);
@@ -730,6 +1290,7 @@ export default function Collection() {
                 </div>
               </div>
             </div>
+            )}
 
             {globalFeedback && (
               <div className="mt-3">
@@ -746,7 +1307,7 @@ export default function Collection() {
             ) : null}
           </div>
 
-          {!loading && !error && (
+          {!loading && !error && showCardsPanel && (
             <div className="collectionTopBar">
               <div className="small">
                 Page <b>{pageSafe}</b> / <b>{totalPages}</b> • Total: <b>{total}</b>
@@ -764,7 +1325,7 @@ export default function Collection() {
             </div>
           )}
 
-          {!loading && !error && (
+          {!loading && !error && showCardsPanel && (
             <div
               className={`collectionBody ${settings.disableHoloEffects ? "collectionBody--noHolo" : ""}`}
             >
@@ -786,6 +1347,10 @@ export default function Collection() {
                   const isSellable = !!c.isSellable;
                   const isSelectableDisabled =
                     (selectForMarket || quickSellMode) && !isSellable;
+                  const isFavorite = Boolean(c.isFavorite);
+                  const isObjective = Boolean(c.isObjective);
+                  const personalTags = Array.isArray(c.personalTags) ? c.personalTags : [];
+                  const sellableQuantity = Number(c.sellableRow?.sellableQuantity ?? 0);
 
                   return (
                     <div
@@ -796,6 +1361,8 @@ export default function Collection() {
                         selectForMarket || quickSellMode ? "cardTile--selectMode" : ""
                       } ${isSellable ? "cardTile--sellable" : ""} ${
                         isSelectableDisabled ? "cardTile--notSellable" : ""
+                      } ${isFavorite ? "cardTile--favorite" : ""} ${
+                        isObjective ? "cardTile--objective" : ""
                       }`}
                       data-rarity={rk}
                     >
@@ -852,6 +1419,37 @@ export default function Collection() {
                         {!owned && <div className="cardTile__lock">NON DÉBLOQUÉE</div>}
                         {isLatestNew && <div className="cardTile__new">NEW</div>}
 
+                        {!selectForMarket && !quickSellMode && (
+                          <div className="cardTile__collectorTools">
+                            <button
+                              type="button"
+                              className={["cardTile__collectorBtn", isFavorite ? "is-active" : ""].join(" ")}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggleFavorite(Number(c.id));
+                              }}
+                              aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                              title={isFavorite ? "Favori" : "Ajouter aux favoris"}
+                            >
+                              ★
+                            </button>
+                            <button
+                              type="button"
+                              className={["cardTile__collectorBtn", isObjective ? "is-active" : ""].join(" ")}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggleObjective(Number(c.id));
+                              }}
+                              aria-label={isObjective ? "Retirer des objectifs" : "Ajouter aux objectifs"}
+                              title={isObjective ? "Objectif suivi" : "Ajouter aux objectifs"}
+                            >
+                              ◎
+                            </button>
+                          </div>
+                        )}
+
                         {(selectForMarket || quickSellMode) && (
                           <div
                             className={`cardTile__marketPick ${
@@ -879,6 +1477,11 @@ export default function Collection() {
                             {c.season ?? c.extension ?? "—"}{" "}
                             {typeof c.number === "number" ? `#${c.number}` : ""}
                           </span>
+                          {isFavorite && <span className="pill pill--favorite">Favori</span>}
+                          {isObjective && <span className="pill pill--objective">Objectif</span>}
+                          {sellableQuantity > 0 && (
+                            <span className="pill pill--duplicate">Vendable x{sellableQuantity}</span>
+                          )}
                           {(selectForMarket || quickSellMode) && isSellable && (
                             <span className="pill pill--market">
                               {quickSellMode ? "Rapide" : "Vendable"}
@@ -886,8 +1489,30 @@ export default function Collection() {
                           )}
                         </div>
 
+                        {personalTags.length > 0 && (
+                          <div className="cardTile__tags">
+                            {personalTags.map((tag: string) => (
+                              <button
+                                key={tag}
+                                type="button"
+                                className="cardTile__tag"
+                                onClick={() => updateFilter("tag", tag)}
+                              >
+                                #{tag}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
                         {!selectForMarket && !quickSellMode && (
                           <div className="cardTile__actions">
+                            <button
+                              className="btn btn-secondary cardTile__detailsBtn"
+                              type="button"
+                              onClick={() => openTagModal(c)}
+                            >
+                              Tags
+                            </button>
                             <Link className="btn btn-secondary cardTile__detailsBtn" to={`/collection/card/${c.id}`}>
                               Voir plus
                             </Link>
@@ -897,11 +1522,18 @@ export default function Collection() {
                     </div>
                   );
                 })}
+
+                {pageItems.length === 0 && (
+                  <div className="collectionEmptyState">
+                    <strong>Aucune carte ici pour le moment.</strong>
+                    <span>Essaie de changer de vue, de retirer un filtre ou d'ajouter des objectifs/favoris.</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {!loading && !error && (
+          {!loading && !error && showCardsPanel && (
             <div className="collectionBottomBar">
               <Pager
                 pageSafe={pageSafe}
@@ -916,6 +1548,41 @@ export default function Collection() {
           )}
         </div>
       </section>
+
+      {tagModal.open && tagModal.card && (
+        <div className="collectionModalBackdrop" onClick={closeTagModal}>
+          <div className="collectionTagModal" onClick={(e) => e.stopPropagation()}>
+            <div className="collectionModal__head">
+              <h3>Tags perso</h3>
+              <button type="button" className="collectionModal__close" onClick={closeTagModal}>
+                âœ•
+              </button>
+            </div>
+
+            <div className="collectionTagModal__body">
+              <strong>{tagModal.card.name}</strong>
+              <p>
+                Ajoute des tags separes par des virgules : hunt, echange, deck, coup de coeur...
+              </p>
+              <input
+                value={tagModal.value}
+                onChange={(e) => setTagModal((prev) => ({ ...prev, value: e.target.value }))}
+                placeholder="ex: hunt, trade, rare preferee"
+                autoFocus
+              />
+            </div>
+
+            <div className="collectionModal__actions">
+              <button type="button" className="btn" onClick={closeTagModal}>
+                Annuler
+              </button>
+              <button type="button" className="btn btn-primary" onClick={saveTagModal}>
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {quickSellModal.open && quickSellModal.card && quickSellModal.sellable && (
         <div className="collectionModalBackdrop" onClick={closeQuickSellModal}>
