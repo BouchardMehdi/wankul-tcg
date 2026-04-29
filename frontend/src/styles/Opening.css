@@ -18,10 +18,28 @@
 
 .openingTitle { margin: 0; font-weight: 950; font-size: 26px; }
 
+.openingReplayNotice {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background:
+    linear-gradient(135deg, rgba(255, 92, 147, 0.14), rgba(155, 92, 255, 0.14)),
+    rgba(255,255,255,0.04);
+  color: rgba(240,245,255,0.92);
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .openingStage {
   margin-top: 14px;
   padding: 18px;
   min-height: 660px;
+}
+
+.openingSkipAction {
+  white-space: nowrap;
 }
 
 .creditInline {
@@ -419,6 +437,44 @@
   animation: newPop 650ms cubic-bezier(.2,.9,.2,1) both;
 }
 
+.hitRibbon,
+.eleventhRibbon {
+  position: absolute;
+  z-index: 7;
+  pointer-events: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.52);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.28);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hitRibbon {
+  right: 10px;
+  top: 10px;
+  color: #ffeeb2;
+}
+
+.eleventhRibbon {
+  left: 10px;
+  bottom: 10px;
+  color: #c9f7ff;
+}
+
+.openingCardWrap.rare-appear .hitRibbon {
+  animation: hitBadgePop 720ms cubic-bezier(.2,.9,.2,1) both;
+}
+
+@keyframes hitBadgePop {
+  0% { opacity: 0; transform: translateY(-8px) scale(0.88); }
+  65% { opacity: 1; transform: translateY(1px) scale(1.05); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 @keyframes newPop {
   0% { transform: translateY(-6px) scale(0.92); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
@@ -730,6 +786,117 @@
   opacity: 0.95;
 }
 
+.openingStatsStrip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.openingStatsStrip > div {
+  min-height: 74px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255, 92, 147, 0.12), transparent 48%),
+    rgba(255,255,255,0.04);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.openingStatsStrip span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.openingStatsStrip b {
+  display: block;
+  margin-top: 8px;
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 950;
+}
+
+.openingHighlights {
+  padding: 12px;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background:
+    radial-gradient(circle at top left, rgba(255, 216, 115, 0.13), transparent 34%),
+    rgba(255,255,255,0.035);
+  overflow: hidden;
+}
+
+.openingHighlights__title {
+  margin-bottom: 10px;
+  color: rgba(240,245,255,0.94);
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.openingHighlights__rail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.openingHighlightCard {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.22);
+}
+
+.openingHighlightCard.is-new {
+  border-color: rgba(91, 214, 255, 0.25);
+}
+
+.openingHighlightCard.is-hit {
+  box-shadow: 0 0 24px rgba(255, 216, 115, 0.10);
+}
+
+.openingHighlightCard img {
+  width: 54px;
+  height: 74px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+}
+
+.openingHighlightCard div {
+  min-width: 0;
+}
+
+.openingHighlightCard span,
+.openingHighlightCard small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.openingHighlightCard b {
+  display: block;
+  margin: 4px 0;
+  overflow: hidden;
+  color: rgba(240,245,255,0.98);
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .summaryGrid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -977,6 +1144,10 @@
     align-items: flex-start;
   }
 
+  .openingSkipAction {
+    width: 100%;
+  }
+
   .openingStage {
     margin-top: 12px;
     padding: 14px;
@@ -1045,6 +1216,22 @@
     align-items: flex-start;
   }
 
+  .openingStatsStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .openingHighlights__rail {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .openingHighlightCard {
+    min-width: min(78vw, 300px);
+    scroll-snap-align: start;
+  }
+
   .summaryGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1080,5 +1267,9 @@
   .summaryGrid,
   .summaryGrid--displayFinal {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .openingStatsStrip {
+    grid-template-columns: 1fr;
   }
 }

@@ -40,6 +40,38 @@ export type OpenDisplayResponse = {
   newCardKeys?: string[];
 };
 
+export type OpeningHistoryKind = "booster" | "display";
+
+export type OpeningHistoryItem = {
+  id: number;
+  kind: OpeningHistoryKind;
+  openedAt: string;
+  season: string;
+  seasonNumber: number | null;
+  boosterCount: number;
+  cardsCount: number;
+  creditsEarnedTotal: number | null;
+  newCount: number;
+  hitCount: number;
+  hasGoldBooster?: boolean;
+  coverCard?: any | null;
+  canReplay: boolean;
+};
+
+export type OpeningReplayResponse = OpeningHistoryItem & {
+  result: OpenBoosterResponse | OpenDisplayResponse | any;
+};
+
+export type OpeningHistoryPage = {
+  items: OpeningHistoryItem[];
+  page: number;
+  perPage: number;
+  total: number;
+  totalPages: number;
+  hasPrev: boolean;
+  hasNext: boolean;
+};
+
 export async function getBoosterSeasons() {
   return apiFetch<BoosterSeasonInfo[]>("/booster/seasons", {
     method: "GET",
@@ -59,6 +91,34 @@ export async function openDisplay(seasonNumber: number) {
   return apiFetch<OpenDisplayResponse>("/booster/open-display", {
     method: "POST",
     body: { seasonNumber },
+    auth: true,
+  });
+}
+
+export async function getOpeningHistory(page = 1, perPage = 12) {
+  const safePage = Math.max(1, Math.floor(page));
+  const safePerPage = Math.max(1, Math.min(50, Math.floor(perPage)));
+
+  return apiFetch<OpeningHistoryPage>(
+    `/booster/openings/history?page=${safePage}&perPage=${safePerPage}`,
+    {
+      method: "GET",
+      auth: true,
+    }
+  );
+}
+
+export async function getOpeningHistoryLegacy(limit = 8) {
+  const safeLimit = Math.max(1, Math.min(50, Math.floor(limit)));
+  return apiFetch<OpeningHistoryPage>(`/booster/openings/history?limit=${safeLimit}`, {
+    method: "GET",
+    auth: true,
+  });
+}
+
+export async function getOpeningReplay(kind: OpeningHistoryKind, id: number) {
+  return apiFetch<OpeningReplayResponse>(`/booster/openings/${kind}/${id}`, {
+    method: "GET",
     auth: true,
   });
 }

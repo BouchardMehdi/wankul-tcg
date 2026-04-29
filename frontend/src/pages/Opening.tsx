@@ -25,6 +25,9 @@ type OpeningStatePayload = {
   season: string;
   seasonNumber?: number;
   result: any;
+  replay?: boolean;
+  openedAt?: string;
+  historyId?: number;
 };
 
 type Phase =
@@ -143,6 +146,44 @@ function isRareForFx(rarityKey: string) {
 
 function isRareOrBetter(card: any) {
   return isRareForFx(normalizeRarity(card?.rarity ?? ""));
+}
+
+function getRarityHitLabel(rarityKey: string) {
+  switch (rarityKey) {
+    case "u1":
+      return "U1";
+    case "u2":
+      return "U2";
+    case "leg-bronze":
+      return "Legendaire bronze";
+    case "leg-silver":
+      return "Legendaire argent";
+    case "leg-gold":
+      return "Legendaire or";
+    case "gold-ticket-winner":
+      return "Ticket gagnant";
+    case "gold-ticket":
+      return "Ticket d'or";
+    default:
+      return "Gros hit";
+  }
+}
+
+function getCardIdentity(card: any, fallback: number) {
+  return card?.id ?? card?.cardId ?? card?.key ?? fallback;
+}
+
+function formatOpeningDate(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
 const MARKET_RARITY_BASE_VALUES: Record<string, number> = {
@@ -351,6 +392,8 @@ export default function Opening() {
   const activeSeasonNumber = resultSeasonNumber ?? stateSeasonNumber ?? 1;
 
   const isDisplayMode = state?.kind === "display";
+  const isReplayMode = Boolean(state?.replay);
+  const replayDate = formatOpeningDate(state?.openedAt ?? null);
 
   const displayMeta = state?.result?.meta ?? null;
   const goldIndex: number | null =
@@ -550,6 +593,18 @@ export default function Opening() {
     current?.creditsEarned ??
     (current ? fallbackCardCredits(current, isCurrentNew) : null);
 
+  function getCardCreditsValue(card: any, fallbackIndex: number) {
+    const cid = getCardIdentity(card, fallbackIndex);
+    const isNew = isCardMarkedNew(card);
+    const cc =
+      perCardCredits.get(cid) ??
+      card?.earnedCredits ??
+      card?.creditsEarned ??
+      fallbackCardCredits(card, isNew);
+
+    return typeof cc === "number" && Number.isFinite(cc) ? cc : 0;
+  }
+
   const displayBoosterCount = displayBoosters.length;
   const remainingBoosters = Math.max(0, displayBoosterCount - displayBoosterIndex - 1);
 
@@ -628,6 +683,64 @@ export default function Opening() {
     });
   }, [isDisplayMode, displayBoosters, newCardIds]);
 
+  const boosterHighlightCards = useMemo(() => {
+    const selected = dedupeCards(cards.filter((c) => isCardMarkedNew(c) || isRareOrBetter(c)));
+
+    return selected
+      .sort((a, b) => {
+        const byNew = Number(isCardMarkedNew(b)) - Number(isCardMarkedNew(a));
+        if (byNew !== 0) return byNew;
+
+        const byRarity = boosterSummaryRank(b) - boosterSummaryRank(a);
+        if (byRarity !== 0) return byRarity;
+
+        return getCardCreditsValue(b, 0) - getCardCreditsValue(a, 0);
+      })
+      .slice(0, 5);
+  }, [cards, newCardIds, perCardCredits]);
+
+  const displayHighlightCards = useMemo(() => {
+    const flat = displayBoosters.flatMap((b) => (Array.isArray(b) ? b : []));
+    const selected = dedupeCards(flat.filter((c) => isCardMarkedNew(c) || isRareOrBetter(c)));
+
+    return selected
+      .sort((a, b) => {
+        const byNew = Number(isCardMarkedNew(b)) - Number(isCardMarkedNew(a));
+        if (byNew !== 0) return byNew;
+
+        const byRarity = boosterSummaryRank(b) - boosterSummaryRank(a);
+        if (byRarity !== 0) return byRarity;
+
+        return getCardCreditsValue(b, 0) - getCardCreditsValue(a, 0);
+      })
+      .slice(0, 8);
+  }, [displayBoosters, newCardIds, perCardCredits]);
+
+  const currentSummaryStats = useMemo(() => {
+    const uniqueNew = dedupeCards(cards.filter((c) => isCardMarkedNew(c))).length;
+    const uniqueHits = dedupeCards(cards.filter((c) => isRareOrBetter(c))).length;
+
+    return {
+      cardsCount: cards.length,
+      newCount: uniqueNew,
+      hitCount: uniqueHits,
+      totalValue: currentBoosterCreditsTotal,
+    };
+  }, [cards, currentBoosterCreditsTotal, newCardIds]);
+
+  const displayFinalStats = useMemo(() => {
+    const flat = displayBoosters.flatMap((b) => (Array.isArray(b) ? b : []));
+    const uniqueNew = dedupeCards(flat.filter((c) => isCardMarkedNew(c))).length;
+    const uniqueHits = dedupeCards(flat.filter((c) => isRareOrBetter(c))).length;
+
+    return {
+      cardsCount: flat.length,
+      newCount: uniqueNew,
+      hitCount: uniqueHits,
+      totalValue: computedTotalCredits,
+    };
+  }, [displayBoosters, computedTotalCredits, newCardIds]);
+
   const openAnotherLabel = useMemo(() => {
     const free = (eco?.freeBoosterCharges ?? 0) > 0;
     if (free) return "Ouvrir un autre";
@@ -700,6 +813,44 @@ export default function Opening() {
 
     playSoundEffect("opening.start-booster");
     beginRevealSequence(cards);
+  }
+
+  function skipOpeningAnimation() {
+    if (phase === "idle" || phase === "summary" || phase === "display-final-summary") return;
+    void primeSound();
+
+    clearQueuedTimeouts();
+    clearMotionState();
+    setOpeningLock(false);
+
+    if (isDisplayMode) {
+      setDisplayStarted(true);
+      setPhase("display-final-summary");
+      return;
+    }
+
+    setPhase("summary");
+  }
+
+  function replayOpeningAnimation() {
+    if (!state?.result) return;
+    void primeSound();
+
+    clearQueuedTimeouts();
+    clearMotionState();
+    setOpeningLock(false);
+    setDisplayBoosterIndex(0);
+    setDisplayStarted(false);
+    setIndex(0);
+
+    if (isDisplayMode) {
+      setCards([]);
+    } else {
+      setCards(Array.isArray(state.result?.cards) ? state.result.cards : []);
+    }
+
+    setPhase("idle");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function animateNext(direction: 1 | -1) {
@@ -896,6 +1047,9 @@ export default function Opening() {
   const idleVisualImg =
     isDisplayMode && !displayStarted ? displayImg : currentPackImg;
 
+  const canSkipOpening =
+    phase === "display-intro" || phase === "opening" || phase === "reveal";
+
   const rarityCls = normalizeRarity(current?.rarity ?? "")
     ? `rarity-${normalizeRarity(current?.rarity ?? "")}`
     : "";
@@ -910,6 +1064,12 @@ export default function Opening() {
             <h1 className="openingTitle">
               {isDisplayMode ? "Ouverture Display" : "Ouverture"}
             </h1>
+
+            {isReplayMode ? (
+              <div className="openingReplayNotice">
+                Replay historique{replayDate ? ` • ${replayDate}` : ""}
+              </div>
+            ) : null}
 
             <div className="muted">
               {isDisplayMode ? (
@@ -947,6 +1107,16 @@ export default function Opening() {
           </div>
 
           <div className="openingHeader__right">
+            {canSkipOpening ? (
+              <button
+                type="button"
+                className="btn btn--ghost openingSkipAction"
+                onClick={skipOpeningAnimation}
+              >
+                Passer l'animation
+              </button>
+            ) : null}
+
             {showDisplayRemaining ? (
               <div className="displayRemainingPill">
                 <img
@@ -1086,6 +1256,8 @@ export default function Opening() {
                   {isSurprise11 && !settings.disableHoloEffects ? <span className="surpriseSparkles" aria-hidden="true" /> : null}
                   {isSurprise11 && !settings.disableHoloEffects ? <span className="surpriseShine" aria-hidden="true" /> : null}
                   {isCurrentNew ? <span className="newRibbon" aria-hidden="true">NEW</span> : null}
+                  {isRare ? <span className="hitRibbon">{getRarityHitLabel(rarityKey)}</span> : null}
+                  {isSurprise11 ? <span className="eleventhRibbon">11e carte</span> : null}
 
                   {current ? (
                     <img
@@ -1108,6 +1280,55 @@ export default function Opening() {
                 <span>Résumé {isDisplayMode ? `du booster ${displayBoosterIndex + 1}` : ""}</span>
                 <span className="summaryCreditsPill">Gain total : +{currentBoosterCreditsTotal} crédits</span>
               </div>
+
+              <div className="openingStatsStrip">
+                <div>
+                  <span>Valeur totale</span>
+                  <b>+{currentSummaryStats.totalValue} credits</b>
+                </div>
+                <div>
+                  <span>Nouvelles</span>
+                  <b>{currentSummaryStats.newCount}</b>
+                </div>
+                <div>
+                  <span>Gros hits</span>
+                  <b>{currentSummaryStats.hitCount}</b>
+                </div>
+                <div>
+                  <span>Cartes</span>
+                  <b>{currentSummaryStats.cardsCount}</b>
+                </div>
+              </div>
+
+              {boosterHighlightCards.length > 0 ? (
+                <div className="openingHighlights">
+                  <div className="openingHighlights__title">A retenir dans ce booster</div>
+                  <div className="openingHighlights__rail">
+                    {boosterHighlightCards.map((c, i) => {
+                      const rk = normalizeRarity(c?.rarity ?? "");
+                      const isNew = isCardMarkedNew(c);
+
+                      return (
+                        <div
+                          key={`booster-highlight-${c?.id ?? i}`}
+                          className={[
+                            "openingHighlightCard",
+                            isNew ? "is-new" : "",
+                            isRareOrBetter(c) ? "is-hit" : "",
+                          ].join(" ")}
+                        >
+                          <img src={resolveImg(c.imageUrl ?? c.image ?? c.img ?? "")} alt={c?.name ?? "Carte"} draggable={false} />
+                          <div>
+                            <span>{isNew ? "Nouvelle carte" : getRarityHitLabel(rk)}</span>
+                            <b>{c?.name ?? "Carte"}</b>
+                            <small>{c?.rarity ?? "Rarete inconnue"}</small>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="summaryGrid">
                 {sortedBoosterSummaryCards.map((c, i) => {
@@ -1159,6 +1380,10 @@ export default function Opening() {
                   </button>
                 )}
 
+                <button className="btn btn--ghost" type="button" onClick={replayOpeningAnimation}>
+                  Rejouer l'animation
+                </button>
+
                 <Link className="btn btn--ghost" to="/booster">
                   Retour boosters
                 </Link>
@@ -1179,6 +1404,55 @@ export default function Opening() {
               <div className="muted">
                 Affichage d’abord des cartes rares ou mieux déjà possédées, puis des nouvelles cartes, avec tri par rareté.
               </div>
+
+              <div className="openingStatsStrip openingStatsStrip--display">
+                <div>
+                  <span>Valeur totale</span>
+                  <b>+{displayFinalStats.totalValue} credits</b>
+                </div>
+                <div>
+                  <span>Nouvelles</span>
+                  <b>{displayFinalStats.newCount}</b>
+                </div>
+                <div>
+                  <span>Gros hits</span>
+                  <b>{displayFinalStats.hitCount}</b>
+                </div>
+                <div>
+                  <span>Cartes</span>
+                  <b>{displayFinalStats.cardsCount}</b>
+                </div>
+              </div>
+
+              {displayHighlightCards.length > 0 ? (
+                <div className="openingHighlights openingHighlights--display">
+                  <div className="openingHighlights__title">Les cartes qui font briller la display</div>
+                  <div className="openingHighlights__rail">
+                    {displayHighlightCards.map((c, i) => {
+                      const rk = normalizeRarity(c?.rarity ?? "");
+                      const isNew = isCardMarkedNew(c);
+
+                      return (
+                        <div
+                          key={`display-highlight-${c?.id ?? i}`}
+                          className={[
+                            "openingHighlightCard",
+                            isNew ? "is-new" : "",
+                            isRareOrBetter(c) ? "is-hit" : "",
+                          ].join(" ")}
+                        >
+                          <img src={resolveImg(c.imageUrl ?? c.image ?? c.img ?? "")} alt={c?.name ?? "Carte"} draggable={false} />
+                          <div>
+                            <span>{isNew ? "Nouvelle carte" : getRarityHitLabel(rk)}</span>
+                            <b>{c?.name ?? "Carte"}</b>
+                            <small>{c?.rarity ?? "Rarete inconnue"}</small>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="summaryGrid summaryGrid--displayFinal">
                 {displaySummaryCards.map((c, i) => {
@@ -1222,6 +1496,9 @@ export default function Opening() {
               <div className="summaryActions">
                 <button className="btn btn--primary" onClick={openAnotherDisplay} disabled={openingLock}>
                   {openAnotherDisplayLabel}
+                </button>
+                <button className="btn btn--ghost" type="button" onClick={replayOpeningAnimation}>
+                  Rejouer l'animation
                 </button>
                 <Link className="btn btn--ghost" to="/booster">
                   Retour boosters

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { BoosterService } from './booster.service';
@@ -13,6 +13,25 @@ export class BoosterController {
   @Get('seasons')
   getSeasons() {
     return this.booster.getAvailableSeasons();
+  }
+
+  @Get('openings/history')
+  getOpeningHistory(
+    @CurrentUser() user: { id: number },
+    @Query('limit') limit?: string,
+    @Query('page') page?: string,
+    @Query('perPage') perPage?: string,
+  ) {
+    return this.booster.getOpeningHistory(user.id, page, perPage, limit);
+  }
+
+  @Get('openings/:kind/:id')
+  getOpeningReplay(
+    @CurrentUser() user: { id: number },
+    @Param('kind') kind: string,
+    @Param('id') id: string,
+  ) {
+    return this.booster.getOpeningReplay(user.id, kind, id);
   }
 
   @Post('open')

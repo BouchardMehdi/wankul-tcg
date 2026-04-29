@@ -43,6 +43,8 @@ type LoadedPools = {
   gtoCards: Card[];
 };
 
+type OpeningHistoryKind = 'booster' | 'display';
+
 @Injectable()
 export class BoosterService {
   constructor(
@@ -503,6 +505,245 @@ export class BoosterService {
     return { newCardIds, newCardKeys };
   }
 
+  private clampHistoryPage(raw?: string) {
+    const n = Number.parseInt(String(raw ?? ''), 10);
+    if (!Number.isFinite(n)) return 1;
+    return Math.max(1, n);
+  }
+
+  private clampHistoryPerPage(rawPerPage?: string, rawLimit?: string) {
+    const n = Number.parseInt(String(rawPerPage ?? rawLimit ?? ''), 10);
+    if (!Number.isFinite(n)) return 12;
+    return Math.max(1, Math.min(50, n));
+  }
+
+  private isSavedBigHit(card: any) {
+    const rarity = this.normalizeText(card?.rarity);
+    return (
+      rarity.includes('u1') ||
+      rarity.includes('u2') ||
+      rarity.includes('legendaire') ||
+      rarity.includes('booster gold') ||
+      rarity.includes('ticket')
+    );
+  }
+
+  private extractSavedCreditsTotal(result: any): number | null {
+    const candidates = [
+      result?.creditsEarned,
+      result?.creditsEarnedTotal,
+      result?.creditsGained,
+      result?.totalCredits,
+      result?.breakdown?.total,
+      result?.credits?.total,
+      result?.credits?.display?.total,
+      result?.creditBreakdown?.total,
+      result?.economy?.earned,
+      result?.economy?.earnedCredits,
+      result?.economy?.creditsEarned,
+      result?.economy?.totalEarned,
+    ];
+
+    for (const value of candidates) {
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+    }
+
+    return null;
+  }
+
+  private normalizeStoredOpeningResult(kind: OpeningHistoryKind, row: any) {
+    const stored = row?.resultJson;
+
+    if (kind === 'booster') {
+      if (stored && !Array.isArray(stored) && Array.isArray(stored.cards)) {
+        return stored;
+      }
+
+      const cards = Array.isArray(stored) ? stored : [];
+      return {
+        payment: { paid: false, cost: 0 },
+        season: row?.seasonLabel ?? 'Saison inconnue',
+        seasonNumber: row?.seasonNumber ?? null,
+        cards,
+        credits: {},
+        creditsEarnedTotal: null,
+        newCardIds: [],
+        newCardKeys: [],
+        flags: {
+          hasGTO: false,
+          hasTicketOr: false,
+          ticketOrIsNew: false,
+        },
+      };
+    }
+
+    if (
+      stored &&
+      !Array.isArray(stored) &&
+      Array.isArray(stored.boosters) &&
+      (stored.boosters.length === 0 ||
+        !Array.isArray(stored.boosters[0]) ||
+        typeof stored.boosters[0]?.[0] === 'object')
+    ) {
+      return stored;
+    }
+
+    return {
+      payment: { paid: false, cost: 0 },
+      season: row?.season ?? 'Saison inconnue',
+      seasonNumber: row?.seasonNumber ?? null,
+      meta: {
+        boosters: row?.boosterCount ?? this.DISPLAY_BOOSTERS,
+        hasGoldBooster: Boolean(stored?.hasGoldBooster),
+        goldIndex: stored?.goldIndex ?? null,
+        forcedLegendaryIndex: stored?.forcedLegendaryIndex ?? -1,
+      },
+      boosters: [],
+      credits: {
+        display: {},
+        boosters: [],
+      },
+      creditsEarnedTotal: null,
+      newCardIds: [],
+      newCardKeys: [],
+    };
+  }
+
+  private flattenStoredOpeningCards(kind: OpeningHistoryKind, result: any) {
+    if (kind === 'display') {
+      return Array.isArray(result?.boosters)
+        ? result.boosters.flatMap((b: any) => (Array.isArray(b) ? b : []))
+        : [];
+    }
+
+    return Array.isArray(result?.cards) ? result.cards : [];
+  }
+
+  private buildOpeningHistoryItem(kind: OpeningHistoryKind, row: any) {
+    const result = this.normalizeStoredOpeningResult(kind, row);
+    const flatCards = this.flattenStoredOpeningCards(kind, result);
+    const newIds = Array.isArray(result?.newCardIds) ? result.newCardIds : [];
+    const newCards = flatCards.filter((card: any) => Boolean(card?.isNew));
+    const hitCards = flatCards.filter((card: any) => this.isSavedBigHit(card));
+    const coverCard =
+      newCards.find((card: any) => this.isSavedBigHit(card)) ??
+      hitCards[0] ??
+      newCards[0] ??
+      flatCards[0] ??
+      null;
+    const firstDisplayBooster = Array.isArray(result?.boosters?.[0])
+      ? result.boosters[0]
+      : [];
+
+    return {
+      id: row.id,
+      kind,
+      openedAt: row.openedAt,
+      season: result?.season ?? row?.seasonLabel ?? row?.season ?? 'Saison inconnue',
+      seasonNumber: result?.seasonNumber ?? row?.seasonNumber ?? null,
+      boosterCount:
+        kind === 'display'
+          ? row?.boosterCount ?? result?.meta?.boosters ?? this.DISPLAY_BOOSTERS
+          : row?.boosterCount ?? 1,
+      cardsCount: flatCards.length,
+      creditsEarnedTotal: this.extractSavedCreditsTotal(result),
+      newCount: Math.max(newIds.length, newCards.length),
+      hitCount: hitCards.length,
+      hasGoldBooster: Boolean(result?.meta?.hasGoldBooster),
+      coverCard,
+      canReplay:
+        kind === 'booster'
+          ? flatCards.length > 0
+          : firstDisplayBooster.some((card: any) => card && typeof card === 'object'),
+    };
+  }
+
+  async getOpeningHistory(
+    userId: number,
+    rawPage?: string,
+    rawPerPage?: string,
+    rawLimit?: string,
+  ) {
+    const page = this.clampHistoryPage(rawPage);
+    const perPage = this.clampHistoryPerPage(rawPerPage, rawLimit);
+    const offset = (page - 1) * perPage;
+    const takeForMerge = offset + perPage;
+
+    const [boosters, displays, boosterTotal, displayTotal] = await Promise.all([
+      this.boosterOpeningRepo.find({
+        where: { user: { id: userId } as any } as any,
+        order: { openedAt: 'DESC' },
+        take: takeForMerge,
+      }),
+      this.displayOpeningRepo.find({
+        where: { user: { id: userId } as any } as any,
+        order: { openedAt: 'DESC' },
+        take: takeForMerge,
+      }),
+      this.boosterOpeningRepo.count({
+        where: { user: { id: userId } as any } as any,
+      }),
+      this.displayOpeningRepo.count({
+        where: { user: { id: userId } as any } as any,
+      }),
+    ]);
+
+    const total = boosterTotal + displayTotal;
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    const items = [
+      ...boosters.map((row) => this.buildOpeningHistoryItem('booster', row)),
+      ...displays.map((row) => this.buildOpeningHistoryItem('display', row)),
+    ]
+      .sort(
+        (a, b) =>
+          new Date(b.openedAt as any).getTime() -
+          new Date(a.openedAt as any).getTime(),
+      )
+      .slice(offset, offset + perPage);
+
+    return {
+      items,
+      page,
+      perPage,
+      total,
+      totalPages,
+      hasPrev: page > 1,
+      hasNext: page < totalPages,
+    };
+  }
+
+  async getOpeningReplay(userId: number, rawKind: string, rawId: string) {
+    const kind = rawKind === 'display' ? 'display' : rawKind === 'booster' ? 'booster' : null;
+    const id = Number.parseInt(String(rawId), 10);
+
+    if (!kind || !Number.isFinite(id)) {
+      throw new BadRequestException('Ouverture invalide.');
+    }
+
+    const repo = kind === 'display' ? this.displayOpeningRepo : this.boosterOpeningRepo;
+    const row = await repo.findOne({
+      where: { id, user: { id: userId } as any } as any,
+    });
+
+    if (!row) {
+      throw new NotFoundException('Ouverture introuvable.');
+    }
+
+    const result = this.normalizeStoredOpeningResult(kind, row);
+    const item = this.buildOpeningHistoryItem(kind, row);
+
+    if (!item.canReplay) {
+      throw new BadRequestException(
+        'Cette ancienne ouverture ne contient pas assez de donnees pour etre rejouee.',
+      );
+    }
+
+    return {
+      ...item,
+      result,
+    };
+  }
+
   async openBooster(userId: number, seasonNumber: number) {
     const payment = await this.economy.consumeOpen(userId, 'booster');
 
@@ -529,18 +770,10 @@ export class BoosterService {
 
       await this.economy.addCredits(userId, breakdown.total);
 
-      await this.boosterOpeningRepoSaveSafe({
-        userId,
-        cards,
-        boosterCount: 1,
-        seasonNumber,
-        seasonLabel: pools.label,
-      });
-
       const newIdsSet = new Set(newMeta.newCardIds);
       const firstOccurrenceMarked = new Set<number>();
 
-      return {
+      const openingResult = {
         payment,
         season: pools.label,
         seasonNumber,
@@ -564,6 +797,17 @@ export class BoosterService {
           ticketOrIsNew,
         },
       };
+
+      await this.boosterOpeningRepoSaveSafe({
+        userId,
+        cards,
+        boosterCount: 1,
+        seasonNumber,
+        seasonLabel: pools.label,
+        result: openingResult,
+      });
+
+      return openingResult;
     });
 
     await this.economyAnalyticsService.incrementBooster();
@@ -671,17 +915,7 @@ export class BoosterService {
 
       await this.economy.addCredits(userId, displayBreakdown.total);
 
-      await this.displayOpeningRepoSaveSafe({
-        userId,
-        seasonNumber,
-        seasonLabel: pools.label,
-        boosters,
-        hasGoldBooster,
-        forcedLegendaryIndex,
-        goldIndex,
-      });
-
-      return {
+      const openingResult = {
         payment,
         season: pools.label,
         seasonNumber,
@@ -700,6 +934,19 @@ export class BoosterService {
         newCardIds: displayNewCardIds,
         newCardKeys: displayNewCardKeys,
       };
+
+      await this.displayOpeningRepoSaveSafe({
+        userId,
+        seasonNumber,
+        seasonLabel: pools.label,
+        boosters,
+        hasGoldBooster,
+        forcedLegendaryIndex,
+        goldIndex,
+        result: openingResult,
+      });
+
+      return openingResult;
     });
 
     await this.economyAnalyticsService.incrementDisplay();
@@ -717,6 +964,7 @@ export class BoosterService {
     boosterCount: number;
     seasonNumber: number;
     seasonLabel: string;
+    result?: any;
   }) {
     try {
       await this.boosterOpeningRepo.save({
@@ -726,13 +974,15 @@ export class BoosterService {
         seasonLabel: args.seasonLabel,
         boosterCount: args.boosterCount as any,
         cardIds: args.cards.map((c) => c.id) as any,
-        resultJson: args.cards.map((c) => ({
-          id: c.id,
-          key: (c as any).key,
-          name: c.name,
-          rarity: c.rarity,
-          imageUrl: (c as any).imageUrl,
-        })) as any,
+        resultJson:
+          args.result ??
+          (args.cards.map((c) => ({
+            id: c.id,
+            key: (c as any).key,
+            name: c.name,
+            rarity: c.rarity,
+            imageUrl: (c as any).imageUrl,
+          })) as any),
       } as any);
     } catch {
       //
@@ -747,6 +997,7 @@ export class BoosterService {
     hasGoldBooster: boolean;
     forcedLegendaryIndex: number;
     goldIndex: number;
+    result?: any;
   }) {
     try {
       await this.displayOpeningRepo.save({
@@ -755,12 +1006,14 @@ export class BoosterService {
         seasonNumber: args.seasonNumber,
         season: args.seasonLabel,
         boosterCount: this.DISPLAY_BOOSTERS,
-        resultJson: {
-          boosters: args.boosters.map((b) => b.map((c) => c.id)),
-          hasGoldBooster: args.hasGoldBooster,
-          forcedLegendaryIndex: args.forcedLegendaryIndex,
-          goldIndex: args.hasGoldBooster ? args.goldIndex : null,
-        },
+        resultJson:
+          args.result ??
+          ({
+            boosters: args.boosters.map((b) => b.map((c) => c.id)),
+            hasGoldBooster: args.hasGoldBooster,
+            forcedLegendaryIndex: args.forcedLegendaryIndex,
+            goldIndex: args.hasGoldBooster ? args.goldIndex : null,
+          } as any),
       } as any);
     } catch {
       //

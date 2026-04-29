@@ -8,12 +8,16 @@ import "../styles/Booster.css";
 import AppNavbar from "../components/AppNavbar";
 
 import { useAuth } from "../auth/AuthContext";
+import { API_BASE } from "../api/http";
 import { getEconomyMe, formatCooldown, type EconomySnapshot } from "../api/economy";
 import {
   getBoosterSeasons,
+  getOpeningHistory,
+  getOpeningReplay,
   openBooster,
   openDisplay,
   type BoosterSeasonInfo,
+  type OpeningHistoryItem,
 } from "../api/booster";
 import { readAppSettings, subscribeAppSettings } from "../utils/appSettings";
 import { playSoundEffect, playUiErrorSound, primeSound } from "../utils/sound";
@@ -56,8 +60,37 @@ const CLOSED_MODAL: ConfirmModalState = {
   description: "",
 };
 
+const HISTORY_PER_PAGE = 12;
+
+type BoosterPanel = "shop" | "history";
+
 function formatSeasonMeta(season: BoosterSeasonInfo) {
   return `${season.cardCount} cartes • Saison ${season.seasonNumber}`;
+}
+
+function resolveHistoryImg(imageUrl?: string | null) {
+  const url = (imageUrl ?? "").trim();
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (url.startsWith("/")) return `${API_BASE}${url}`;
+  return `${API_BASE}/${url}`;
+}
+
+function formatOpeningDate(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatHistoryKind(item: OpeningHistoryItem) {
+  return item.kind === "display" ? "Display" : "Booster";
 }
 
 export default function Booster() {
@@ -66,18 +99,56 @@ export default function Booster() {
 
   const [eco, setEco] = useState<EconomySnapshot | null>(null);
   const [seasons, setSeasons] = useState<SeasonCard[]>([]);
+  const [activePanel, setActivePanel] = useState<BoosterPanel>("shop");
+  const [openingHistory, setOpeningHistory] = useState<OpeningHistoryItem[]>([]);
+  const [openingHistoryPage, setOpeningHistoryPage] = useState(1);
+  const [openingHistoryTotal, setOpeningHistoryTotal] = useState(0);
+  const [openingHistoryTotalPages, setOpeningHistoryTotalPages] = useState(1);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [replayBusyKey, setReplayBusyKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [confirmModal, setConfirmModal] = useState<ConfirmModalState>(CLOSED_MODAL);
   const [settings, setSettings] = useState(() => readAppSettings());
 
+  async function loadOpeningHistory(page = openingHistoryPage, silent = false) {
+    if (!silent) setLoadingHistory(true);
+
+    try {
+      const historyRes = await getOpeningHistory(page, HISTORY_PER_PAGE);
+      setOpeningHistory(historyRes.items ?? []);
+      setOpeningHistoryPage(historyRes.page ?? page);
+      setOpeningHistoryTotal(historyRes.total ?? 0);
+      setOpeningHistoryTotalPages(historyRes.totalPages ?? 1);
+    } catch (e: any) {
+      if (!silent) setError(e?.message || "Impossible de charger l'historique.");
+      setOpeningHistory([]);
+      setOpeningHistoryTotal(0);
+      setOpeningHistoryTotalPages(1);
+    } finally {
+      if (!silent) setLoadingHistory(false);
+    }
+  }
+
   async function loadPageData() {
     setLoading(true);
     setError("");
 
     try {
-      const [snap, seasonsRes] = await Promise.all([getEconomyMe(), getBoosterSeasons()]);
+      const [snap, seasonsRes, historyRes] = await Promise.all([
+        getEconomyMe(),
+        getBoosterSeasons(),
+        getOpeningHistory(1, HISTORY_PER_PAGE).catch(() => ({
+          items: [],
+          page: 1,
+          perPage: HISTORY_PER_PAGE,
+          total: 0,
+          totalPages: 1,
+          hasPrev: false,
+          hasNext: false,
+        })),
+      ]);
 
       setEco(snap);
 
@@ -96,6 +167,10 @@ export default function Booster() {
         );
 
       setSeasons(openableSeasons);
+      setOpeningHistory(historyRes.items ?? []);
+      setOpeningHistoryPage(historyRes.page ?? 1);
+      setOpeningHistoryTotal(historyRes.total ?? 0);
+      setOpeningHistoryTotalPages(historyRes.totalPages ?? 1);
     } catch (e: any) {
       setError(e?.message || "Impossible de charger les saisons et l'économie.");
     } finally {
@@ -264,6 +339,50 @@ export default function Booster() {
     await onOpenDisplay(confirmModal.season);
   }
 
+  async function replayOpening(item: OpeningHistoryItem) {
+    if (!item.canReplay || replayBusyKey || busyKey) return;
+    void primeSound();
+
+    const key = `${item.kind}:${item.id}`;
+    setReplayBusyKey(key);
+    setError("");
+
+    try {
+      const replay = await getOpeningReplay(item.kind, item.id);
+
+      navigate("/opening", {
+        state: {
+          kind: replay.kind,
+          season: replay.season,
+          seasonNumber: replay.seasonNumber ?? undefined,
+          result: replay.result,
+          replay: true,
+          openedAt: replay.openedAt,
+          historyId: replay.id,
+        },
+      });
+    } catch (e: any) {
+      playUiErrorSound();
+      setError(e?.message || "Replay impossible.");
+    } finally {
+      setReplayBusyKey(null);
+    }
+  }
+
+  function switchPanel(panel: BoosterPanel) {
+    void primeSound();
+    setActivePanel(panel);
+
+    if (panel === "history") {
+      void loadOpeningHistory(openingHistoryPage, false);
+    }
+  }
+
+  function goToHistoryPage(page: number) {
+    const safePage = Math.max(1, Math.min(openingHistoryTotalPages, page));
+    void loadOpeningHistory(safePage, false);
+  }
+
   if (loading) {
     return (
       <div className="app-shell">
@@ -307,7 +426,135 @@ export default function Booster() {
             </div>
           ) : null}
 
-          {seasons.length === 0 ? (
+          <div className="boosterPanelSwitch" role="tablist" aria-label="Sections boosters">
+            <button
+              type="button"
+              className={["boosterPanelSwitch__btn", activePanel === "shop" ? "is-active" : ""].join(" ")}
+              onClick={() => switchPanel("shop")}
+              role="tab"
+              aria-selected={activePanel === "shop"}
+            >
+              Ouvrir
+            </button>
+            <button
+              type="button"
+              className={["boosterPanelSwitch__btn", activePanel === "history" ? "is-active" : ""].join(" ")}
+              onClick={() => switchPanel("history")}
+              role="tab"
+              aria-selected={activePanel === "history"}
+            >
+              Historique
+              {openingHistoryTotal > 0 ? <span>{openingHistoryTotal}</span> : null}
+            </button>
+          </div>
+
+          {activePanel === "history" ? (
+            <section className="panel openingHistoryPanel">
+              <div className="openingHistoryPanel__header">
+                <div>
+                  <div className="openingHistoryPanel__eyebrow">Opening log</div>
+                  <h2 className="openingHistoryPanel__title">Historique complet</h2>
+                </div>
+                <span className="openingHistoryPanel__count">
+                  {openingHistoryTotal} opening{openingHistoryTotal > 1 ? "s" : ""} • page {openingHistoryPage}/{openingHistoryTotalPages}
+                </span>
+              </div>
+
+              {loadingHistory ? (
+                <div className="openingHistoryEmpty">Chargement de l'historique...</div>
+              ) : openingHistory.length === 0 ? (
+                <div className="openingHistoryEmpty">
+                  Aucun opening dans l'historique pour le moment. Le premier booster va lancer la collection.
+                </div>
+              ) : (
+                <div className="openingHistoryList openingHistoryList--paged">
+                  {openingHistory.map((item, index) => {
+                  const cover = resolveHistoryImg(item.coverCard?.imageUrl ?? item.coverCard?.image ?? "");
+                  const busy = replayBusyKey === `${item.kind}:${item.id}`;
+                  const isLatest = openingHistoryPage === 1 && index === 0;
+
+                  return (
+                    <article
+                      key={`${item.kind}-${item.id}`}
+                      className={[
+                        "openingHistoryCard",
+                        isLatest ? "openingHistoryCard--latest" : "",
+                        item.hasGoldBooster ? "openingHistoryCard--gold" : "",
+                      ].join(" ")}
+                    >
+                      <div className="openingHistoryCard__visual">
+                        {cover ? (
+                          <img src={cover} alt={item.coverCard?.name ?? "Carte de l'ouverture"} />
+                        ) : (
+                          <span>{formatHistoryKind(item).slice(0, 1)}</span>
+                        )}
+                      </div>
+
+                      <div className="openingHistoryCard__body">
+                        <div className="openingHistoryCard__topline">
+                          <span>{isLatest ? "Dernier opening" : formatHistoryKind(item)}</span>
+                          <span>{formatOpeningDate(item.openedAt)}</span>
+                        </div>
+
+                        <h3 className="openingHistoryCard__title">
+                          {formatHistoryKind(item)} {item.seasonNumber ? `S${item.seasonNumber}` : ""}
+                          {item.kind === "display" ? ` • ${item.boosterCount} boosters` : ""}
+                        </h3>
+
+                        <div className="openingHistoryCard__meta">
+                          <span>+{item.creditsEarnedTotal ?? 0} credits</span>
+                          <span>{item.newCount} NEW</span>
+                          <span>{item.hitCount} hits</span>
+                        </div>
+                      </div>
+
+                      <button
+                        className="btn btn--ghost openingHistoryCard__replay"
+                        type="button"
+                        disabled={!item.canReplay || !!busyKey || !!replayBusyKey}
+                        onClick={() => {
+                          void replayOpening(item);
+                        }}
+                        title={!item.canReplay ? "Ancienne ouverture non rejouable" : undefined}
+                      >
+                        {busy ? "Chargement..." : "Revoir"}
+                      </button>
+                    </article>
+                  );
+                  })}
+                </div>
+              )}
+
+              {openingHistoryTotalPages > 1 ? (
+                <div className="openingHistoryPagination">
+                  <button
+                    type="button"
+                    className="btn btn--ghost"
+                    disabled={openingHistoryPage <= 1 || loadingHistory}
+                    onClick={() => goToHistoryPage(openingHistoryPage - 1)}
+                  >
+                    Page precedente
+                  </button>
+                  <span>
+                    {Math.min((openingHistoryPage - 1) * HISTORY_PER_PAGE + 1, openingHistoryTotal)}
+                    {" "}-{" "}
+                    {Math.min(openingHistoryPage * HISTORY_PER_PAGE, openingHistoryTotal)}
+                    {" "}sur {openingHistoryTotal}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn--ghost"
+                    disabled={openingHistoryPage >= openingHistoryTotalPages || loadingHistory}
+                    onClick={() => goToHistoryPage(openingHistoryPage + 1)}
+                  >
+                    Page suivante
+                  </button>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
+          {activePanel === "shop" && seasons.length === 0 ? (
             <div className="panel boosterEmpty">
               <div className="boosterEmpty__title">Aucune saison affichable</div>
               <div className="boosterEmpty__text">
@@ -315,7 +562,7 @@ export default function Booster() {
                 <b> booster.* </b>et <b>display.*</b> dans <b>src/assets/boosters/season-X/</b>.
               </div>
             </div>
-          ) : (
+          ) : activePanel === "shop" ? (
             <div className="boosterGrid">
               {seasons.map((s) => (
                 <div key={s.seasonNumber} className="panel boosterSeasonCard">
@@ -397,7 +644,7 @@ export default function Booster() {
                 </div>
               ))}
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 
