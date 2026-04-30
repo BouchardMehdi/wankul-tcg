@@ -25,37 +25,95 @@ function pad3(n: number) {
   return String(n).padStart(3, '0');
 }
 
+const EXTENSION_FOLDERS: Record<string, string> = {
+  Origins: 'origins',
+  Campus: 'campus',
+  Battle: 'battle',
+  Stellar: 'stellar',
+  Special: 'special',
+  'Hors Série': 'hors-serie',
+  'Hors Serie': 'hors-serie',
+};
+
+const SEASON_FOLDERS: Record<number, string> = {
+  1: 'origins',
+  2: 'campus',
+  3: 'battle',
+  4: 'stellar',
+};
+
+const SPECIAL_IMAGE_BY_KEY: Record<string, string> = {
+  'special:s1-131-gala-tcg-2024': 'Wankul_Edition_Special_01.webp',
+  'special:s1-132-gala-tcg-2024': 'Wankul_Edition_Special_02.webp',
+  'special:s2-28-gemmes-pack': 'Wankul_GP_S2_028.webp',
+  'special:s2-67-edition-speciale-japan-expo-2025': 'Wankul_ED_JE2025.webp',
+};
+
+function normalizeText(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function slugify(value: string) {
+  return normalizeText(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function folderForCard(card: RawCard) {
+  if (card.extension && EXTENSION_FOLDERS[card.extension]) {
+    return EXTENSION_FOLDERS[card.extension];
+  }
+
+  if (card.season && EXTENSION_FOLDERS[card.season]) {
+    return EXTENSION_FOLDERS[card.season];
+  }
+
+  if (card.seasonNumber && SEASON_FOLDERS[card.seasonNumber]) {
+    return SEASON_FOLDERS[card.seasonNumber];
+  }
+
+  return slugify(card.extension || card.season || 'special') || 'special';
+}
+
+function imagePath(card: RawCard, filename: string, folder?: string) {
+  return `/cards/${folder ?? folderForCard(card)}/${filename}`;
+}
+
 // Garde ton resolver si tu en as déjà un ailleurs.
 // Ici: fallback simple + mapping specials (PGW/Gold/Sx)
-function resolveImageUrl(card: any): string | null {
+function resolveImageUrl(card: RawCard): string | null {
   if (card.imageUrl) return card.imageUrl;
 
   const key: string = card.key ?? '';
 
-  // PGW: special:pgw2023-special-1 -> /cards/Wankul_PGW_1.webp
+  const explicitSpecialImage = SPECIAL_IMAGE_BY_KEY[key];
+  if (explicitSpecialImage) return imagePath(card, explicitSpecialImage, 'hors-serie');
+
+  // PGW: special:pgw2023-special-1 -> /cards/hors-serie/Wankul_PGW_1.webp
   const mPgw = key.match(/^special:pgw(\d{4})-special-(\d+)$/);
   if (mPgw) {
     const year = mPgw[1];
     const num = Number(mPgw[2]);
-    if (year === '2023') return `/cards/Wankul_PGW_${num}.webp`;
-    if (year === '2024') return `/cards/Wankul_PGW2024_${num}.webp`;
-    return `/cards/Wankul_PGW${year}_${num}.webp`;
+    if (year === '2023') return imagePath(card, `Wankul_PGW_${num}.webp`, 'hors-serie');
+    if (year === '2024') return imagePath(card, `Wankul_PGW2024_${num}.webp`, 'hors-serie');
+    return imagePath(card, `Wankul_PGW${year}_${num}.webp`, 'hors-serie');
   }
 
-  // Gold: special:s2-47-edition-gold -> /cards/Wankul_ED_S2_047.webp
+  // Gold: special:s2-47-edition-gold -> /cards/hors-serie/Wankul_ED_S2_047.webp
   const mGold = key.match(/^special:s(\d+)-(\d+)-edition-gold$/);
   if (mGold) {
     const s = Number(mGold[1]);
     const n = Number(mGold[2]);
-    return `/cards/Wankul_ED_S${s}_${pad3(n)}.webp`;
+    return imagePath(card, `Wankul_ED_S${s}_${pad3(n)}.webp`, 'hors-serie');
   }
 
-  // Special basé saison: special:s1-131-xxxx -> /cards/Wankul_S1_131.webp
+  // Special basé saison: special:s1-131-xxxx -> /cards/origins/Wankul_S1_131.webp
   const mSeason = key.match(/^special:s(\d+)-(\d+)-/);
   if (mSeason) {
     const s = Number(mSeason[1]);
     const n = Number(mSeason[2]);
-    return `/cards/Wankul_S${s}_${pad3(n)}.webp`;
+    return imagePath(card, `Wankul_S${s}_${pad3(n)}.webp`, SEASON_FOLDERS[s]);
   }
 
   return null;
@@ -124,11 +182,31 @@ async function main() {
   const chunks = chunk(rows, 500);
 
   await dataSource.transaction(async (trx) => {
-    const qb = trx.createQueryBuilder();
     let done = 0;
 
     for (const part of chunks) {
-      await qb.insert().into(Card).values(part).execute();
+      await trx
+        .createQueryBuilder()
+        .insert()
+        .into(Card)
+        .values(part)
+        .orUpdate(
+          [
+            'name',
+            'season',
+            'seasonNumber',
+            'extension',
+            'number',
+            'rarity',
+            'type',
+            'gameplayType',
+            'specialEdition',
+            'artist',
+            'imageUrl',
+          ],
+          ['key'],
+        )
+        .execute();
       done += part.length;
       console.log(`✅ Inséré: ${done}/${rows.length}`);
     }
