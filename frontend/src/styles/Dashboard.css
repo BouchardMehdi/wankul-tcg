@@ -69,8 +69,27 @@
 @media (max-width: 860px) {
   .welcome { flex-direction: column; align-items: stretch; }
 }
-.welcome__title { margin: 0; font-size: clamp(24px, 2.6vw, 34px); font-weight: 950; }
+.welcome__title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: clamp(24px, 2.6vw, 34px);
+  font-weight: 950;
+}
 .welcome__subtitle { margin-top: 10px; color: var(--text2); line-height: 1.75; max-width: 760px; }
+.welcomeInlineBadge {
+  display: inline-grid;
+  place-items: center;
+  width: 33px;
+  height: 33px;
+}
+
+.welcomeInlineBadge .profileBadgeIcon {
+  width: 33px;
+  height: 33px;
+}
 .welcome__right {
   display: flex;
   align-items: stretch;

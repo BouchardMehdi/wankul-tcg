@@ -13,6 +13,7 @@ import {
   type ProfileResponse,
 } from "../api/profile";
 import AppNavbar from "../components/AppNavbar";
+import ProfileBadgeIcon from "../components/ProfileBadgeIcon";
 import SmartImage from "../components/SmartImage";
 import { playActionDeniedSound, playSettingToggleSound } from "../utils/sound";
 
@@ -198,45 +199,53 @@ export default function Profile() {
     return (
       <article
         className={[
-          "profileBadgeCard",
-          `profileBadgeCard--${badge.tier}`,
+          "profileBadgeItem",
+          `profileBadgeItem--${badge.tier}`,
           badge.unlocked ? "is-unlocked" : "is-locked",
         ].join(" ")}
         key={badge.code}
       >
-        <div className="profileBadgeCard__top">
-          <span>{badge.category}</span>
-          <strong>{badge.unlocked ? "Debloque" : `${percent}%`}</strong>
-        </div>
+        <ProfileBadgeIcon
+          code={badge.code}
+          title={badge.title}
+          tier={badge.tier}
+          unlocked={badge.unlocked}
+          className="profileBadgeItem__icon"
+        />
 
-        <div className="profileBadgeCard__icon" aria-hidden="true">
-          {badge.tier === "rainbow" ? "W" : badge.title.slice(0, 1)}
-        </div>
+        <div className="profileBadgeItem__body">
+          <div className="profileBadgeItem__top">
+            <div>
+              <strong>{badge.title}</strong>
+              <span>{badge.category}</span>
+            </div>
+            <em>{badge.unlocked ? "Actif" : `${percent}%`}</em>
+          </div>
 
-        <h3>{badge.title}</h3>
-        <p>{badge.description}</p>
+          <p>{badge.description}</p>
 
-        <div className="profileBadgeCard__progress" aria-label={progressLabel(badge)}>
-          <span style={{ width: `${percent}%` }} />
-        </div>
+          <div className="profileBadgeItem__progress" aria-label={progressLabel(badge)}>
+            <span style={{ width: `${percent}%` }} />
+          </div>
 
-        <div className="profileBadgeCard__meta">
-          <span>{progressLabel(badge)}</span>
-          <span>{rewardLabel(badge)}</span>
-        </div>
+          <div className="profileBadgeItem__meta">
+            <span>{progressLabel(badge)}</span>
+            <span>{rewardLabel(badge)}</span>
+          </div>
 
-        <div className="profileBadgeCard__bottom">
-          <span>{formatUnlockedAt(badge.unlockedAt)}</span>
-          {badge.unlocked ? (
-            <button
-              type="button"
-              className="btn btn--ghost"
-              disabled={saving || profile?.profile.featuredBadgeCode === badge.code}
-              onClick={() => void featureBadge(badge.code)}
-            >
-              {profile?.profile.featuredBadgeCode === badge.code ? "Mis en avant" : "Mettre en avant"}
-            </button>
-          ) : null}
+          <div className="profileBadgeItem__bottom">
+            <span>{formatUnlockedAt(badge.unlockedAt)}</span>
+            {badge.unlocked ? (
+              <button
+                type="button"
+                className="btn btn--ghost"
+                disabled={saving || profile?.profile.featuredBadgeCode === badge.code}
+                onClick={() => void featureBadge(badge.code)}
+              >
+                {profile?.profile.featuredBadgeCode === badge.code ? "Affiche" : "Afficher"}
+              </button>
+            ) : null}
+          </div>
         </div>
       </article>
     );
@@ -284,7 +293,18 @@ export default function Profile() {
 
           <div className="profileHero__content">
             <span className="profileHero__eyebrow">Profil joueur</span>
-            <h1>{profile.user.username}</h1>
+            <div className="profileNameLine">
+              <h1>{profile.user.username}</h1>
+              {featuredBadge ? (
+                <ProfileBadgeIcon
+                  code={featuredBadge.code}
+                  title={featuredBadge.title}
+                  tier={featuredBadge.tier}
+                  size="sm"
+                  className="profileInlineBadge"
+                />
+              ) : null}
+            </div>
             <p>
               Ta vitrine de collection : avatar, badge principal et objectifs qui
               donnent des vraies recompenses sans toucher au gameplay.

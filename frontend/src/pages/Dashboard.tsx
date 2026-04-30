@@ -16,6 +16,7 @@ import {
   toProfileAssetUrl,
   type ProfileResponse,
 } from "../api/profile";
+import ProfileBadgeIcon from "../components/ProfileBadgeIcon";
 import SmartImage from "../components/SmartImage";
 
 import { readAppSettings, subscribeAppSettings } from "../utils/appSettings";
@@ -220,6 +221,10 @@ export default function Dashboard() {
     () => getProfileAvatarStyleVars(profile) as CSSProperties,
     [profile],
   );
+  const featuredBadge = useMemo(() => {
+    if (!profile?.profile.featuredBadgeCode) return null;
+    return profile.badges.find((badge) => badge.code === profile.profile.featuredBadgeCode) ?? null;
+  }, [profile]);
 
   useEffect(() => subscribeAppSettings(() => setSettings(readAppSettings())), []);
 
@@ -415,7 +420,24 @@ export default function Dashboard() {
       <section className="container menuSection menuSection--hero">
         <div className="welcome">
           <div className="welcome__left">
-            <h1 className="welcome__title">Bienvenue, {username}</h1>
+            <h1 className="welcome__title">
+              <span>Bienvenue, {username}</span>
+              {featuredBadge ? (
+                <Link
+                  to="/profile"
+                  className="welcomeInlineBadge"
+                  title={featuredBadge.title}
+                  aria-label={`Badge mis en avant : ${featuredBadge.title}`}
+                >
+                  <ProfileBadgeIcon
+                    code={featuredBadge.code}
+                    title={featuredBadge.title}
+                    tier={featuredBadge.tier}
+                    size="sm"
+                  />
+                </Link>
+              ) : null}
+            </h1>
             <p className="welcome__subtitle">
               Ouvre des boosters, complète ta collection, et regarde tes stats.
             </p>
@@ -434,8 +456,7 @@ export default function Dashboard() {
                 <div>
                   <span>Profil</span>
                   <strong>
-                    {profile.badges.find((badge) => badge.code === profile.profile.featuredBadgeCode)?.title ??
-                      `${profile.summary.unlockedBadges} badges`}
+                    {featuredBadge?.title ?? `${profile.summary.unlockedBadges} badges`}
                   </strong>
                 </div>
               </Link>

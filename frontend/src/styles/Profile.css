@@ -120,6 +120,18 @@
   font-size: clamp(40px, 6vw, 76px);
 }
 
+.profileNameLine {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.profileInlineBadge {
+  width: 38px;
+  height: 38px;
+}
+
 .profileHero p {
   max-width: 720px;
   margin: 12px 0 0;
@@ -419,43 +431,248 @@
 
 .profileBadgeGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profileBadgeItem {
+  --badge-main: #9b5cff;
+  --badge-alt: #4cc9f0;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-height: 146px;
+  padding: 12px;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--badge-main) 34%, rgba(255, 255, 255, 0.10));
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--badge-main) 18%, transparent), transparent 36%),
+    linear-gradient(180deg, rgba(20, 25, 42, 0.88), rgba(10, 13, 23, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 14px 34px rgba(0, 0, 0, 0.16);
+}
+
+.profileBadgeItem::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.045) 0 1px,
+      transparent 1px 12px
+    );
+  opacity: 0.52;
+  pointer-events: none;
+}
+
+.profileBadgeItem--bronze { --badge-main: #c98953; --badge-alt: #ff8a4c; }
+.profileBadgeItem--silver { --badge-main: #d7e4f2; --badge-alt: #7dd3fc; }
+.profileBadgeItem--gold { --badge-main: #f6c945; --badge-alt: #ff8a4c; }
+.profileBadgeItem--rainbow { --badge-main: #ff4d6d; --badge-alt: #4cc9f0; }
+
+.profileBadgeItem.is-locked {
+  opacity: 0.72;
+  filter: saturate(0.52);
+}
+
+.profileBadgeItem__icon.profileBadgeIcon {
+  width: 44px;
+  height: 44px;
+}
+
+.profileBadgeItem__body,
+.profileBadgeItem__top,
+.profileBadgeItem__progress,
+.profileBadgeItem__meta,
+.profileBadgeItem__bottom {
+  position: relative;
+  z-index: 1;
+}
+
+.profileBadgeItem__body {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.profileBadgeItem__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.profileBadgeItem__top strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 950;
+  line-height: 1.05;
+}
+
+.profileBadgeItem__top span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.profileBadgeItem__top em {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--badge-main) 34%, rgba(255, 255, 255, 0.10));
+  color: color-mix(in srgb, var(--badge-main) 82%, #ffffff);
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.profileBadgeItem p {
+  margin: 0;
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 820;
+  line-height: 1.35;
+}
+
+.profileBadgeItem__progress {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.profileBadgeItem__progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--badge-main), var(--badge-alt));
+}
+
+.profileBadgeItem__meta,
+.profileBadgeItem__bottom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.profileBadgeItem__meta span,
+.profileBadgeItem__bottom span {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: var(--text2);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.profileBadgeItem__meta span:last-child {
+  color: #08111f;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--badge-main) 78%, #ffffff), #ffffff);
+}
+
+.profileBadgeItem__bottom {
+  justify-content: space-between;
+}
+
+.profileBadgeItem__bottom .btn {
+  height: 28px;
+  padding-inline: 9px;
+  border-radius: 999px;
+  font-size: 11px;
 }
 
 .profileBadgeCard {
+  --badge-main: #9b5cff;
+  --badge-alt: #ff4d6d;
+  --badge-ink: rgba(6, 9, 18, 0.92);
+  --badge-soft: rgba(155, 92, 255, 0.16);
   position: relative;
   overflow: hidden;
-  min-height: 280px;
+  min-height: 292px;
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 11px;
   padding: 16px;
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, var(--badge-main) 42%, rgba(255, 255, 255, 0.12));
   background:
-    radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.08), transparent 34%),
-    rgba(255, 255, 255, 0.04);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.11), transparent 20%),
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--badge-main) 34%, transparent), transparent 38%),
+    radial-gradient(circle at 90% 24%, color-mix(in srgb, var(--badge-alt) 26%, transparent), transparent 32%),
+    linear-gradient(180deg, rgba(19, 24, 43, 0.94), rgba(8, 11, 22, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 color-mix(in srgb, var(--badge-main) 26%, transparent),
+    0 18px 44px rgba(0, 0, 0, 0.22);
+}
+
+.profileBadgeCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.055) 0 1px,
+      transparent 1px 13px
+    ),
+    radial-gradient(circle at 24px 24px, rgba(255, 255, 255, 0.10) 0 1px, transparent 1px 12px);
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 .profileBadgeCard::after {
   content: "";
   position: absolute;
-  inset: auto -20% -32% 20%;
-  height: 112px;
-  opacity: 0.46;
-  filter: blur(26px);
-  background: var(--badge-glow, rgba(155, 92, 255, 0.20));
+  inset: auto -18% -30% 16%;
+  height: 124px;
+  opacity: 0.58;
+  filter: blur(28px);
+  background: var(--badge-glow, color-mix(in srgb, var(--badge-main) 34%, transparent));
 }
 
-.profileBadgeCard--bronze { --badge-glow: rgba(201, 137, 83, 0.38); }
-.profileBadgeCard--silver { --badge-glow: rgba(215, 228, 242, 0.32); }
-.profileBadgeCard--gold { --badge-glow: rgba(246, 201, 69, 0.38); }
-.profileBadgeCard--rainbow { --badge-glow: linear-gradient(90deg, #ff4d6d, #9b5cff, #4cc9f0, #f6c945); }
+.profileBadgeCard--bronze {
+  --badge-main: #c98953;
+  --badge-alt: #ff8a4c;
+  --badge-glow: rgba(201, 137, 83, 0.42);
+}
+
+.profileBadgeCard--silver {
+  --badge-main: #d7e4f2;
+  --badge-alt: #7dd3fc;
+  --badge-glow: rgba(215, 228, 242, 0.34);
+}
+
+.profileBadgeCard--gold {
+  --badge-main: #f6c945;
+  --badge-alt: #ff8a4c;
+  --badge-glow: rgba(246, 201, 69, 0.44);
+}
+
+.profileBadgeCard--rainbow {
+  --badge-main: #9b5cff;
+  --badge-alt: #4cc9f0;
+  --badge-glow: linear-gradient(90deg, #ff4d6d, #9b5cff, #4cc9f0, #f6c945);
+}
 
 .profileBadgeCard.is-locked {
-  opacity: 0.72;
-  filter: saturate(0.65);
+  opacity: 0.82;
+  filter: saturate(0.48);
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 12px),
+    linear-gradient(180deg, rgba(24, 29, 45, 0.86), rgba(11, 14, 24, 0.92));
 }
 
 .profileBadgeCard__top,
@@ -478,19 +695,82 @@
   font-weight: 900;
 }
 
+.profileBadgeCard__top span,
+.profileBadgeCard__top strong {
+  padding: 6px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--badge-main) 30%, rgba(255, 255, 255, 0.10));
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.profileBadgeCard__top strong {
+  color: color-mix(in srgb, var(--badge-main) 76%, #ffffff);
+}
+
 .profileBadgeCard__icon {
   position: relative;
   z-index: 1;
-  width: 54px;
-  height: 54px;
+  width: 76px;
+  height: 76px;
   display: grid;
   place-items: center;
-  border-radius: 18px;
-  background: linear-gradient(135deg, var(--a-pink), var(--a-violet));
+  margin-top: 2px;
+  border-radius: 24px 24px 18px 18px;
+  border: 1px solid color-mix(in srgb, var(--badge-main) 52%, rgba(255, 255, 255, 0.16));
+  background:
+    radial-gradient(circle at 26% 18%, rgba(255, 255, 255, 0.34), transparent 24%),
+    linear-gradient(135deg, var(--badge-main), var(--badge-alt));
   color: #fff;
-  font-size: 24px;
   font-weight: 950;
-  box-shadow: 0 14px 34px rgba(155, 92, 255, 0.18);
+  box-shadow:
+    0 16px 34px color-mix(in srgb, var(--badge-main) 25%, transparent),
+    inset 0 -12px 20px rgba(0, 0, 0, 0.20);
+}
+
+.profileBadgeCard__icon::before,
+.profileBadgeCard__icon::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.profileBadgeCard__icon::before {
+  inset: 9px;
+  border-radius: 18px 18px 13px 13px;
+  border: 2px solid rgba(255, 255, 255, 0.34);
+}
+
+.profileBadgeCard__icon::after {
+  left: 50%;
+  bottom: -10px;
+  width: 34px;
+  height: 18px;
+  border-radius: 0 0 999px 999px;
+  background: var(--badge-ink);
+  transform: translateX(-50%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--badge-main) 40%, transparent);
+}
+
+.profileBadgeCard__iconMark {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: -0.08em;
+}
+
+.profileBadgeCard__iconCode {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  font-size: 25px;
+  letter-spacing: -0.08em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
 }
 
 .profileBadgeCard h3,
@@ -501,10 +781,11 @@
 }
 
 .profileBadgeCard h3 {
-  margin: 2px 0 0;
-  font-size: 20px;
+  margin: 6px 0 0;
+  font-size: 22px;
   font-weight: 950;
-  line-height: 1.05;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
 }
 
 .profileBadgeCard p {
@@ -516,21 +797,40 @@
 }
 
 .profileBadgeCard__progress {
-  height: 9px;
+  height: 11px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.22);
 }
 
 .profileBadgeCard__progress span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--a-pink), var(--a-violet), var(--a-cyan));
+  background: linear-gradient(90deg, var(--badge-main), var(--badge-alt));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--badge-main) 32%, transparent);
 }
 
 .profileBadgeCard__meta {
   align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.profileBadgeCard__progressText,
+.profileBadgeCard__reward {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.profileBadgeCard__reward {
+  color: #07111d;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--badge-main) 82%, #ffffff), #ffffff);
 }
 
 .profileBadgeCard__bottom {
@@ -573,10 +873,22 @@
 [data-theme="light"] .profileCosmeticGroup,
 [data-theme="light"] .profileSwatch,
 [data-theme="light"] .profileUpload,
-[data-theme="light"] .profileBadgeCard,
+[data-theme="light"] .profileBadgeItem,
 [data-theme="light"] .profileFeaturedBadge {
   border-color: rgba(42, 35, 54, 0.12);
   background: rgba(255, 250, 239, 0.68);
+}
+
+[data-theme="light"] .profileBadgeItem {
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--badge-main) 14%, transparent), transparent 36%),
+    linear-gradient(180deg, rgba(255, 252, 244, 0.92), rgba(244, 233, 213, 0.78));
+}
+
+[data-theme="light"] .profileBadgeItem__meta span,
+[data-theme="light"] .profileBadgeItem__bottom span {
+  background: rgba(42, 35, 54, 0.07);
+  color: rgba(27, 25, 34, 0.82);
 }
 
 [data-theme="light"] .profileBadgeCard__icon {
