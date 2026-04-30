@@ -18,6 +18,7 @@ import { StatsModule } from './modules/stats/stats.module';
 import { MarketModule } from './modules/market/market.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { PushModule } from './modules/push/push.module';
+import { ProfileModule } from './modules/profile/profile.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { PushModule } from './modules/push/push.module';
     MarketModule,
     AdminModule,
     PushModule,
+    ProfileModule,
   ],
 })
 export class AppModule {}

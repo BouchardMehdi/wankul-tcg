@@ -11,6 +11,7 @@ import { BoosterOpening } from './booster-opening.entity';
 import { DisplayOpening } from './display-opening.entity';
 import { EconomyAnalyticsService } from '../economy/economy-analytics.service';
 import { AntiAbuseService } from '../security/anti-abuse.service';
+import { ProfileService } from '../profile/profile.service';
 
 type NewCardsMeta = {
   newCardIds: number[];
@@ -62,6 +63,7 @@ export class BoosterService {
     private readonly economy: EconomyService,
     private readonly economyAnalyticsService: EconomyAnalyticsService,
     private readonly antiAbuseService: AntiAbuseService,
+    private readonly profileService: ProfileService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -835,6 +837,7 @@ export class BoosterService {
         flags: result.flags,
       },
     });
+    await this.profileService.evaluateAndGrantBadges(userId).catch(() => undefined);
 
     return result;
   }
@@ -994,6 +997,7 @@ export class BoosterService {
         forcedLegendaryIndex,
       },
     });
+    await this.profileService.evaluateAndGrantBadges(userId).catch(() => undefined);
 
     return result;
   }

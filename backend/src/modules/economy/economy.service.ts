@@ -178,4 +178,12 @@ export class EconomyService {
     row.credits += amount;
     await this.economyRepo.save(row);
   }
+
+  async addFreeBoosters(userId: number, amount: number) {
+    if (!amount) return;
+
+    const row = await this.ensure(userId);
+    row.freeBoosterCharges = Math.min(127, row.freeBoosterCharges + amount);
+    await this.economyRepo.save(row);
+  }
 }

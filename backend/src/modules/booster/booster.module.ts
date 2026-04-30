@@ -11,6 +11,7 @@ import { UsersModule } from '../users/users.module';
 import { EconomyModule } from '../economy/economy.module';
 import { EconomyAnalyticsModule } from '../economy/economy-analytics.module';
 import { SecurityModule } from '../security/security.module';
+import { ProfileModule } from '../profile/profile.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SecurityModule } from '../security/security.module';
     EconomyModule,
     EconomyAnalyticsModule,
     SecurityModule,
+    ProfileModule,
   ],
   controllers: [BoosterController],
   providers: [BoosterService],
