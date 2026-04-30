@@ -1268,8 +1268,12 @@ export default function Settings() {
             <div className="settingsDangerZone">
               <div className="settingsDangerZone__title">Compte</div>
               <div className="settingsDangerZone__desc">
-                Déconnecte-toi de l'application sur cet appareil.
+                Gere ton profil public, ton avatar et tes badges, ou deconnecte-toi de l'application sur cet appareil.
               </div>
+
+              <Link to="/profile" className="btn settingsProfileBtn">
+                Voir mon profil
+              </Link>
 
               <button
                 type="button"

@@ -18,6 +18,7 @@ import QuickSell from "./pages/QuickSell";
 import Admin from "./pages/Admin";
 import CardDetails from "./pages/CardDetails";
 import PwaPreferences from "./pages/PwaPreferences";
+import Profile from "./pages/Profile";
 import PwaNotificationManager from "./components/PwaNotificationManager";
 import PwaCacheManager from "./components/PwaCacheManager";
 import InAppNotificationCenter from "./components/InAppNotificationCenter";
@@ -136,6 +137,14 @@ export default function App() {
           element={
             <PrivateRoute>
               <Settings />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <Profile />
             </PrivateRoute>
           }
         />

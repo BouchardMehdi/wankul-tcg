@@ -749,6 +749,21 @@
   filter: brightness(1.06);
 }
 
+.settingsProfileBtn {
+  justify-self: flex-start;
+  min-width: 200px;
+  display: inline-grid;
+  place-items: center;
+  border-color: rgba(76, 201, 240, 0.24);
+  background: linear-gradient(135deg, rgba(76, 201, 240, 0.14), rgba(155, 92, 255, 0.12));
+}
+
+[data-theme="light"] .settingsProfileBtn {
+  border-color: rgba(0, 144, 169, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.94), rgba(244, 233, 213, 0.78));
+}
+
 @media (max-width: 700px) {
   .settingsPage {
     padding-top: 20px;
@@ -847,7 +862,8 @@
     padding-bottom: 18px;
   }
 
-  .settingsLogoutBtn {
+  .settingsLogoutBtn,
+  .settingsProfileBtn {
     width: 100%;
     justify-self: stretch;
   }

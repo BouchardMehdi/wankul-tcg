@@ -63,13 +63,39 @@ const DEFAULT_AVATARS = [
   {
     id: 'default-laink',
     label: 'Laink focus',
-    url: '/avatars/default-laink.svg',
+    url: '/avatars/wankul_laink.png',
   },
   {
     id: 'default-terra',
     label: 'Terracid chaos',
-    url: '/avatars/default-terra.svg',
+    url: '/avatars/wankul_terra.png',
   },
+];
+
+const AVATAR_FRAMES = [
+  { id: 'neon-pink', label: 'Neon rose', cssValue: 'linear-gradient(135deg, #ff4d6d, #9b5cff)' },
+  { id: 'cyan-rift', label: 'Faille cyan', cssValue: 'linear-gradient(135deg, #4cc9f0, #65e6a2)' },
+  { id: 'gold-hit', label: 'Hit dore', cssValue: 'linear-gradient(135deg, #f6c945, #ff9f1c)' },
+  { id: 'bronze-legend', label: 'Bronze legendaire', cssValue: 'linear-gradient(135deg, #b87333, #f0a66b)' },
+  { id: 'silver-legend', label: 'Argent legendaire', cssValue: 'linear-gradient(135deg, #cbd5e1, #94a3b8)' },
+  { id: 'terra-red', label: 'Rouge chaos', cssValue: 'linear-gradient(135deg, #ef4444, #f97316)' },
+  { id: 'campus-green', label: 'Vert campus', cssValue: 'linear-gradient(135deg, #22c55e, #84cc16)' },
+  { id: 'stellar-violet', label: 'Violet stellar', cssValue: 'linear-gradient(135deg, #8b5cf6, #ec4899)' },
+  { id: 'night-blue', label: 'Bleu nuit', cssValue: 'linear-gradient(135deg, #2563eb, #0f172a)' },
+  { id: 'rainbow-prism', label: 'Prisme', cssValue: 'conic-gradient(from 180deg, #ff4d6d, #f6c945, #65e6a2, #4cc9f0, #9b5cff, #ff4d6d)' },
+];
+
+const AVATAR_BACKGROUNDS = [
+  { id: 'deep-space', label: 'Deep space', cssValue: 'radial-gradient(circle at 30% 20%, #4cc9f0 0%, transparent 34%), linear-gradient(135deg, #080b16, #18213a)' },
+  { id: 'booster-glow', label: 'Booster glow', cssValue: 'radial-gradient(circle at 70% 20%, #f6c945 0%, transparent 30%), linear-gradient(135deg, #1a1028, #3b145f)' },
+  { id: 'market-green', label: 'Market green', cssValue: 'radial-gradient(circle at 28% 18%, #65e6a2 0%, transparent 32%), linear-gradient(135deg, #062018, #123c2b)' },
+  { id: 'battle-red', label: 'Battle red', cssValue: 'radial-gradient(circle at 72% 28%, #ff8a70 0%, transparent 32%), linear-gradient(135deg, #2b0c14, #5f1729)' },
+  { id: 'campus-day', label: 'Campus day', cssValue: 'radial-gradient(circle at 22% 22%, #a7f3d0 0%, transparent 34%), linear-gradient(135deg, #0f5132, #94d82d)' },
+  { id: 'origins-blue', label: 'Origins blue', cssValue: 'radial-gradient(circle at 72% 22%, #93c5fd 0%, transparent 34%), linear-gradient(135deg, #102a56, #1e40af)' },
+  { id: 'stellar-night', label: 'Stellar night', cssValue: 'radial-gradient(circle at 50% 20%, #ec4899 0%, transparent 28%), linear-gradient(135deg, #160b2e, #312e81)' },
+  { id: 'gold-ticket', label: 'Ticket gold', cssValue: 'radial-gradient(circle at 30% 18%, #fff0a6 0%, transparent 34%), linear-gradient(135deg, #422006, #b7791f)' },
+  { id: 'mono-clean', label: 'Clean noir', cssValue: 'radial-gradient(circle at 50% 20%, #ffffff 0%, transparent 28%), linear-gradient(135deg, #0f172a, #475569)' },
+  { id: 'candy-pop', label: 'Candy pop', cssValue: 'radial-gradient(circle at 30% 24%, #fb7185 0%, transparent 32%), linear-gradient(135deg, #7c3aed, #06b6d4)' },
 ];
 
 function clampProgress(current: number, target: number, label?: string): BadgeProgress {
@@ -289,6 +315,14 @@ export class ProfileService {
     return DEFAULT_AVATARS;
   }
 
+  getAvatarFrames() {
+    return AVATAR_FRAMES;
+  }
+
+  getAvatarBackgrounds() {
+    return AVATAR_BACKGROUNDS;
+  }
+
   async getProfile(userId: number) {
     const newlyUnlocked = await this.evaluateAndGrantBadges(userId);
     const [user, profile, badges, context] = await Promise.all([
@@ -307,6 +341,8 @@ export class ProfileService {
       },
       profile: this.mapProfile(profile),
       defaultAvatars: DEFAULT_AVATARS,
+      avatarFrames: AVATAR_FRAMES,
+      avatarBackgrounds: AVATAR_BACKGROUNDS,
       summary: this.buildSummary(context, badges.length),
       badges: this.mapBadges(badges, context),
       newlyUnlocked,
@@ -318,6 +354,22 @@ export class ProfileService {
 
     if (dto.bio !== undefined) {
       profile.bio = dto.bio.trim() || null;
+    }
+
+    if (dto.avatarFrameId !== undefined) {
+      const frameId = dto.avatarFrameId.trim();
+      if (!AVATAR_FRAMES.some((frame) => frame.id === frameId)) {
+        throw new BadRequestException('Cadre avatar invalide.');
+      }
+      profile.avatarFrameId = frameId;
+    }
+
+    if (dto.avatarBackgroundId !== undefined) {
+      const backgroundId = dto.avatarBackgroundId.trim();
+      if (!AVATAR_BACKGROUNDS.some((background) => background.id === backgroundId)) {
+        throw new BadRequestException('Fond avatar invalide.');
+      }
+      profile.avatarBackgroundId = backgroundId;
     }
 
     if (dto.featuredBadgeCode !== undefined) {
@@ -450,6 +502,8 @@ export class ProfileService {
       user: { id: userId } as User,
       avatarUrl: DEFAULT_AVATARS[0].url,
       avatarSource: DEFAULT_AVATARS[0].id,
+      avatarFrameId: AVATAR_FRAMES[0].id,
+      avatarBackgroundId: AVATAR_BACKGROUNDS[0].id,
       featuredBadgeCode: null,
       bio: null,
     });
@@ -557,6 +611,8 @@ export class ProfileService {
     return {
       avatarUrl: profile.avatarUrl,
       avatarSource: profile.avatarSource,
+      avatarFrameId: profile.avatarFrameId ?? AVATAR_FRAMES[0].id,
+      avatarBackgroundId: profile.avatarBackgroundId ?? AVATAR_BACKGROUNDS[0].id,
       featuredBadgeCode: profile.featuredBadgeCode,
       bio: profile.bio,
       createdAt: profile.createdAt,

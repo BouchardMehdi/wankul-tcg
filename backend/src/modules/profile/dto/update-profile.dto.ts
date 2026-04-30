@@ -10,4 +10,14 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(140)
   bio?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  avatarFrameId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  avatarBackgroundId?: string;
 }

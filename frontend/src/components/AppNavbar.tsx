@@ -13,6 +13,7 @@ type NavPage =
   | "collection"
   | "market"
   | "settings"
+  | "profile"
   | "opening"
   | "admin";
 

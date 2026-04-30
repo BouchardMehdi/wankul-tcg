@@ -71,6 +71,94 @@
 }
 .welcome__title { margin: 0; font-size: clamp(24px, 2.6vw, 34px); font-weight: 950; }
 .welcome__subtitle { margin-top: 10px; color: var(--text2); line-height: 1.75; max-width: 760px; }
+.welcome__right {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.welcomeProfile {
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid var(--border2);
+  background: rgba(255, 255, 255, 0.05);
+  transition:
+    transform var(--t-fast) var(--ease),
+    filter var(--t-fast) var(--ease);
+}
+
+.welcomeProfile:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.welcomeProfile__avatarFrame {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  padding: 3px;
+  border-radius: 18px;
+  background: var(--profile-avatar-frame, linear-gradient(135deg, var(--a-pink), var(--a-violet)));
+}
+
+.welcomeProfile__avatarFrame::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 14px;
+  background: var(--profile-avatar-background, rgba(255, 255, 255, 0.06));
+}
+
+.welcomeProfile img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 15px;
+  object-fit: cover;
+  background: var(--profile-avatar-background, rgba(255, 255, 255, 0.06));
+}
+
+.welcomeProfile span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.welcomeProfile strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 950;
+  line-height: 1.12;
+}
+
+.welcomeProfile--empty {
+  justify-content: center;
+}
+
+[data-theme="light"] .welcomeProfile {
+  border-color: rgba(42, 35, 54, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.82), rgba(244, 233, 213, 0.66));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.66),
+    0 12px 28px rgba(94, 68, 41, 0.08);
+}
+@media (max-width: 860px) {
+  .welcome__right { width: 100%; }
+  .welcomeProfile,
+  .kpi { flex: 1 1 0; min-width: 0; }
+}
+@media (max-width: 560px) {
+  .welcome__right { flex-direction: column; }
+}
 
 /* KPI */
 .kpi {

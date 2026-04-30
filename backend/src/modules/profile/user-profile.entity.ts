@@ -34,6 +34,22 @@ export class UserProfile {
   })
   avatarSource!: string;
 
+  @Column({
+    name: 'avatar_frame_id',
+    type: 'varchar',
+    length: 40,
+    default: 'neon-pink',
+  })
+  avatarFrameId!: string;
+
+  @Column({
+    name: 'avatar_background_id',
+    type: 'varchar',
+    length: 40,
+    default: 'deep-space',
+  })
+  avatarBackgroundId!: string;
+
   @Column({ name: 'featured_badge_code', type: 'varchar', length: 80, nullable: true })
   featuredBadgeCode!: string | null;
 

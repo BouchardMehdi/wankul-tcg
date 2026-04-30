@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import "../styles.css";
 import "../styles/Dashboard.css";
 
@@ -10,6 +10,13 @@ import type { MeResponse, WalletResponse } from "../api/me";
 
 import { getMyStats } from "../api/stats";
 import type { MyStatsResponse, SeasonProgress } from "../api/stats";
+import {
+  getProfile,
+  getProfileAvatarStyleVars,
+  toProfileAssetUrl,
+  type ProfileResponse,
+} from "../api/profile";
+import SmartImage from "../components/SmartImage";
 
 import { readAppSettings, subscribeAppSettings } from "../utils/appSettings";
 
@@ -199,6 +206,7 @@ export default function Dashboard() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [wallet, setWallet] = useState<WalletResponse | null>(null);
   const [stats, setStats] = useState<MyStatsResponse | null>(null);
+  const [profile, setProfile] = useState<ProfileResponse | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -208,6 +216,10 @@ export default function Dashboard() {
   const [lootSeason, setLootSeason] = useState<LootSeasonFilter>("global");
 
   const username = useMemo(() => me?.username ?? "Joueur", [me]);
+  const profileAvatarStyle = useMemo(
+    () => getProfileAvatarStyleVars(profile) as CSSProperties,
+    [profile],
+  );
 
   useEffect(() => subscribeAppSettings(() => setSettings(readAppSettings())), []);
 
@@ -219,10 +231,11 @@ export default function Dashboard() {
       setError("");
 
       try {
-        const [meRes, walletRes, statsRes] = await Promise.allSettled([
+        const [meRes, walletRes, statsRes, profileRes] = await Promise.allSettled([
           getMe(),
           getWallet(),
           getMyStats(),
+          getProfile(),
         ]);
 
         if (!mounted) return;
@@ -233,6 +246,15 @@ export default function Dashboard() {
         if (walletRes.status === "fulfilled") setWallet(walletRes.value);
 
         if (statsRes.status === "fulfilled") setStats(statsRes.value);
+
+        if (profileRes.status === "fulfilled") {
+          setProfile(profileRes.value);
+
+          if (profileRes.value.newlyUnlocked.length > 0) {
+            const refreshedWallet = await getWallet().catch(() => null);
+            if (mounted && refreshedWallet) setWallet(refreshedWallet);
+          }
+        }
       } catch (e: any) {
         setError(e?.message || "Impossible de charger le dashboard.");
       } finally {
@@ -400,6 +422,32 @@ export default function Dashboard() {
           </div>
 
           <div className="welcome__right">
+            {profile ? (
+              <Link to="/profile" className="welcomeProfile">
+                <span className="welcomeProfile__avatarFrame" style={profileAvatarStyle}>
+                  <SmartImage
+                    src={toProfileAssetUrl(profile.profile.avatarUrl, profile.profile.avatarSource)}
+                    alt={`Profil de ${username}`}
+                    loading="lazy"
+                  />
+                </span>
+                <div>
+                  <span>Profil</span>
+                  <strong>
+                    {profile.badges.find((badge) => badge.code === profile.profile.featuredBadgeCode)?.title ??
+                      `${profile.summary.unlockedBadges} badges`}
+                  </strong>
+                </div>
+              </Link>
+            ) : (
+              <Link to="/profile" className="welcomeProfile welcomeProfile--empty">
+                <div>
+                  <span>Profil</span>
+                  <strong>Configurer</strong>
+                </div>
+              </Link>
+            )}
+
             <div className="kpi">
               <div className="kpi__label">Crédits</div>
               <div className="kpi__value">{wallet?.credits ?? "—"}</div>
