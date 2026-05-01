@@ -417,7 +417,7 @@ export default function Dashboard() {
     <div className="app-shell">
       <AppNavbar currentPage="dashboard" />
 
-      <section className="container menuSection menuSection--hero">
+      <section className="container menuSection menuSection--hero" data-onboarding="dashboard-welcome">
         <div className="welcome">
           <div className="welcome__left">
             <h1 className="welcome__title">

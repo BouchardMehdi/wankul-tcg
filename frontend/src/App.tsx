@@ -24,6 +24,7 @@ import PwaCacheManager from "./components/PwaCacheManager";
 import InAppNotificationCenter from "./components/InAppNotificationCenter";
 import PwaSplash from "./components/PwaSplash";
 import PwaStatusOverlay from "./components/PwaStatusOverlay";
+import OnboardingTour from "./components/OnboardingTour";
 import { installThemeSync } from "./utils/theme";
 
 function ThemeSync() {
@@ -69,6 +70,7 @@ export default function App() {
       <PwaCacheManager />
       <InAppNotificationCenter />
       <PwaStatusOverlay />
+      <OnboardingTour />
 
       <Routes>
         <Route

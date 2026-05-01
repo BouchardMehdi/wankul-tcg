@@ -1185,7 +1185,7 @@ export default function Opening() {
           </div>
         </div>
 
-        <div className="openingStage panel">
+        <div className="openingStage panel" data-onboarding="opening-stage">
           {(phase === "idle" || phase === "opening") && (
             <div className="packZone">
               <div

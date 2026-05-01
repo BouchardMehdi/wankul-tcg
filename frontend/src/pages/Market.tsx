@@ -1525,7 +1525,7 @@ export default function Market() {
           </div>
         </header>
 
-        <nav className="marketTabs">
+        <nav className="marketTabs" data-onboarding="market-tabs">
           <button
             type="button"
             className={activeTab === "my-listings" ? "is-active" : ""}

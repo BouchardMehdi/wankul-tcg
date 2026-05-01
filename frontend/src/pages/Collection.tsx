@@ -979,7 +979,12 @@ export default function Collection() {
             )}
 
             {!loading && !error && showCollectionPanels && (
-              <div className="collectionPanelSwitch" role="tablist" aria-label="Panneaux collection">
+              <div
+                className="collectionPanelSwitch"
+                role="tablist"
+                aria-label="Panneaux collection"
+                data-onboarding="collection-panels"
+              >
                 <button
                   type="button"
                   className={["collectionPanelSwitch__btn", activePanel === "cards" ? "is-active" : ""].join(" ")}

@@ -28,6 +28,7 @@ import {
 } from "../utils/imagePerformance";
 import { warmCardImageCache } from "../utils/pwaCache";
 import { playSoundEffect, playUiErrorSound, primeSound } from "../utils/sound";
+import { markOnboardingFirstBoosterOpened } from "../utils/onboarding";
 import {
   getSeasonBoosterImage,
   getSeasonDisplayImage,
@@ -123,7 +124,7 @@ function formatHistoryKind(item: OpeningHistoryItem) {
 
 export default function Booster() {
   const navigate = useNavigate();
-  const { credits, refreshWallet } = useAuth();
+  const { credits, refreshWallet, user } = useAuth();
 
   const [eco, setEco] = useState<EconomySnapshot | null>(null);
   const [seasons, setSeasons] = useState<SeasonCard[]>([]);
@@ -304,6 +305,7 @@ export default function Booster() {
       const res = await openBooster(season.seasonNumber);
       setConfirmModal(CLOSED_MODAL);
       playSoundEffect("opening.purchase-booster");
+      if (user?.id) markOnboardingFirstBoosterOpened(user.id);
 
       const imagePrep = prepareOpeningImages(res).catch(() => undefined);
       await refreshWallet();
@@ -635,6 +637,7 @@ export default function Booster() {
 
                       <button
                         className="btn btn--primary w-full"
+                        data-onboarding={index === 0 ? "booster-open" : undefined}
                         disabled={boosterDisabled}
                         onClick={() => askOpenBooster(s)}
                       >
