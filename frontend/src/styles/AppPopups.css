@@ -1,0 +1,345 @@
+.appPopupLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 2600;
+  display: grid;
+  place-items: center;
+  padding:
+    max(18px, var(--safe-top))
+    max(16px, var(--safe-right))
+    max(18px, var(--safe-bottom))
+    max(16px, var(--safe-left));
+}
+
+.appPopupLayer__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background:
+    radial-gradient(circle at 52% 18%, rgba(255, 77, 109, 0.18), transparent 30%),
+    rgba(3, 6, 16, 0.72);
+  backdrop-filter: blur(12px);
+  cursor: default;
+}
+
+.appPopupLayer__backdrop--clickable {
+  cursor: pointer;
+}
+
+.appPopupCard {
+  position: relative;
+  width: min(520px, 100%);
+  overflow: hidden;
+  isolation: isolate;
+  padding: clamp(20px, 5vw, 30px);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text);
+  background:
+    radial-gradient(circle at 14% 0%, rgba(255, 77, 109, 0.26), transparent 36%),
+    radial-gradient(circle at 92% 8%, rgba(76, 201, 240, 0.18), transparent 34%),
+    linear-gradient(145deg, rgba(17, 23, 43, 0.98), rgba(7, 10, 20, 0.96));
+  box-shadow:
+    0 34px 90px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  animation: appPopupIn 220ms var(--ease) both;
+}
+
+.appPopupCard--welcome {
+  border-color: rgba(255, 213, 95, 0.28);
+}
+
+.appPopupCard--install {
+  border-color: rgba(76, 201, 240, 0.24);
+}
+
+.appPopupCard__shine {
+  position: absolute;
+  inset: -45% 18% auto auto;
+  z-index: -1;
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  background: rgba(255, 213, 95, 0.18);
+  filter: blur(30px);
+}
+
+.appPopupCard__pack {
+  position: relative;
+  width: 86px;
+  height: 74px;
+  margin-bottom: 16px;
+}
+
+.appPopupCard__pack span {
+  position: absolute;
+  inset: 8px 24px;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(145deg, #ff4d6d, #9b5cff);
+  box-shadow: 0 18px 36px rgba(155, 92, 255, 0.22);
+}
+
+.appPopupCard__pack span:nth-child(1) {
+  transform: rotate(-14deg) translateX(-18px);
+  background: linear-gradient(145deg, #4cc9f0, #9b5cff);
+}
+
+.appPopupCard__pack span:nth-child(2) {
+  transform: rotate(2deg);
+}
+
+.appPopupCard__pack span:nth-child(3) {
+  transform: rotate(15deg) translateX(18px);
+  background: linear-gradient(145deg, #ffd55f, #ff6b4c);
+}
+
+.appPopupInstallIcon {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(76, 201, 240, 0.28);
+  background:
+    radial-gradient(circle at 30% 24%, rgba(76, 201, 240, 0.42), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 18px 42px rgba(76, 201, 240, 0.14);
+}
+
+.appPopupInstallIcon span {
+  width: 42px;
+  height: 50px;
+  border-radius: 11px;
+  border: 2px solid rgba(247, 248, 255, 0.86);
+  background:
+    linear-gradient(180deg, transparent 66%, rgba(76, 201, 240, 0.42) 66%),
+    rgba(247, 248, 255, 0.10);
+  position: relative;
+}
+
+.appPopupInstallIcon span::before,
+.appPopupInstallIcon span::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.appPopupInstallIcon span::before {
+  top: 10px;
+  width: 16px;
+  height: 20px;
+  border-radius: 999px;
+  border: 3px solid rgba(255, 213, 95, 0.95);
+  border-top-color: transparent;
+}
+
+.appPopupInstallIcon span::after {
+  bottom: 6px;
+  width: 16px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(247, 248, 255, 0.86);
+}
+
+.appPopupCard__eyebrow {
+  margin: 0 0 8px;
+  color: #ffd55f;
+  font-size: 0.74rem;
+  font-weight: 1000;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.appPopupCard h2 {
+  margin: 0;
+  max-width: 12ch;
+  font-size: clamp(2rem, 9vw, 4rem);
+  line-height: 0.9;
+  letter-spacing: -0.065em;
+}
+
+.appPopupCard__text {
+  margin: 14px 0 0;
+  color: var(--text2);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.appPopupReward {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 213, 95, 0.28);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 213, 95, 0.18), transparent 42%),
+    rgba(255, 255, 255, 0.06);
+}
+
+.appPopupReward span,
+.appPopupPerks span,
+.appPopupSteps span {
+  color: var(--text2);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.appPopupReward strong {
+  color: #ffd55f;
+  font-size: 1.35rem;
+  font-weight: 1000;
+  letter-spacing: -0.03em;
+  text-align: right;
+}
+
+.appPopupSteps,
+.appPopupPerks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.appPopupSteps span,
+.appPopupPerks span {
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.appPopupPerks span:nth-child(1) {
+  border-color: rgba(255, 77, 109, 0.22);
+}
+
+.appPopupPerks span:nth-child(2) {
+  border-color: rgba(76, 201, 240, 0.22);
+}
+
+.appPopupPerks span:nth-child(3) {
+  border-color: rgba(255, 213, 95, 0.22);
+}
+
+.appPopupCard__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.appPopupCard__actions .btn {
+  min-height: 44px;
+  height: auto;
+  padding: 11px 16px;
+}
+
+[data-theme="light"] .appPopupLayer__backdrop {
+  background:
+    radial-gradient(circle at 52% 18%, rgba(233, 79, 85, 0.16), transparent 30%),
+    rgba(244, 236, 221, 0.74);
+}
+
+[data-theme="light"] .appPopupCard {
+  color: #171722;
+  border-color: rgba(42, 35, 54, 0.14);
+  background:
+    radial-gradient(circle at 14% 0%, rgba(233, 79, 85, 0.14), transparent 36%),
+    radial-gradient(circle at 92% 8%, rgba(0, 144, 169, 0.12), transparent 34%),
+    linear-gradient(145deg, rgba(255, 252, 244, 0.98), rgba(246, 236, 218, 0.96));
+  box-shadow:
+    0 34px 90px rgba(94, 68, 41, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.74);
+}
+
+[data-theme="light"] .appPopupCard__eyebrow {
+  color: #a35a0f;
+}
+
+[data-theme="light"] .appPopupReward {
+  border-color: rgba(201, 138, 24, 0.28);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(201, 138, 24, 0.13), transparent 42%),
+    rgba(255, 255, 255, 0.48);
+}
+
+[data-theme="light"] .appPopupReward strong {
+  color: #8b560d;
+}
+
+[data-theme="light"] .appPopupSteps span,
+[data-theme="light"] .appPopupPerks span {
+  border-color: rgba(42, 35, 54, 0.12);
+  background: rgba(255, 255, 255, 0.52);
+}
+
+[data-theme="light"] .appPopupInstallIcon {
+  border-color: rgba(0, 144, 169, 0.22);
+  background:
+    radial-gradient(circle at 30% 24%, rgba(0, 144, 169, 0.20), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(244, 233, 213, 0.46));
+  box-shadow: 0 18px 42px rgba(94, 68, 41, 0.12);
+}
+
+[data-theme="light"] .appPopupInstallIcon span {
+  border-color: rgba(27, 25, 34, 0.74);
+  background:
+    linear-gradient(180deg, transparent 66%, rgba(0, 144, 169, 0.22) 66%),
+    rgba(255, 255, 255, 0.34);
+}
+
+[data-theme="light"] .appPopupInstallIcon span::after {
+  background: rgba(27, 25, 34, 0.72);
+}
+
+@keyframes appPopupIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 560px) {
+  .appPopupLayer {
+    place-items: end center;
+    padding-bottom: calc(var(--mobile-nav-offset) + 12px);
+  }
+
+  .appPopupCard {
+    border-radius: 26px;
+  }
+
+  .appPopupReward {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .appPopupReward strong {
+    text-align: left;
+  }
+
+  .appPopupCard__actions {
+    display: grid;
+  }
+
+  .appPopupCard__actions .btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appPopupCard {
+    animation: none;
+  }
+}

@@ -25,6 +25,7 @@ import InAppNotificationCenter from "./components/InAppNotificationCenter";
 import PwaSplash from "./components/PwaSplash";
 import PwaStatusOverlay from "./components/PwaStatusOverlay";
 import OnboardingTour from "./components/OnboardingTour";
+import AppPopups from "./components/AppPopups";
 import { installThemeSync } from "./utils/theme";
 
 function ThemeSync() {
@@ -71,6 +72,7 @@ export default function App() {
       <InAppNotificationCenter />
       <PwaStatusOverlay />
       <OnboardingTour />
+      <AppPopups />
 
       <Routes>
         <Route
