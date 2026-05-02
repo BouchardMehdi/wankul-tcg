@@ -47,7 +47,7 @@ export default function VerifyEmail() {
     <div className="center-page">
       <div className="card" style={{ width: '100%', maxWidth: 520 }}>
         <h1>Vérifier l’email</h1>
-        <p className="muted">Entre le code reçu par email (Mailhog en local).</p>
+        <p className="muted">Entre le code recu par email.</p>
 
         <form className="row" onSubmit={onVerify}>
           <label>

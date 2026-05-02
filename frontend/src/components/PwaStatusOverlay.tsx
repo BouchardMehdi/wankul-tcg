@@ -111,18 +111,18 @@ export default function PwaStatusOverlay() {
           <strong>Mode hors ligne actif</strong>
           <span>
             Tu peux garder l'app ouverte, consulter les pages deja chargees et
-            les images cachees. Les achats, ventes et openings reprendront des
+            les images deja preparees. Les achats, ventes et openings reprendront des
             que le serveur sera joignable.
           </span>
 
           <div className="pwaOfflinePanel__stats">
-            <span><b>{cacheStatus?.cardImageEntries ?? 0}</b> cartes cachees</span>
-            <span><b>{cacheStatus?.shellEntries ?? 0}</b> fichiers app</span>
-            <span><b>{formatSyncTime(cacheStatus?.timestamp)}</b> dernier sync</span>
+            <span><b>{cacheStatus?.cardImageEntries ?? 0}</b> cartes pretes</span>
+            <span><b>{cacheStatus?.shellEntries ?? 0}</b> elements prets</span>
+            <span><b>{formatSyncTime(cacheStatus?.timestamp)}</b> derniere mise a jour</span>
           </div>
         </div>
         <div className="pwaOfflinePanel__actions">
-          <Link to="/pwa-preferences">Statut PWA</Link>
+          <Link to="/pwa-preferences">Etat de l'app</Link>
           <button type="button" onClick={() => window.location.reload()}>
             Reessayer
           </button>
@@ -141,12 +141,12 @@ export default function PwaStatusOverlay() {
         <div className="pwaSyncPanel__content">
           <strong>Donnees synchronisees</strong>
           <span>
-            Connexion revenue. Cache PWA pret avec {cacheStatus?.cardImageEntries ?? 0}
-            {" "}image(s) de cartes et {cacheStatus?.runtimeEntries ?? 0} asset(s) app.
+            Connexion revenue. {cacheStatus?.cardImageEntries ?? 0}
+            {" "}image(s) de cartes prete(s) et {cacheStatus?.runtimeEntries ?? 0} element(s) app.
           </span>
           {cacheProgress ? (
             <em>
-              Derniere preparation: {cacheProgress.cached} ok, {cacheProgress.failed} erreur(s).
+              Derniere preparation : {cacheProgress.cached} ok, {cacheProgress.failed} erreur(s).
             </em>
           ) : null}
         </div>

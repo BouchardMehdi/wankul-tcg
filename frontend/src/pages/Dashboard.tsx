@@ -261,7 +261,7 @@ export default function Dashboard() {
           }
         }
       } catch (e: any) {
-        setError(e?.message || "Impossible de charger le dashboard.");
+        setError(e?.message || "Impossible de charger ton espace.");
       } finally {
         setLoading(false);
       }

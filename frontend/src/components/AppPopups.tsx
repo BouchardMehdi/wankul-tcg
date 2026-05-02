@@ -41,7 +41,7 @@ export default function AppPopups() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(() => isStandalonePwaMode());
   const [installMessage, setInstallMessage] = useState(
-    "Ajoute Wankul TCG a ton ecran d'accueil pour ouvrir tes boosters comme une vraie app.",
+    "Ajoute Wankul TCG a ton ecran d'accueil pour ouvrir tes boosters plus vite.",
   );
   const [onboardingState, setOnboardingState] = useState<OnboardingState | null>(null);
 
@@ -266,19 +266,19 @@ export default function AppPopups() {
               <span />
             </div>
 
-            <p className="appPopupCard__eyebrow">Web app prete</p>
+            <p className="appPopupCard__eyebrow">App prete a installer</p>
             <h2 id="install-popup-title">Installe Wankul TCG sur ton appareil.</h2>
             <p className="appPopupCard__text">{installMessage}</p>
 
             <div className="appPopupPerks">
               <span>Acces rapide</span>
-              <span>Mode PWA</span>
+              <span>Mode installe</span>
               <span>Notifications</span>
             </div>
 
             <div className="appPopupCard__actions">
               <button type="button" className="btn btn--primary" onClick={installApp}>
-                Telecharger la web app
+                Installer l'app
               </button>
               <button type="button" className="btn btn--ghost" onClick={closeInstallPopup}>
                 Plus tard

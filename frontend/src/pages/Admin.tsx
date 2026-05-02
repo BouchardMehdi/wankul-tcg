@@ -389,7 +389,7 @@ export default function Admin() {
               <div>
                 <h2>Administration</h2>
                 <p className="small">
-                  Dashboard économique + gestion des reports dans une seule console admin.
+                  Suivi economie + gestion des signalements dans une seule console admin.
                 </p>
               </div>
 
@@ -419,14 +419,14 @@ export default function Admin() {
                 className={`adminTabBtn ${activeTab === "dashboard" ? "is-active" : ""}`}
                 onClick={() => setActiveTab("dashboard")}
               >
-                Dashboard économie
+                Suivi economie
               </button>
               <button
                 type="button"
                 className={`adminTabBtn ${activeTab === "reports" ? "is-active" : ""}`}
                 onClick={() => setActiveTab("reports")}
               >
-                Reports / tickets
+                Signalements
               </button>
             </div>
 
@@ -449,7 +449,7 @@ export default function Admin() {
                 </div>
 
                 {ecoError ? <div className="adminError">{ecoError}</div> : null}
-                {ecoLoading ? <div className="adminEmpty">Chargement du dashboard économie...</div> : null}
+                {ecoLoading ? <div className="adminEmpty">Chargement du suivi economie...</div> : null}
 
                 {!ecoLoading ? (
                   <>
@@ -521,7 +521,7 @@ export default function Admin() {
                       <div className="adminDashboardPanel__head">
                         <h3>Securite anti-abus</h3>
                         <p className="small">
-                          Rate limits, prix hors cadre et transactions suspectes sur la periode.
+                          Limites d'action, prix hors cadre et transactions suspectes sur la periode.
                         </p>
                       </div>
 

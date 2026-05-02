@@ -18,7 +18,7 @@ const PILLARS = [
   {
     kicker: "Opening",
     title: "Des boosters qui ont une vraie valeur",
-    text: "Chaque ouverture nourrit ta collection, tes doublons et ton economie. Ce n'est pas un simple reveal visuel.",
+    text: "Chaque ouverture nourrit ta collection, tes doublons et ton economie. Ce n'est pas juste une animation.",
   },
   {
     kicker: "Collection",
@@ -28,7 +28,7 @@ const PILLARS = [
   {
     kicker: "Market",
     title: "Un marche communautaire au centre du jeu",
-    text: "Les cartes, les prix et la liquidite passent par le market. Le dashboard et les pages cartes s'appuient dessus.",
+    text: "Les cartes, les prix et la liquidite passent par le market. Ton espace joueur t'aide a suivre tout ca.",
   },
   {
     kicker: "Economie",
@@ -56,7 +56,7 @@ const LOOP_STEPS = [
   {
     step: "04",
     title: "Optimise",
-    text: "Le dashboard te montre ce que tu ouvres, ce que tu possedes et comment ton compte evolue dans le temps.",
+    text: "Ton espace joueur te montre ce que tu ouvres, ce que tu possedes et comment ton compte evolue dans le temps.",
   },
 ];
 
@@ -84,7 +84,7 @@ const SEASONS = [
 ];
 
 const HERO_STATS = [
-  { value: "PWA", label: "Pensée pour mobile et installable comme une app" },
+  { value: "Mobile", label: "Pensee pour mobile et installable comme une app" },
   { value: "Market", label: "Les prix et la valeur des cartes partent du marche" },
   { value: "4 saisons", label: "Une progression en extensions plutot qu'une simple liste de cartes" },
 ];
@@ -198,7 +198,7 @@ export default function Home() {
     }
 
     setInstallMessage(
-      "L'installation apparait seulement quand le navigateur la propose. Chrome ou Edge sont les plus fiables.",
+      "L'installation apparait seulement quand ton appareil la propose. Tu peux aussi passer par le menu de ton navigateur.",
     );
     playActionDeniedSound();
   }
@@ -215,7 +215,7 @@ export default function Home() {
             <SmartImage src={wankilLogo} alt="Wankil Studio" className="homeBrand__logo homeBrand__logo--studio" loading="eager" fetchPriority="high" />
           </div>
           <div className="homeBrand__text">
-            <span className="homeBrand__eyebrow">Fan-made collector app</span>
+            <span className="homeBrand__eyebrow">Projet fan non officiel</span>
             <strong>Wankul TCG</strong>
           </div>
         </Link>
@@ -236,7 +236,7 @@ export default function Home() {
                 Ouvrir
               </Link>
               <Link className="homeButton homeButton--primary" to="/dashboard">
-                Dashboard
+                Mon espace
               </Link>
             </>
           )}
@@ -258,7 +258,7 @@ export default function Home() {
             </h1>
 
             <p className="homeHero__text">
-              Ouvre des boosters, fais grossir ta collection, exploite le market et pilote ton compte via un vrai dashboard.
+              Ouvre des boosters, fais grossir ta collection, exploite le market et suis ton compte depuis ton espace joueur.
               Le coeur du projet, c'est la boucle opening - collection - economie - marche.
             </p>
 
@@ -275,7 +275,7 @@ export default function Home() {
               ) : (
                 <>
                   <Link className="homeButton homeButton--primary homeButton--large" to="/dashboard">
-                    Aller au dashboard
+                    Voir mon espace
                   </Link>
                   <Link className="homeButton homeButton--ghost homeButton--large" to="/booster">
                     Lancer un opening
@@ -291,7 +291,7 @@ export default function Home() {
                 onClick={handleInstallClick}
                 disabled={isInstalled}
               >
-                {isInstalled ? "Web app installee" : "Telecharger la web app"}
+                {isInstalled ? "App installee" : "Installer l'app"}
               </button>
               <p className="homeHero__installNote">{installMessage}</p>
             </div>
@@ -310,10 +310,10 @@ export default function Home() {
             <div className="homeShowcase">
               <div className="homeShowcase__top">
                 <div>
-                  <div className="homeShowcase__eyebrow">Public landing</div>
-                  <div className="homeShowcase__title">Opening + dashboard + market</div>
+                  <div className="homeShowcase__eyebrow">Accueil public</div>
+                  <div className="homeShowcase__title">Boosters + collection + market</div>
                 </div>
-                <div className="homeShowcase__pill">PWA ready</div>
+                <div className="homeShowcase__pill">Installable</div>
               </div>
 
               <div className="homeShowcase__scene">
@@ -353,7 +353,7 @@ export default function Home() {
                 </div>
 
                 <div className="homeFloatingCard">
-                  <span>Dashboard</span>
+                  <span>Progression</span>
                   <strong>Stats perso, progression par saison et lecture immediate de ton compte</strong>
                 </div>
               </div>
@@ -394,7 +394,7 @@ export default function Home() {
         <section className="homeSection homeShell">
           <div className="homeSection__head">
             <span className="homeSection__kicker">Le projet</span>
-            <h2>Une app de collection orientee economie, avec le market comme source de verite.</h2>
+            <h2>Une app de collection orientee economie, avec le market comme repere principal.</h2>
             <p>
               L'objectif n'est pas de reproduire le gameplay papier, mais de capter le plaisir d'ouvrir, posseder, traquer
               et echanger de la valeur autour des cartes.
@@ -416,7 +416,7 @@ export default function Home() {
           <div className="homeEconomyGrid">
             <article className="homeEconomyCard homeEconomyCard--main">
               <div className="homeSection__kicker">Le coeur du systeme</div>
-              <h2>Le market pilote la valeur, le quick sell reste en dessous, et le dashboard explique tout.</h2>
+              <h2>Le market pilote la valeur, le quick sell reste en dessous, et ton espace joueur explique tout.</h2>
               <p>
                 Les cartes tirent leur prix du marche, l'economie est cadre par des garde-fous, et tes pages details
                 te montrent comment une carte evolue dans le temps. L'ouverture n'est donc jamais deconnectee du reste.
@@ -536,10 +536,10 @@ export default function Home() {
           <div className="homeClosing">
             <div className="homeClosing__copy">
               <span className="homeSection__kicker">Projet fan</span>
-              <h2>Une home publique pour entrer dans l'univers, un dashboard prive pour jouer vraiment.</h2>
+              <h2>Un accueil public pour entrer dans l'univers, un espace joueur pour jouer vraiment.</h2>
               <p>
-                Le projet est non officiel et pense comme une vitrine jouable : l'accueil montre la promesse, le dashboard
-                sert la progression du joueur, et tout le reste alimente cette boucle.
+                Wankul TCG est un projet de fan non officiel, realise comme projet de fin d'annee d'etude.
+                Il sert a imaginer une experience de collection numerique autour de l'univers Wankil.
               </p>
             </div>
 
@@ -556,7 +556,7 @@ export default function Home() {
               ) : (
                 <>
                   <Link className="homeButton homeButton--primary homeButton--large" to="/dashboard">
-                    Retour au dashboard
+                    Retour a mon espace
                   </Link>
                   <Link className="homeButton homeButton--ghost homeButton--large" to="/market">
                     Aller au market
@@ -569,8 +569,8 @@ export default function Home() {
       </main>
 
       <footer className="homeFooter homeShell">
-        <span>Wankul TCG - fan project / portfolio</span>
-        <span>React + Vite, NestJS, MySQL, mobile-first PWA</span>
+        <span>Wankul TCG - projet fan non officiel</span>
+        <span>Projet de fin d'annee d'etude</span>
       </footer>
     </div>
   );

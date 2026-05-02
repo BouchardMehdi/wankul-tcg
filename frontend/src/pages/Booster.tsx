@@ -592,8 +592,7 @@ export default function Booster() {
             <div className="panel boosterEmpty">
               <div className="boosterEmpty__title">Aucune saison affichable</div>
               <div className="boosterEmpty__text">
-                Vérifie le seed des cartes, les raretés requises, les terrains, et la présence d’un visuel
-                <b> booster.* </b>et <b>display.*</b> dans <b>src/assets/boosters/season-X/</b>.
+                Aucune saison n'est disponible pour le moment. Reviens un peu plus tard pour ouvrir de nouveaux boosters.
               </div>
             </div>
           ) : activePanel === "shop" ? (

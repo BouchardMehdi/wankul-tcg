@@ -62,84 +62,84 @@ const SETTING_ROWS: SettingRow[] = [
   },
   {
     key: "pwaNotifications",
-    title: "Notifications PWA",
+    title: "Notifications de l'app",
     desc: "Recoit une alerte pour les boosters ou displays gratuits et les ventes du market pretes a etre recuperees.",
     kind: "toggle",
     section: "general",
   },
   {
     key: "soundEffects",
-    title: "Sound effects",
+    title: "Sons",
     desc: "Active les sons d'interface, d'opening, de market et des interactions principales.",
     kind: "toggle",
     section: "general",
   },
   {
     key: "skipOpeningAnimations",
-    title: "Skip animations",
+    title: "Passer les animations",
     desc: "Passe directement aux cartes ou au résumé pendant les openings.",
     kind: "toggle",
     section: "general",
   },
   {
     key: "autoFlipCards",
-    title: "Auto flip cards",
+    title: "Defilement auto des cartes",
     desc: "Fait défiler automatiquement les cartes révélées une par une.",
     kind: "toggle",
     section: "general",
   },
   {
     key: "fastReveal",
-    title: "Fast reveal",
+    title: "Ouverture rapide",
     desc: "Accélère les timings d'ouverture et les enchaînements des cartes.",
     kind: "toggle",
     section: "general",
   },
   {
     key: "disableHoloEffects",
-    title: "Disable holo effects",
+    title: "Reduire les effets brillants",
     desc: "Désactive les effets holo et une partie des effets visuels lourds.",
     kind: "toggle",
     section: "general",
   },
   {
     key: "showDuplicatesCounter",
-    title: "Show duplicates counter",
+    title: "Compteur de doublons",
     desc: "Affiche le compteur x2, x3, x4… sur les cartes possédées plusieurs fois.",
     kind: "toggle",
     section: "general",
   },
   {
     key: "collectionLayout",
-    title: "Collection layout",
+    title: "Affichage collection",
     desc: "Choisis la disposition de la grille de collection selon ton écran et ta préférence.",
     kind: "select",
     section: "general",
   },
   {
     key: "hideMissingCards",
-    title: "Hide missing cards",
+    title: "Masquer les cartes manquantes",
     desc: "Masque les cartes non débloquées dans la collection.",
     kind: "toggle",
     section: "general",
   },
   {
     key: "autoHighlightNewCards",
-    title: "Auto highlight new cards",
+    title: "Nouvelles cartes mises en avant",
     desc: "Met en avant dans la collection les nouvelles cartes obtenues lors de la dernière ouverture.",
     kind: "toggle",
     section: "general",
   },
   {
     key: "showDropRates",
-    title: "Show drop rates",
-    desc: "Affiche la distribution du butin et les pourcentages sur le dashboard.",
+    title: "Afficher les chances d'ouverture",
+    desc: "Affiche la distribution du butin et les pourcentages dans ton espace joueur.",
     kind: "toggle",
     section: "general",
   },
   {
     key: "confirmPurchases",
-    title: "Confirm purchases",
+    title: "Confirmer les achats",
     desc: "Demande une confirmation avant d'acheter un booster ou une display avec des crédits.",
     kind: "toggle",
     section: "general",
@@ -191,19 +191,19 @@ const SETTING_ROWS: SettingRow[] = [
 const SECTION_META = {
   general: {
     title: "Application",
-    desc: "Préférences globales de l'app, de la collection et des openings.",
+    desc: "Preferences globales de l'app, de la collection et des openings.",
   },
   market: {
     title: "Market",
-    desc: "Paramètres de sécurité et de comportement pour les achats et ventes.",
+    desc: "Preferences de securite et de confort pour les achats et ventes.",
   },
   notifications: {
     title: "Notifications",
-    desc: "Regles push serveur pour le market, les charges gratuites, la watchlist et le recap quotidien.",
+    desc: "Alertes de l'app pour le market, les charges gratuites, la watchlist et le recap quotidien.",
   },
   support: {
     title: "Support",
-    desc: "Signale un bug, un problème visuel ou un comportement anormal rencontré dans l'application.",
+    desc: "Signale un bug, un probleme visuel ou un comportement anormal rencontre dans l'application.",
   },
 } as const;
 
@@ -211,7 +211,7 @@ const PAGE_OPTIONS = [
   "Home",
   "Login",
   "Register",
-  "Dashboard",
+  "Espace joueur",
   "Booster",
   "Opening",
   "Collection",
@@ -646,7 +646,7 @@ export default function Settings() {
             <div className="section-title settingsHeading">
               <div>
                 <h2>Paramètres</h2>
-                <p className="small">Préférences locales de l'application.</p>
+                <p className="small">Preferences de ton application.</p>
               </div>
 
               <div className="settingsSummary small">
@@ -667,9 +667,9 @@ export default function Settings() {
 
                 <div className="settingsPwaShortcut">
                   <div>
-                    <div className="settingsPwaShortcut__title">Preferences PWA premium</div>
+                    <div className="settingsPwaShortcut__title">Preferences de l'app installee</div>
                     <div className="settingsPwaShortcut__desc">
-                      Installation, cache images de cartes, offline utile et notifications par type.
+                      Installation, images de cartes hors ligne et notifications par type.
                     </div>
                   </div>
 
@@ -697,7 +697,7 @@ export default function Settings() {
                 </div>
 
                 {pushPrefsLoading ? (
-                  <div className="settingsSupportCard__desc">Chargement des notifications push...</div>
+                  <div className="settingsSupportCard__desc">Chargement des notifications...</div>
                 ) : pushPrefs ? (
                   <div className="settingsList">
                     <div className="settingsRow">
@@ -1056,7 +1056,7 @@ export default function Settings() {
                       <div>
                         <div className="settingsSupportCard__title">Historique de tes signalements</div>
                         <div className="settingsSupportCard__desc">
-                          Les reports corrigés et rejetés sont masqués par défaut pour garder un affichage plus lisible.
+                          Les signalements corriges et rejetes sont masques par defaut pour garder un affichage plus lisible.
                         </div>
                       </div>
 
