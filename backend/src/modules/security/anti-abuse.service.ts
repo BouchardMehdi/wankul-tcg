@@ -359,6 +359,77 @@ export class AntiAbuseService {
     };
   }
 
+  async getLogs(params: {
+    days?: number;
+    page?: number;
+    pageSize?: number;
+    action?: string;
+    status?: EconomicActionStatus | '';
+    severity?: EconomicActionSeverity | '';
+    userId?: number;
+  } = {}) {
+    const safeDays = Math.min(180, Math.max(1, Number(params.days) || 7));
+    const page = Math.max(1, Number(params.page ?? 1) || 1);
+    const pageSize = Math.min(100, Math.max(1, Number(params.pageSize ?? 25) || 25));
+    const since = new Date();
+    since.setDate(since.getDate() - safeDays);
+
+    const qb = this.logRepo
+      .createQueryBuilder('log')
+      .where('log.createdAt >= :since', { since });
+
+    if (params.action?.trim()) {
+      qb.andWhere('log.action = :action', { action: params.action.trim() });
+    }
+
+    if (params.status) {
+      qb.andWhere('log.status = :status', { status: params.status });
+    }
+
+    if (params.severity) {
+      qb.andWhere('log.severity = :severity', { severity: params.severity });
+    }
+
+    if (params.userId) {
+      qb.andWhere('log.userId = :userId', { userId: Number(params.userId) });
+    }
+
+    const [rows, total] = await qb
+      .orderBy('log.createdAt', 'DESC')
+      .skip((page - 1) * pageSize)
+      .take(pageSize)
+      .getManyAndCount();
+
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        userId: row.userId,
+        action: row.action,
+        status: row.status,
+        severity: row.severity,
+        targetType: row.targetType,
+        targetId: row.targetId,
+        valueCredits: row.valueCredits,
+        reason: row.reason,
+        metadata: row.metadata,
+        createdAt: row.createdAt,
+      })),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+      filters: {
+        days: safeDays,
+        action: params.action?.trim() || null,
+        status: params.status || null,
+        severity: params.severity || null,
+        userId: params.userId || null,
+      },
+    };
+  }
+
   private evaluatePriceGuard(input: PriceGuardInput): AbuseDecision {
     const referenceValue = Math.max(1, Math.round(input.referenceValue));
     const requestedValue = Math.max(0, Math.round(input.requestedValue));

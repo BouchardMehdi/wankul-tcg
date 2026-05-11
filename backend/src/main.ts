@@ -1,14 +1,26 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { AppModule } from './app.module';
 import { join } from 'path';
 import * as express from 'express';
 
+import { AppModule } from './app.module';
+
+function getCorsOrigins() {
+  const raw = process.env.CORS_ORIGINS ?? process.env.FRONTEND_URL ?? 'http://localhost:5173';
+
+  return raw
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+}
+
 async function bootstrap() {
+  const port = Number(process.env.PORT ?? 3000);
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: {
-      origin: ['http://localhost:5173'],
+      origin: getCorsOrigins(),
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization'],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -30,7 +42,8 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(3000);
-  console.log('✅ Backend running on http://localhost:3000');
+  await app.listen(port);
+  console.log(`Wankul TCG API running on port ${port}`);
 }
+
 bootstrap();

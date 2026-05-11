@@ -1,4 +1,7 @@
-export const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+export const API_ORIGIN = (import.meta.env.VITE_API_URL ?? "http://localhost:3000")
+  .replace(/\/$/, "")
+  .replace(/\/api$/, "");
+export const API_BASE = API_ORIGIN;
 
 type ApiFetchOptions = {
   method?: string;
@@ -19,7 +22,7 @@ export async function apiFetch<T = any>(
   const { method = "GET", body, token, headers, auth = true } = options;
 
   // ✅ Tous les endpoints passent par /api
-  const url = `${API_BASE}/api${path.startsWith("/") ? path : `/${path}`}`;
+  const url = `${API_ORIGIN}/api${path.startsWith("/") ? path : `/${path}`}`;
 
   // ✅ Token : fourni explicitement OU depuis localStorage
   const resolvedToken =

@@ -1,7 +1,7 @@
-import { apiFetch } from './http';
+import { API_ORIGIN, apiFetch } from './http';
 
 function getApiBase() {
-  return (import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api').replace(/\/$/, '');
+  return `${API_ORIGIN}/api`;
 }
 
 async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -281,6 +281,23 @@ export type AdminEconomyOverviewResponse = {
   };
 };
 
+export type AdminEconomyLogsResponse = {
+  items: NonNullable<AdminEconomyOverviewResponse['security']>['recentEvents'];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+  filters: {
+    days: number;
+    action: string | null;
+    status: string | null;
+    severity: string | null;
+    userId: number | null;
+  };
+};
+
 export async function login(dto: LoginDto) {
   return apiFetch<LoginResponse>('/auth/login', {
     method: 'POST',
@@ -408,4 +425,60 @@ export async function getAdminEconomyOverview(days = 7) {
       method: 'GET',
     },
   );
+}
+
+export async function getAdminEconomyLogs(params?: {
+  days?: number;
+  page?: number;
+  pageSize?: number;
+  action?: string;
+  status?: string;
+  severity?: string;
+  userId?: number;
+}) {
+  const search = new URLSearchParams();
+
+  if (params?.days) search.set('days', String(params.days));
+  if (params?.page) search.set('page', String(params.page));
+  if (params?.pageSize) search.set('pageSize', String(params.pageSize));
+  if (params?.action) search.set('action', params.action);
+  if (params?.status) search.set('status', params.status);
+  if (params?.severity) search.set('severity', params.severity);
+  if (params?.userId) search.set('userId', String(params.userId));
+
+  const query = search.toString();
+
+  return adminFetch<AdminEconomyLogsResponse>(
+    `/admin/economy/logs${query ? `?${query}` : ''}`,
+    {
+      method: 'GET',
+    },
+  );
+}
+
+export async function downloadAdminEconomyExport(days = 30, format: 'json' | 'csv' = 'json') {
+  const adminToken = localStorage.getItem('admin_token');
+  const url = `${getApiBase()}/admin/economy/export?days=${days}&format=${format}`;
+
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+    },
+  });
+
+  const blob = await res.blob();
+
+  if (!res.ok) {
+    const text = await blob.text().catch(() => '');
+    throw new Error(text || 'Export admin impossible.');
+  }
+
+  const disposition = res.headers.get('Content-Disposition') ?? '';
+  const match = disposition.match(/filename="([^"]+)"/i);
+
+  return {
+    blob,
+    filename: match?.[1] ?? `wankul-economy-${days}d.${format}`,
+  };
 }

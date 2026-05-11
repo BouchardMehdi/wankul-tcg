@@ -22,6 +22,16 @@ type GetAllTicketsParams = {
   pageSize?: number;
 };
 
+type EconomyLogParams = {
+  days?: number;
+  page?: number;
+  pageSize?: number;
+  action?: string;
+  status?: 'allowed' | 'flagged' | 'blocked' | '';
+  severity?: 'info' | 'watch' | 'danger' | '';
+  userId?: number;
+};
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -264,5 +274,74 @@ export class AdminService {
       ...overview,
       security,
     };
+  }
+
+  async getEconomyLogs(params: EconomyLogParams = {}) {
+    return this.antiAbuseService.getLogs(params);
+  }
+
+  async getEconomyExport(days = 30) {
+    const safeDays = Math.min(180, Math.max(1, Number(days) || 30));
+    const [overview, logs] = await Promise.all([
+      this.getEconomyOverview(safeDays),
+      this.antiAbuseService.getLogs({
+        days: safeDays,
+        page: 1,
+        pageSize: 100,
+      }),
+    ]);
+
+    return {
+      exportedAt: new Date().toISOString(),
+      days: safeDays,
+      overview,
+      recentEconomicLogs: logs.items,
+      rollbackReminder: {
+        mode: 'manual_database_restore',
+        note: 'Toujours creer un backup juste avant toute correction economie. Le rollback se fait par restauration SQL controlee, pas par bouton admin.',
+      },
+    };
+  }
+
+  buildEconomyExportCsv(exportData: Awaited<ReturnType<AdminService['getEconomyExport']>>) {
+    const rows = [
+      ['section', 'date', 'metric', 'value', 'details'],
+      ...exportData.overview.rows.map((row) => [
+        'daily',
+        row.date,
+        'credits_created_opening',
+        row.creditsEarnedOpening,
+        `boosters=${row.boostersOpened};displays=${row.displaysOpened}`,
+      ]),
+      ...exportData.overview.rows.map((row) => [
+        'daily',
+        row.date,
+        'credits_created_quick_sell',
+        row.creditsEarnedQuickSell,
+        `marketVolume=${row.marketVolume}`,
+      ]),
+      ...exportData.overview.rows.map((row) => [
+        'daily',
+        row.date,
+        'credits_destroyed',
+        row.creditsSpent,
+        `marketVolume=${row.marketVolume}`,
+      ]),
+      ...exportData.recentEconomicLogs.map((log) => [
+        'log',
+        log.createdAt,
+        log.action,
+        log.valueCredits,
+        `status=${log.status};severity=${log.severity};user=${log.userId ?? ''};reason=${log.reason ?? ''}`,
+      ]),
+    ];
+
+    return rows.map((row) => row.map((value) => this.csvValue(value)).join(',')).join('\n');
+  }
+
+  private csvValue(value: unknown) {
+    const text = String(value ?? '');
+    if (!/[",\n\r]/.test(text)) return text;
+    return `"${text.replace(/"/g, '""')}"`;
   }
 }

@@ -7,8 +7,10 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 
 import { AdminService } from './admin.service';
 import { AdminLoginDto } from './dto/admin-login.dto';
@@ -65,5 +67,56 @@ export class AdminController {
   @Get('economy/overview')
   async getEconomyOverview(@Query('days') days?: string) {
     return this.adminService.getEconomyOverview(Number(days ?? 7) || 7);
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Get('economy/logs')
+  async getEconomyLogs(
+    @Query('days') days?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('action') action?: string,
+    @Query('status') status?: string,
+    @Query('severity') severity?: string,
+    @Query('userId') userId?: string,
+  ) {
+    return this.adminService.getEconomyLogs({
+      days: Number(days ?? 7) || 7,
+      page: Number(page ?? 1) || 1,
+      pageSize: Number(pageSize ?? 25) || 25,
+      action,
+      status: (status as any) ?? '',
+      severity: (severity as any) ?? '',
+      userId: userId ? Number(userId) : undefined,
+    });
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Get('economy/export')
+  async exportEconomy(
+    @Query('days') days: string | undefined,
+    @Query('format') format: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const exportData = await this.adminService.getEconomyExport(Number(days ?? 30) || 30);
+    const safeDate = new Date().toISOString().slice(0, 10);
+    const safeDays = exportData.days;
+
+    if (format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="wankul-economy-${safeDate}-${safeDays}d.csv"`,
+      );
+      return this.adminService.buildEconomyExportCsv(exportData);
+    }
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="wankul-economy-${safeDate}-${safeDays}d.json"`,
+    );
+
+    return exportData;
   }
 }

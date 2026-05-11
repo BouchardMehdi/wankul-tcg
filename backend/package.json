@@ -19,7 +19,11 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed:cards": "nest start --entryFile database/seed-cards --watch=false",
-    "organize:card-images": "node scripts/organize-card-images.js"
+    "organize:card-images": "node scripts/organize-card-images.js",
+    "db:backup": "node scripts/db-backup.js",
+    "db:restore": "node scripts/db-restore.js",
+    "economy:export": "node scripts/export-economy.js",
+    "push:generate-vapid": "web-push generate-vapid-keys"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

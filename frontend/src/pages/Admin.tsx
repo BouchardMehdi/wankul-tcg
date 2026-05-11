@@ -9,10 +9,13 @@ import {
   getAdminTickets,
   updateAdminTicketStatus,
   getAdminEconomyOverview,
+  getAdminEconomyLogs,
+  downloadAdminEconomyExport,
   type AdminTicketsResponse,
   type BugReportListItem,
   type BugReportStatus,
   type AdminEconomyOverviewResponse,
+  type AdminEconomyLogsResponse,
 } from "../api/auth";
 
 const STATUS_LABELS: Record<BugReportStatus, string> = {
@@ -141,6 +144,11 @@ export default function Admin() {
   const [ecoLoading, setEcoLoading] = useState(false);
   const [ecoError, setEcoError] = useState("");
   const [ecoOverview, setEcoOverview] = useState<AdminEconomyOverviewResponse | null>(null);
+  const [ecoLogs, setEcoLogs] = useState<AdminEconomyLogsResponse | null>(null);
+  const [ecoLogsLoading, setEcoLogsLoading] = useState(false);
+  const [ecoLogsError, setEcoLogsError] = useState("");
+  const [ecoLogsPage, setEcoLogsPage] = useState(1);
+  const [ecoExporting, setEcoExporting] = useState<"json" | "csv" | null>(null);
 
   const currentAdminUsername = user?.username ?? me?.username ?? "";
   const canAccess = role === "admin";
@@ -191,11 +199,38 @@ export default function Admin() {
     }
   }
 
+  async function loadEconomyLogs(nextPage = ecoLogsPage, nextDays = ecoDays) {
+    setEcoLogsLoading(true);
+    setEcoLogsError("");
+
+    try {
+      const res = await getAdminEconomyLogs({
+        days: nextDays,
+        page: nextPage,
+        pageSize: 25,
+      });
+      setEcoLogs(res);
+    } catch (err: any) {
+      setEcoLogsError(err?.message || "Impossible de charger les logs economie.");
+    } finally {
+      setEcoLogsLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (!isAdminAuthenticated) return;
     loadEconomyOverview(ecoDays).catch(() => {});
+    setEcoLogsPage(1);
+    loadEconomyLogs(1, ecoDays).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdminAuthenticated, ecoDays]);
+
+  useEffect(() => {
+    if (!isAdminAuthenticated) return;
+    if (activeTab !== "dashboard") return;
+    loadEconomyLogs(ecoLogsPage, ecoDays).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdminAuthenticated, activeTab, ecoLogsPage]);
 
   useEffect(() => {
     if (!isAdminAuthenticated) return;
@@ -281,7 +316,13 @@ export default function Admin() {
     blocked: 0,
     danger: 0,
   };
-  const recentSecurityEvents = security?.recentEvents ?? [];
+  const recentSecurityEvents = ecoLogs?.items ?? security?.recentEvents ?? [];
+  const ecoLogsPagination = ecoLogs?.pagination ?? {
+    page: ecoLogsPage,
+    pageSize: 25,
+    total: 0,
+    totalPages: 1,
+  };
 
   async function handleAdminLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -322,6 +363,27 @@ export default function Admin() {
 
   function goToPage(nextPage: number) {
     setPage(nextPage);
+  }
+
+  async function handleEconomyExport(format: "json" | "csv") {
+    setEcoExporting(format);
+    setEcoError("");
+
+    try {
+      const { blob, filename } = await downloadAdminEconomyExport(ecoDays, format);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setEcoError(err?.message || "Export economie impossible.");
+    } finally {
+      setEcoExporting(null);
+    }
   }
 
   if (!canAccess) {
@@ -446,6 +508,25 @@ export default function Admin() {
                       </select>
                     </label>
                   </div>
+
+                  <div className="adminHeaderActions">
+                    <button
+                      type="button"
+                      className="btn adminPrimaryBtn"
+                      onClick={() => handleEconomyExport("json")}
+                      disabled={!!ecoExporting}
+                    >
+                      {ecoExporting === "json" ? "Export..." : "Exporter JSON"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => handleEconomyExport("csv")}
+                      disabled={!!ecoExporting}
+                    >
+                      {ecoExporting === "csv" ? "Export..." : "Exporter CSV"}
+                    </button>
+                  </div>
                 </div>
 
                 {ecoError ? <div className="adminError">{ecoError}</div> : null}
@@ -545,6 +626,8 @@ export default function Admin() {
                       </div>
 
                       <div className="adminSecurityEvents">
+                        {ecoLogsLoading ? <div className="adminEmpty">Chargement des logs economie...</div> : null}
+                        {ecoLogsError ? <div className="adminError">{ecoLogsError}</div> : null}
                         {recentSecurityEvents.length > 0 ? (
                           recentSecurityEvents.map((event) => (
                             <article
@@ -566,6 +649,28 @@ export default function Admin() {
                         ) : (
                           <div className="adminEmpty">Aucun signal anti-abus sur cette periode.</div>
                         )}
+                      </div>
+
+                      <div className="adminPagination adminPagination--compact">
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => setEcoLogsPage((value) => Math.max(1, value - 1))}
+                          disabled={ecoLogsPagination.page <= 1 || ecoLogsLoading}
+                        >
+                          Precedent
+                        </button>
+                        <div className="adminPagination__info">
+                          Logs page {ecoLogsPagination.page} / {ecoLogsPagination.totalPages} - {formatNumber(ecoLogsPagination.total)} entree(s)
+                        </div>
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => setEcoLogsPage((value) => Math.min(ecoLogsPagination.totalPages, value + 1))}
+                          disabled={ecoLogsPagination.page >= ecoLogsPagination.totalPages || ecoLogsLoading}
+                        >
+                          Suivant
+                        </button>
                       </div>
                     </section>
 
