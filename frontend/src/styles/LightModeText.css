@@ -103,6 +103,31 @@
   -webkit-text-fill-color: #16653a !important;
 }
 
+[data-theme="light"] :is(
+  .btn--primary,
+  .btn-primary,
+  .marketBtn:not(.marketBtn--secondary):not(.marketBtn--danger),
+  .marketCreateBtn:not(.marketCreateBtn--secondary),
+  .quickSellBtn:not(.quickSellBtn--secondary),
+  .adminPrimaryBtn,
+  .settingsReportSubmit,
+  .homeButton--primary,
+  .appPopupCard .btn--primary,
+  .onboardingTour__primary
+):not(:disabled) {
+  color: var(--btn-primary-text) !important;
+  -webkit-text-fill-color: var(--btn-primary-text) !important;
+}
+
+[data-theme="light"] :is(
+  .marketBtn--danger,
+  .adminDangerBtn,
+  .settingsLogoutBtn
+):not(:disabled) {
+  color: var(--btn-danger-text) !important;
+  -webkit-text-fill-color: var(--btn-danger-text) !important;
+}
+
 [data-theme="light"] .confirmModal__card {
   border-color: rgba(42, 35, 54, 0.12);
   background:

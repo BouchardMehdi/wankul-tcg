@@ -638,8 +638,10 @@
 
 .btn-primary {
   border: 0;
-  background: linear-gradient(135deg, #ff4d6d, #9b5cff);
-  box-shadow: 0 16px 55px rgba(255,77,109,0.18);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  -webkit-text-fill-color: var(--btn-primary-text);
+  box-shadow: var(--btn-primary-shadow);
 }
 
 [data-theme="light"] .collectionPage .btn {
@@ -653,9 +655,10 @@
 }
 
 [data-theme="light"] .collectionPage .btn-primary {
-  color: #fff;
-  background: linear-gradient(135deg, #e94f55, #f19a35 46%, #7155d9);
-  box-shadow: 0 18px 42px rgba(233, 79, 85, 0.20);
+  color: var(--btn-primary-text);
+  -webkit-text-fill-color: var(--btn-primary-text);
+  background: var(--btn-primary-bg);
+  box-shadow: var(--btn-primary-shadow);
 }
 
 [data-theme="light"] .collectionPage .btn:disabled {
@@ -2084,4 +2087,64 @@
 
 .cardTile__detailsBtn {
   width: 100%;
+}
+
+/* =========================
+   MOBILE PWA STABILIZATION
+========================= */
+
+[data-theme="light"] .collectionProgressList,
+[data-theme="light"] .collectionMiniRail,
+[data-theme="light"] .collectionViewSwitch {
+  scrollbar-color: rgba(233, 79, 85, 0.72) rgba(244, 233, 213, 0.70);
+}
+
+[data-theme="light"] .collectionProgressList::-webkit-scrollbar-track,
+[data-theme="light"] .collectionModal__body::-webkit-scrollbar-track {
+  background: rgba(244, 233, 213, 0.82);
+}
+
+@media (max-width: 520px) {
+  .collectionPage {
+    padding: 10px;
+    padding-bottom: calc(10px + var(--mobile-nav-offset));
+  }
+
+  .collectionShell {
+    border-radius: 20px;
+  }
+
+  .collectionViewSwitch {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scroll-snap-type: x proximity;
+  }
+
+  .collectionViewSwitch__btn {
+    flex: 0 0 auto;
+    min-width: max-content;
+    scroll-snap-align: start;
+  }
+
+  .collectionStatsGrid > div,
+  .collectionProgressCard,
+  .collectionFocusCard {
+    padding: 10px;
+    border-radius: 14px;
+  }
+
+  .collectionProgressList {
+    max-height: 236px;
+  }
+
+  .cardsGrid--standard,
+  .cardsGrid--compact,
+  .cardsGrid--large {
+    gap: 12px;
+  }
+
+  .cardTile__actions {
+    grid-template-columns: 1fr;
+  }
 }

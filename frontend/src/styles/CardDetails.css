@@ -869,3 +869,236 @@
     align-items: flex-start;
   }
 }
+
+/* =========================
+   LIGHT MODE + MOBILE STABILIZATION
+========================= */
+
+[data-theme="light"] .cardDetailsShell {
+  border-color: rgba(42, 35, 54, 0.12);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 144, 169, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(255, 252, 244, 0.92), rgba(244, 233, 213, 0.80));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.70),
+    0 18px 48px rgba(94, 68, 41, 0.13);
+}
+
+[data-theme="light"] .cardDetailsTopbar,
+[data-theme="light"] .cardDetailsHero {
+  border-color: rgba(42, 35, 54, 0.10);
+}
+
+[data-theme="light"] .cardDetailsState,
+[data-theme="light"] .cardDetailsMarketSnapshot > div,
+[data-theme="light"] .cardDetailsGrid > div,
+[data-theme="light"] .cardDetailsKpiCard,
+[data-theme="light"] .cardDetailsMarketBlock,
+[data-theme="light"] .cardDetailsOfferCard,
+[data-theme="light"] .cardDetailsSaleRow,
+[data-theme="light"] .cardDetailsVariantCard {
+  border-color: rgba(42, 35, 54, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.82), rgba(241, 229, 207, 0.66));
+  color: rgba(27, 25, 34, 0.94);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    0 10px 24px rgba(94, 68, 41, 0.07);
+}
+
+[data-theme="light"] .cardDetailsState--error,
+[data-theme="light"] .cardDetailsMarketFeedback--error,
+[data-theme="light"] .cardDetailsWatchlist__feedback--error {
+  border-color: rgba(143, 29, 45, 0.24);
+  background: rgba(233, 79, 85, 0.10);
+  color: #8f1d2d;
+}
+
+[data-theme="light"] .cardDetailsMarketFeedback--success,
+[data-theme="light"] .cardDetailsWatchlist__feedback--success {
+  border-color: rgba(22, 101, 58, 0.22);
+  background: rgba(70, 196, 126, 0.12);
+  color: #16653a;
+}
+
+[data-theme="light"] .cardDetailsHero__media,
+[data-theme="light"] .cardDetailsVariantCard__image {
+  border-color: rgba(42, 35, 54, 0.12);
+  background: rgba(255, 250, 239, 0.74);
+  box-shadow: 0 16px 34px rgba(94, 68, 41, 0.12);
+}
+
+[data-theme="light"] .cardDetailsHero__placeholder,
+[data-theme="light"] .cardDetailsHero__subtitle,
+[data-theme="light"] .cardDetailsMarketSnapshot span,
+[data-theme="light"] .cardDetailsMarketBlock__head span,
+[data-theme="light"] .cardDetailsOfferCard p,
+[data-theme="light"] .cardDetailsSaleRow span,
+[data-theme="light"] .cardDetailsVariantCard span,
+[data-theme="light"] .cardDetailsGrid span,
+[data-theme="light"] .cardDetailsKpiCard span,
+[data-theme="light"] .cardDetailsKpiCard em,
+[data-theme="light"] .cardDetailsChartCard__head p,
+[data-theme="light"] .cardDetailsChartMeta,
+[data-theme="light"] .cardDetailsChartFooter,
+[data-theme="light"] .cardDetailsMarketPanel__head p,
+[data-theme="light"] .cardDetailsOfferCard__meta span,
+[data-theme="light"] .cardDetailsOfferCard__meta em {
+  color: rgba(72, 67, 82, 0.72);
+}
+
+[data-theme="light"] .cardDetailsBadge,
+[data-theme="light"] .cardDetailsRangeTab {
+  border-color: rgba(42, 35, 54, 0.12);
+  background: rgba(255, 250, 239, 0.70);
+  color: rgba(27, 25, 34, 0.92);
+}
+
+[data-theme="light"] .cardDetailsBadge--rarity,
+[data-theme="light"] .cardDetailsRangeTab.is-active {
+  border-color: rgba(201, 138, 24, 0.30);
+  background:
+    linear-gradient(135deg, rgba(201, 138, 24, 0.15), rgba(113, 85, 217, 0.10)),
+    rgba(255, 250, 239, 0.78);
+}
+
+[data-theme="light"] .cardDetailsBadge--up,
+[data-theme="light"] .cardDetailsKpiCard--up strong,
+[data-theme="light"] .cardDetailsKpiCard--up em {
+  color: #16653a;
+}
+
+[data-theme="light"] .cardDetailsBadge--down,
+[data-theme="light"] .cardDetailsKpiCard--down strong,
+[data-theme="light"] .cardDetailsKpiCard--down em {
+  color: #8f1d2d;
+}
+
+[data-theme="light"] .cardDetailsChartWrap {
+  border-color: rgba(42, 35, 54, 0.10);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(var(--chart-main-rgb), 0.10), transparent 36%),
+    linear-gradient(180deg, rgba(255, 252, 244, 0.88), rgba(244, 233, 213, 0.66));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+}
+
+[data-theme="light"] .cardDetailsChartGrid { stroke: rgba(42, 35, 54, 0.12); }
+[data-theme="light"] .cardDetailsChartAxis { stroke: rgba(42, 35, 54, 0.32); }
+[data-theme="light"] .cardDetailsChartTick { stroke: rgba(42, 35, 54, 0.24); }
+[data-theme="light"] .cardDetailsChartAxisLabel { fill: rgba(42, 39, 52, 0.76); }
+[data-theme="light"] .cardDetailsChartAxisTitle { fill: rgba(27, 25, 34, 0.88); }
+
+[data-theme="light"] .cardDetailsTooltip {
+  border-color: rgba(42, 35, 54, 0.13);
+  background: rgba(255, 250, 239, 0.96);
+  box-shadow: 0 18px 34px rgba(94, 68, 41, 0.16);
+}
+
+[data-theme="light"] .cardDetailsTooltip::after {
+  background: rgba(255, 250, 239, 0.96);
+}
+
+[data-theme="light"] .cardDetailsTooltip--top::after {
+  border-color: rgba(42, 35, 54, 0.12);
+}
+
+[data-theme="light"] .cardDetailsTooltip--bottom::after {
+  border-color: rgba(42, 35, 54, 0.12);
+}
+
+[data-theme="light"] .cardDetailsTooltip__date {
+  color: rgba(72, 67, 82, 0.72);
+}
+
+[data-theme="light"] .cardDetailsTooltip--up .cardDetailsTooltip__price { color: #16653a; }
+[data-theme="light"] .cardDetailsTooltip--down .cardDetailsTooltip__price { color: #8f1d2d; }
+[data-theme="light"] .cardDetailsTooltip--flat .cardDetailsTooltip__price { color: #5740b0; }
+
+[data-theme="light"] .cardDetailsWatchlist,
+[data-theme="light"] .cardDetailsMarketPanel {
+  border-color: rgba(42, 35, 54, 0.12);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(0, 144, 169, 0.08), transparent 36%),
+    linear-gradient(180deg, rgba(255, 252, 244, 0.90), rgba(244, 233, 213, 0.76));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.66),
+    0 18px 48px rgba(94, 68, 41, 0.12);
+}
+
+[data-theme="light"] .cardDetailsWatchlist__head p,
+[data-theme="light"] .cardDetailsWatchlist__meta,
+[data-theme="light"] .cardDetailsWatchlist__current,
+[data-theme="light"] .cardDetailsWatchlist__field span,
+[data-theme="light"] .cardDetailsMarketEmpty {
+  color: rgba(72, 67, 82, 0.72);
+}
+
+[data-theme="light"] .cardDetailsWatchlist__field input {
+  border-color: rgba(42, 35, 54, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.90), rgba(244, 233, 213, 0.78));
+  color: rgba(27, 25, 34, 0.94);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 8px 18px rgba(94, 68, 41, 0.07);
+}
+
+[data-theme="light"] .cardDetailsMarketEmpty {
+  border-color: rgba(42, 35, 54, 0.14);
+  background: rgba(255, 250, 239, 0.52);
+}
+
+[data-theme="light"] .cardDetailsSaleRow em {
+  color: rgba(201, 138, 24, 0.96);
+}
+
+@media (max-width: 640px) {
+  .cardDetailsShell {
+    border-radius: 20px;
+  }
+
+  .cardDetailsHero__subtitle {
+    font-size: 14px;
+  }
+
+  .cardDetailsBadge {
+    padding: 7px 10px;
+  }
+
+  .cardDetailsMarketSnapshot > div,
+  .cardDetailsGrid > div,
+  .cardDetailsKpiCard,
+  .cardDetailsMarketBlock {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .cardDetailsWatchlist {
+    margin-top: 14px;
+    border-radius: 22px;
+  }
+
+  .cardDetailsWatchlist__field input,
+  .cardDetailsWatchlist__actions .btn {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .cardDetailsMarketPanel {
+    margin: 12px 10px 0;
+    border-radius: 22px;
+  }
+
+  .cardDetailsSaleRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cardDetailsVariantCard {
+    grid-template-columns: 50px minmax(0, 1fr);
+  }
+
+  .cardDetailsVariantCard__image {
+    width: 50px;
+  }
+}

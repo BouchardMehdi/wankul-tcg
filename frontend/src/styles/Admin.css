@@ -137,14 +137,18 @@
 
 .adminPrimaryBtn {
   border: 0;
-  color: #fff;
-  background: linear-gradient(135deg, #ff4d6d, #9b5cff);
+  color: var(--btn-primary-text);
+  -webkit-text-fill-color: var(--btn-primary-text);
+  background: var(--btn-primary-bg);
+  box-shadow: var(--btn-primary-shadow);
 }
 
 .adminDangerBtn {
   border: 0;
-  color: #fff;
-  background: linear-gradient(135deg, #ff6b6b, #d93636);
+  color: var(--btn-danger-text);
+  -webkit-text-fill-color: var(--btn-danger-text);
+  background: var(--btn-danger-bg);
+  box-shadow: var(--btn-danger-shadow);
 }
 
 .adminError {
@@ -1011,5 +1015,267 @@
 
   .adminBarChartRow__label {
     margin-bottom: -2px;
+  }
+}
+
+/* =========================
+   LIGHT MODE + MOBILE STABILIZATION
+========================= */
+
+[data-theme="light"] .adminTabs,
+[data-theme="light"] .adminStatCard,
+[data-theme="light"] .adminDashboardPanel,
+[data-theme="light"] .adminRiskStrip,
+[data-theme="light"] .adminSecurityPill,
+[data-theme="light"] .adminSecurityEvent,
+[data-theme="light"] .adminKpiRow,
+[data-theme="light"] .adminInsightCard,
+[data-theme="light"] .adminSuspiciousCard,
+[data-theme="light"] .adminTicketCard,
+[data-theme="light"] .adminTicketMetaGrid,
+[data-theme="light"] .adminTicketBlock__content,
+[data-theme="light"] .adminTimelineItem__content,
+[data-theme="light"] .adminEmpty {
+  border-color: rgba(42, 35, 54, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.84), rgba(244, 233, 213, 0.66));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    0 10px 24px rgba(94, 68, 41, 0.07);
+}
+
+[data-theme="light"] .adminTabBtn {
+  color: rgba(42, 39, 52, 0.78);
+}
+
+[data-theme="light"] .adminTabBtn:hover,
+[data-theme="light"] .adminTabBtn.is-active {
+  color: rgba(27, 25, 34, 0.96);
+}
+
+[data-theme="light"] .adminTabBtn:hover {
+  background: rgba(42, 35, 54, 0.06);
+}
+
+[data-theme="light"] .adminTabBtn.is-active {
+  border-color: rgba(233, 79, 85, 0.22);
+  background:
+    linear-gradient(135deg, rgba(233, 79, 85, 0.14), rgba(113, 85, 217, 0.12)),
+    rgba(255, 250, 239, 0.82);
+}
+
+[data-theme="light"] .adminField span,
+[data-theme="light"] .adminStatCard__label,
+[data-theme="light"] .adminRiskStrip__main span,
+[data-theme="light"] .adminRiskStrip__metrics span,
+[data-theme="light"] .adminRiskStrip__main p,
+[data-theme="light"] .adminSecurityPill span,
+[data-theme="light"] .adminSecurityEvent span,
+[data-theme="light"] .adminSecurityEvent time,
+[data-theme="light"] .adminSecurityEvent p,
+[data-theme="light"] .adminBarChartRow__label,
+[data-theme="light"] .adminChartLegend,
+[data-theme="light"] .adminKpiRow span,
+[data-theme="light"] .adminInsightCard__title,
+[data-theme="light"] .adminInsightCard__text,
+[data-theme="light"] .adminDataTable th,
+[data-theme="light"] .adminTableSub,
+[data-theme="light"] .adminSuspiciousCard__top span,
+[data-theme="light"] .adminSuspiciousCard__grid span,
+[data-theme="light"] .adminSuspiciousCard p,
+[data-theme="light"] .adminTicketCard__line2,
+[data-theme="light"] .adminTimelineItem__date,
+[data-theme="light"] .adminTimelineItem__by,
+[data-theme="light"] .adminPagination__info,
+[data-theme="light"] .adminEmpty {
+  color: rgba(72, 67, 82, 0.74);
+}
+
+[data-theme="light"] .adminField input,
+[data-theme="light"] .adminField select,
+[data-theme="light"] .adminField textarea {
+  border-color: rgba(42, 35, 54, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.90), rgba(244, 233, 213, 0.78));
+  color: rgba(27, 25, 34, 0.94);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 8px 18px rgba(94, 68, 41, 0.07);
+}
+
+[data-theme="light"] .adminField select option {
+  background: #fff8ed;
+  color: rgba(27, 25, 34, 0.95);
+}
+
+[data-theme="light"] .adminPrimaryBtn,
+[data-theme="light"] .adminDangerBtn {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+[data-theme="light"] .adminError {
+  border-color: rgba(143, 29, 45, 0.24);
+  background: rgba(233, 79, 85, 0.10);
+  color: #8f1d2d;
+}
+
+[data-theme="light"] .adminStatCard--accent {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(233, 79, 85, 0.13), transparent 36%),
+    linear-gradient(180deg, rgba(255, 252, 244, 0.86), rgba(244, 233, 213, 0.68));
+}
+
+[data-theme="light"] .adminStatCard.is-positive,
+[data-theme="light"] .adminStatCard--risk.is-ok,
+[data-theme="light"] .adminSecurityPill.is-ok,
+[data-theme="light"] .adminInsightCard.is-good {
+  border-color: rgba(22, 101, 58, 0.22);
+  background: rgba(70, 196, 126, 0.11);
+}
+
+[data-theme="light"] .adminStatCard.is-negative,
+[data-theme="light"] .adminStatCard--risk.is-danger,
+[data-theme="light"] .adminRiskStrip.is-danger,
+[data-theme="light"] .adminSecurityPill.is-danger,
+[data-theme="light"] .adminSecurityEvent.is-danger {
+  border-color: rgba(143, 29, 45, 0.24);
+  background: rgba(233, 79, 85, 0.10);
+}
+
+[data-theme="light"] .adminStatCard--risk.is-watch,
+[data-theme="light"] .adminRiskStrip.is-watch,
+[data-theme="light"] .adminSecurityPill.is-watch,
+[data-theme="light"] .adminSecurityEvent.is-watch,
+[data-theme="light"] .adminInsightCard.is-warning {
+  border-color: rgba(201, 138, 24, 0.26);
+  background: rgba(246, 201, 69, 0.13);
+}
+
+[data-theme="light"] .adminRiskStrip__metrics div,
+[data-theme="light"] .adminSuspiciousCard__grid span {
+  border-color: rgba(42, 35, 54, 0.10);
+  background: rgba(255, 250, 239, 0.58);
+}
+
+[data-theme="light"] .adminBarChartRow__bar {
+  color: #07111d;
+  -webkit-text-fill-color: #07111d;
+}
+
+[data-theme="light"] .adminDataTableWrap,
+[data-theme="light"] .adminSuspiciousList {
+  color-scheme: light;
+  scrollbar-color: rgba(233, 79, 85, 0.78) rgba(244, 233, 213, 0.96);
+}
+
+[data-theme="light"] .adminDataTableWrap::-webkit-scrollbar,
+[data-theme="light"] .adminSuspiciousList::-webkit-scrollbar {
+  background: rgba(244, 233, 213, 0.96);
+}
+
+[data-theme="light"] .adminDataTableWrap::-webkit-scrollbar-track,
+[data-theme="light"] .adminSuspiciousList::-webkit-scrollbar-track {
+  background: linear-gradient(90deg, rgba(255, 250, 239, 0.90), rgba(113, 85, 217, 0.10));
+  box-shadow: inset 0 0 0 1px rgba(42, 35, 54, 0.08);
+}
+
+[data-theme="light"] .adminDataTableWrap::-webkit-scrollbar-thumb,
+[data-theme="light"] .adminSuspiciousList::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, rgba(233, 79, 85, 0.84), rgba(113, 85, 217, 0.82));
+  border-color: rgba(244, 233, 213, 0.96);
+}
+
+[data-theme="light"] .adminDataTable th,
+[data-theme="light"] .adminDataTable td {
+  border-bottom-color: rgba(42, 35, 54, 0.10);
+}
+
+[data-theme="light"] .adminSignalBadge,
+[data-theme="light"] .adminStatusBadge,
+[data-theme="light"] .adminPriorityBadge,
+[data-theme="light"] .adminScreenshotLink {
+  border-color: rgba(42, 35, 54, 0.12);
+  background: rgba(255, 250, 239, 0.70);
+  color: rgba(27, 25, 34, 0.88);
+}
+
+[data-theme="light"] .adminSignalBadge.is-ok,
+[data-theme="light"] .adminStatusBadge.is-fixed {
+  color: #16653a;
+  background: rgba(70, 196, 126, 0.14);
+}
+
+[data-theme="light"] .adminSignalBadge.is-watch,
+[data-theme="light"] .adminPriorityBadge.is-medium {
+  color: #77510b;
+  background: rgba(246, 201, 69, 0.18);
+}
+
+[data-theme="light"] .adminSignalBadge.is-danger,
+[data-theme="light"] .adminStatusBadge.is-rejected,
+[data-theme="light"] .adminPriorityBadge.is-high,
+[data-theme="light"] .adminPriorityBadge.is-blocking {
+  color: #8f1d2d;
+  background: rgba(233, 79, 85, 0.12);
+}
+
+@media (max-width: 760px) {
+  .adminPage {
+    padding-top: 14px;
+  }
+
+  .adminTabs {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+
+  .adminTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .adminTabBtn {
+    flex: 1 0 max-content;
+    min-height: 46px;
+  }
+
+  .adminDashboardPanel,
+  .adminStatCard,
+  .adminRiskStrip,
+  .adminSecurityPill,
+  .adminSecurityEvent,
+  .adminTicketCard__top,
+  .adminTicketCard__body,
+  .adminTicketMetaGrid,
+  .adminTicketBlock__content {
+    padding: 14px;
+  }
+
+  .adminDashboardGrid,
+  .adminDashboardGrid--analytics,
+  .adminSecurityStats,
+  .adminSecurityEvents,
+  .adminRiskStrip__metrics,
+  .adminSuspiciousCard__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .adminDataTableWrap {
+    margin-inline: -6px;
+    padding-bottom: 12px;
+  }
+
+  .adminSuspiciousCard__top,
+  .adminTicketCard__top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adminTicketCard__line2,
+  .adminTicketBlock__content,
+  .adminTimelineItem__note {
+    overflow-wrap: anywhere;
   }
 }

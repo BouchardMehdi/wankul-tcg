@@ -44,12 +44,13 @@
   min-height: 42px;
   padding: 0 16px;
   border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.05);
-  color: rgba(240,245,255,0.96);
+  border: 1px solid var(--border2);
+  background: var(--btn-surface-bg);
+  color: var(--btn-surface-text);
   font-weight: 950;
   text-decoration: none;
   cursor: pointer;
+  box-shadow: var(--btn-surface-shadow);
   transition:
     transform 160ms cubic-bezier(.2,.8,.2,1),
     filter 160ms cubic-bezier(.2,.8,.2,1);
@@ -62,12 +63,14 @@
 
 .marketCreateBtn:not(.marketCreateBtn--secondary) {
   border: 0;
-  background: linear-gradient(135deg, #ff4d6d, #9b5cff);
-  box-shadow: 0 16px 55px rgba(255,77,109,0.18);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  -webkit-text-fill-color: var(--btn-primary-text);
+  box-shadow: var(--btn-primary-shadow);
 }
 
 .marketCreateBtn--secondary {
-  background: rgba(255,255,255,0.05);
+  background: var(--btn-surface-bg);
 }
 
 .marketCreateInfo,
