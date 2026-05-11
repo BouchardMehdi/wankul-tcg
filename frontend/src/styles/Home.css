@@ -1097,3 +1097,164 @@
     flex-direction: column;
   }
 }
+
+/* =========================================
+   LIGHT MODE
+========================================= */
+
+[data-theme="light"] .homeLanding {
+  color: #171722;
+}
+
+[data-theme="light"] .homeLanding__bg {
+  background:
+    radial-gradient(760px 460px at 8% 4%, rgba(233, 79, 85, 0.20), transparent 60%),
+    radial-gradient(820px 500px at 92% 8%, rgba(0, 144, 169, 0.18), transparent 58%),
+    radial-gradient(920px 560px at 46% 98%, rgba(201, 138, 24, 0.14), transparent 62%),
+    linear-gradient(180deg, rgba(255, 250, 239, 0.62), rgba(241, 229, 207, 0.30));
+}
+
+[data-theme="light"] .homeLanding__noise {
+  background-image:
+    linear-gradient(rgba(42, 35, 54, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(42, 35, 54, 0.035) 1px, transparent 1px);
+  opacity: 0.38;
+}
+
+[data-theme="light"] .homeBrand__logo--main {
+  filter: invert(1) drop-shadow(0 8px 18px rgba(94, 68, 41, 0.08));
+}
+
+[data-theme="light"] .homeBrand__logo--studio {
+  opacity: 0.96;
+  filter: drop-shadow(0 8px 18px rgba(94, 68, 41, 0.12));
+}
+
+[data-theme="light"] .homeBrand__eyebrow,
+[data-theme="light"] .homeShowcase__eyebrow,
+[data-theme="light"] .homeShowcase__footerTitle,
+[data-theme="light"] .homeSection__kicker,
+[data-theme="light"] .homePillarCard__kicker,
+[data-theme="light"] .homeMarketBands__row span,
+[data-theme="light"] .homeMiniMetric span,
+[data-theme="light"] .homeSeasonCard__eyebrow,
+[data-theme="light"] .homeFloatingCard span {
+  color: rgba(60, 51, 70, 0.66);
+}
+
+[data-theme="light"] .homeHero__copy,
+[data-theme="light"] .homeShowcase,
+[data-theme="light"] .homePillarCard,
+[data-theme="light"] .homeEconomyCard,
+[data-theme="light"] .homeLoopCard,
+[data-theme="light"] .homeSeasonCard,
+[data-theme="light"] .homeClosing {
+  border-color: rgba(42, 35, 54, 0.13);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(233, 79, 85, 0.08), transparent 34%),
+    radial-gradient(circle at 92% 6%, rgba(0, 144, 169, 0.08), transparent 32%),
+    linear-gradient(180deg, rgba(255, 252, 244, 0.95), rgba(245, 235, 217, 0.88));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    0 22px 58px rgba(94, 68, 41, 0.14);
+}
+
+[data-theme="light"] .homeChip,
+[data-theme="light"] .homeShowcase__pill,
+[data-theme="light"] .homeStatCard,
+[data-theme="light"] .homeCreatorCard,
+[data-theme="light"] .homeMarketBands__row,
+[data-theme="light"] .homeMiniMetric,
+[data-theme="light"] .homeEconomyList__item,
+[data-theme="light"] .homeShowcase__footer,
+[data-theme="light"] .homeShowcase__footerItem {
+  border-color: rgba(42, 35, 54, 0.12);
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
+}
+
+[data-theme="light"] .homeFloatingCard {
+  border-color: rgba(42, 35, 54, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.88), rgba(238, 225, 201, 0.70));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.70),
+    0 14px 34px rgba(94, 68, 41, 0.10);
+}
+
+[data-theme="light"] .homeShowcase__scene {
+  border-color: rgba(42, 35, 54, 0.12);
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.70), transparent 48%),
+    linear-gradient(180deg, rgba(255, 250, 239, 0.88), rgba(233, 220, 198, 0.64));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+[data-theme="light"] .homeShowcase__halo {
+  background: radial-gradient(circle, rgba(233, 79, 85, 0.14), rgba(113, 85, 217, 0.12), transparent 68%);
+}
+
+[data-theme="light"] .homeHero__text,
+[data-theme="light"] .homeHero__installNote,
+[data-theme="light"] .homeStatCard__label,
+[data-theme="light"] .homeShowcase__footerItem span,
+[data-theme="light"] .homeCreatorCard span,
+[data-theme="light"] .homeSection__head p,
+[data-theme="light"] .homePillarCard p,
+[data-theme="light"] .homeLoopCard p,
+[data-theme="light"] .homeSeasonCard p,
+[data-theme="light"] .homeEconomyCard p,
+[data-theme="light"] .homeClosing__copy p,
+[data-theme="light"] .homeEconomyList__item span,
+[data-theme="light"] .homeChip--soft {
+  color: rgba(47, 42, 56, 0.76);
+}
+
+[data-theme="light"] .homeButton {
+  border-color: rgba(42, 35, 54, 0.14);
+  color: #171722;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.96), rgba(238, 225, 201, 0.84));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 12px 28px rgba(94, 68, 41, 0.10);
+}
+
+[data-theme="light"] .homeButton--primary {
+  color: #ffffff;
+  background: linear-gradient(135deg, #e94f55 0%, #f19a35 46%, #7155d9 100%);
+  box-shadow:
+    0 18px 42px rgba(233, 79, 85, 0.20),
+    0 8px 24px rgba(113, 85, 217, 0.12);
+}
+
+[data-theme="light"] .homeButton--ghost,
+[data-theme="light"] .homeButton--install {
+  color: #201d2b;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.88), rgba(231, 217, 193, 0.74));
+}
+
+[data-theme="light"] .homeFooter {
+  color: rgba(47, 42, 56, 0.62);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-theme="light"] .homeChip:hover,
+  [data-theme="light"] .homeStatCard:hover,
+  [data-theme="light"] .homeFloatingCard:hover,
+  [data-theme="light"] .homeShowcase__footerItem:hover,
+  [data-theme="light"] .homeCreatorCard:hover,
+  [data-theme="light"] .homePillarCard:hover,
+  [data-theme="light"] .homeEconomyCard:hover,
+  [data-theme="light"] .homeLoopCard:hover,
+  [data-theme="light"] .homeSeasonCard:hover,
+  [data-theme="light"] .homeEconomyList__item:hover {
+    border-color: rgba(113, 85, 217, 0.22);
+    background:
+      linear-gradient(180deg, rgba(255, 252, 244, 0.98), rgba(244, 233, 213, 0.88));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.78),
+      0 18px 40px rgba(94, 68, 41, 0.14);
+  }
+}

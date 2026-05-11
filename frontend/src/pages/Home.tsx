@@ -371,7 +371,7 @@ export default function Home() {
                   <SmartImage src={terracidImg} alt="Terracid" />
                   <div>
                     <strong>Terracid</strong>
-                    <span>Il a payé 8 balles aau 118 218 pourr gagner un faux million</span>
+                    <span>Il a payé 8 balles au 118 218 pourr gagner un faux million</span>
                   </div>
                 </div>
               </div>

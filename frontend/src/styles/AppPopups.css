@@ -101,47 +101,21 @@
   place-items: center;
   margin-bottom: 16px;
   border-radius: 24px;
-  border: 1px solid rgba(76, 201, 240, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   background:
-    radial-gradient(circle at 30% 24%, rgba(76, 201, 240, 0.42), transparent 34%),
+    radial-gradient(circle at 30% 24%, rgba(76, 201, 240, 0.22), transparent 34%),
     linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
   box-shadow: 0 18px 42px rgba(76, 201, 240, 0.14);
 }
 
-.appPopupInstallIcon span {
-  width: 42px;
-  height: 50px;
-  border-radius: 11px;
-  border: 2px solid rgba(247, 248, 255, 0.86);
-  background:
-    linear-gradient(180deg, transparent 66%, rgba(76, 201, 240, 0.42) 66%),
-    rgba(247, 248, 255, 0.10);
-  position: relative;
-}
-
-.appPopupInstallIcon span::before,
-.appPopupInstallIcon span::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.appPopupInstallIcon span::before {
-  top: 10px;
-  width: 16px;
-  height: 20px;
-  border-radius: 999px;
-  border: 3px solid rgba(255, 213, 95, 0.95);
-  border-top-color: transparent;
-}
-
-.appPopupInstallIcon span::after {
-  bottom: 6px;
-  width: 16px;
-  height: 3px;
-  border-radius: 999px;
-  background: rgba(247, 248, 255, 0.86);
+.appPopupInstallIcon img {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.24),
+    0 0 24px rgba(255, 255, 255, 0.08);
 }
 
 .appPopupCard__eyebrow {
@@ -280,22 +254,18 @@
 }
 
 [data-theme="light"] .appPopupInstallIcon {
-  border-color: rgba(0, 144, 169, 0.22);
+  border-color: rgba(42, 35, 54, 0.12);
   background:
-    radial-gradient(circle at 30% 24%, rgba(0, 144, 169, 0.20), transparent 34%),
+    radial-gradient(circle at 30% 24%, rgba(0, 144, 169, 0.12), transparent 34%),
     linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(244, 233, 213, 0.46));
   box-shadow: 0 18px 42px rgba(94, 68, 41, 0.12);
 }
 
-[data-theme="light"] .appPopupInstallIcon span {
-  border-color: rgba(27, 25, 34, 0.74);
-  background:
-    linear-gradient(180deg, transparent 66%, rgba(0, 144, 169, 0.22) 66%),
-    rgba(255, 255, 255, 0.34);
-}
-
-[data-theme="light"] .appPopupInstallIcon span::after {
-  background: rgba(27, 25, 34, 0.72);
+[data-theme="light"] .appPopupInstallIcon img {
+  filter: invert(1);
+  box-shadow:
+    0 12px 28px rgba(94, 68, 41, 0.12),
+    0 0 0 1px rgba(42, 35, 54, 0.06);
 }
 
 @keyframes appPopupIn {

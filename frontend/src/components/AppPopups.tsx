@@ -263,7 +263,7 @@ export default function AppPopups() {
           <section className="appPopupCard appPopupCard--install">
             <div className="appPopupCard__shine" />
             <div className="appPopupInstallIcon" aria-hidden="true">
-              <span />
+              <img src="/favicon.png" alt="" />
             </div>
 
             <p className="appPopupCard__eyebrow">App prete a installer</p>
