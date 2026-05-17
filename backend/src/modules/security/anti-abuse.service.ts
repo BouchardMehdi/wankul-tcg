@@ -140,7 +140,7 @@ export class AntiAbuseService {
         });
 
         throw new HttpException(
-          'Trop d actions en peu de temps. Attends un instant avant de recommencer.',
+          'Trop d’actions en peu de temps. Attends un instant avant de recommencer.',
           HttpStatus.TOO_MANY_REQUESTS,
         );
       }
@@ -170,7 +170,7 @@ export class AntiAbuseService {
       });
 
       throw new BadRequestException(
-        'Prix refuse: l annonce est trop eloignee de la valeur marche actuelle.',
+        'Prix refusé: l’annonce est trop éloignée de la valeur marché actuelle.',
       );
     }
 
@@ -216,7 +216,7 @@ export class AntiAbuseService {
     }
 
     if (buyerStats.count >= 18 || buyerStats.volume >= 25000) {
-      decision.reasons.push('Rythme achat tres haut sur une courte fenetre');
+      decision.reasons.push('Rythme achat très haut sur une courte fenêtre');
       decision.status = decision.status === 'blocked' ? 'blocked' : 'flagged';
       decision.severity = 'danger';
     }
@@ -245,7 +245,7 @@ export class AntiAbuseService {
       });
 
       throw new BadRequestException(
-        'Achat refuse: cette transaction ressemble trop a une manipulation de marche.',
+        'Achat refusé: cette transaction ressemble trop à une manipulation de marché.',
       );
     }
 
@@ -441,15 +441,15 @@ export class AntiAbuseService {
     let severity: EconomicActionSeverity = 'info';
 
     if (requestedValue <= 0) {
-      reasons.push('Valeur demandee nulle');
+      reasons.push('Valeur demandée nulle');
       status = 'blocked';
       severity = 'danger';
     } else if (ratio > 3 || ratio < 0.05) {
-      reasons.push('Prix extreme vs marche');
+      reasons.push('Prix extrême vs marché');
       status = 'blocked';
       severity = 'danger';
     } else if (ratio > 1.75 || ratio < 0.45) {
-      reasons.push('Prix tres eloigne du marche');
+      reasons.push('Prix très éloigné du marché');
       status = 'flagged';
       severity = ratio > 2.35 || ratio < 0.2 ? 'danger' : 'watch';
     }

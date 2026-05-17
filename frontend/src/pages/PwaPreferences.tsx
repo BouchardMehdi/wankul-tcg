@@ -65,20 +65,20 @@ const NOTIFICATION_ROWS: Array<{
 }> = [
   {
     key: "saleRewardEnabled",
-    title: "Vente terminee",
-    desc: "Quand une recompense vendeur est disponible.",
+    title: "Vente terminée",
+    desc: "Quand une récompense vendeur est disponible.",
     kind: "toggle",
   },
   {
     key: "freeOpeningsReadyEnabled",
-    title: "Ouvertures gratuites pretes",
-    desc: "Quand un booster ou une display gratuite peut etre recuperee.",
+    title: "Ouvertures gratuites prêtes",
+    desc: "Quand un booster ou une display gratuite peut être récupérée.",
     kind: "toggle",
   },
   {
     key: "freeOpeningsSoonEnabled",
-    title: "Recharge bientot prete",
-    desc: "Quand une charge gratuite arrive bientot.",
+    title: "Recharge bientôt prête",
+    desc: "Quand une charge gratuite arrive bientôt.",
     kind: "toggle",
   },
   {
@@ -105,7 +105,7 @@ const NOTIFICATION_ROWS: Array<{
   {
     key: "staleListingHours",
     title: "Seuil annonce invendue",
-    desc: "Delai avant le rappel sur une annonce active.",
+    desc: "Délai avant le rappel sur une annonce active.",
     kind: "number",
     min: 6,
     max: 336,
@@ -114,7 +114,7 @@ const NOTIFICATION_ROWS: Array<{
   {
     key: "dailyMarketRecapEnabled",
     title: "Recap market quotidien",
-    desc: "Un resume leger du market si tu veux plus d'engagement.",
+    desc: "Un résumé léger du market si tu veux plus d'engagement.",
     kind: "toggle",
   },
 ];
@@ -132,9 +132,9 @@ function toAbsoluteAssetUrl(url?: string | null) {
 
 function formatPermission(permission: NotificationPermission | "unsupported") {
   if (permission === "granted") return "Autorisee";
-  if (permission === "denied") return "Bloquee";
-  if (permission === "default") return "Pas encore demandee";
-  return "Non supportee";
+  if (permission === "denied") return "Bloquée";
+  if (permission === "default") return "Pas encore demandée";
+  return "Non supportée";
 }
 
 function isStandaloneDisplay() {
@@ -198,7 +198,7 @@ export default function PwaPreferences() {
     ? serviceWorkerReady
       ? "Actif"
       : "En activation"
-    : "Non supporte";
+    : "Non supporté";
 
   useEffect(
     () =>
@@ -216,7 +216,7 @@ export default function PwaPreferences() {
     };
     const onAppInstalled = () => {
       setInstallPrompt(null);
-      setInstallFeedback("Installation terminee. Wankul TCG est maintenant lanceable comme une app.");
+      setInstallFeedback("Installation terminée. Wankul TCG est maintenant lançable comme une app.");
     };
     const onControllerChange = () => setServiceWorkerReady(true);
 
@@ -283,7 +283,7 @@ export default function PwaPreferences() {
         if (!cancelled) setPushPrefs(prefs);
       } catch (err: any) {
         if (!cancelled) {
-          setPushPrefsError(err?.message || "Impossible de charger les preferences de notifications.");
+          setPushPrefsError(err?.message || "Impossible de charger les préférences de notifications.");
         }
       } finally {
         if (!cancelled) setPushPrefsLoading(false);
@@ -320,8 +320,8 @@ export default function PwaPreferences() {
     if (!installPrompt) {
       setInstallFeedback(
         installed
-          ? "L'app est deja installee sur cet appareil."
-          : "Si le bouton n'apparait pas, utilise le menu de ton navigateur puis 'Installer l'application'.",
+          ? "L'app est déjà installée sur cet appareil."
+          : "Si le bouton n'apparaît pas, utilise le menu de ton navigateur puis 'Installer l'application'.",
       );
       return;
     }
@@ -332,7 +332,7 @@ export default function PwaPreferences() {
     setInstallFeedback(
       choice.outcome === "accepted"
         ? "Installation lancee. Bienvenue dans la vraie app."
-        : "Installation annulee, tu pourras retenter plus tard.",
+        : "Installation annulée, tu pourras retenter plus tard.",
     );
   }
 
@@ -342,7 +342,7 @@ export default function PwaPreferences() {
 
     if (cacheSupported) {
       await requestPwaCacheStatus().catch(() => {
-        setCacheFeedback("Preparation hors ligne pas encore prete, reessaie dans quelques secondes.");
+        setCacheFeedback("Préparation hors ligne pas encore prête, réessaie dans quelques secondes.");
       });
     }
 
@@ -376,13 +376,13 @@ export default function PwaPreferences() {
 
   async function cacheUrls(urls: string[], successLabel: string) {
     if (!cacheSupported) {
-      setCacheFeedback("Preparation hors ligne non disponible sur cet appareil.");
+      setCacheFeedback("Préparation hors ligne non disponible sur cet appareil.");
       return;
     }
 
     const usableUrls = Array.from(new Set(urls.filter(Boolean)));
     if (!usableUrls.length) {
-      setCacheFeedback("Aucune image a preparer pour le moment.");
+      setCacheFeedback("Aucune image à préparer pour le moment.");
       return;
     }
 
@@ -397,14 +397,14 @@ export default function PwaPreferences() {
     } catch (err: any) {
       playActionDeniedSound();
       setCacheBusy(false);
-      setCacheFeedback(err?.message || "Impossible de preparer les images.");
+      setCacheFeedback(err?.message || "Impossible de préparer les images.");
     }
   }
 
   async function cacheOwnedCards() {
     const ownedRows = await fetchOwnedCollection();
     const urls = ownedRows.map((row) => toAbsoluteAssetUrl(row.card.imageUrl));
-    await cacheUrls(urls, "Images de ta collection preparees pour le hors ligne.");
+    await cacheUrls(urls, "Images de ta collection préparées pour le hors ligne.");
   }
 
   async function cacheSmartCatalog() {
@@ -419,7 +419,7 @@ export default function PwaPreferences() {
     ];
     const limit = cacheStatus?.cardImageLimit ?? 260;
     const urls = prioritized.slice(0, limit).map((card) => toAbsoluteAssetUrl(card.imageUrl));
-    await cacheUrls(urls, `Images utiles preparees pour ${Math.min(urls.length, limit)} cartes.`);
+    await cacheUrls(urls, `Images utiles préparées pour ${Math.min(urls.length, limit)} cartes.`);
   }
 
   async function clearImages() {
@@ -435,7 +435,7 @@ export default function PwaPreferences() {
     } catch (err: any) {
       playActionDeniedSound();
       setCacheBusy(false);
-      setCacheFeedback(err?.message || "Impossible de vider les images preparees.");
+      setCacheFeedback(err?.message || "Impossible de vider les images préparées.");
     }
   }
 
@@ -460,7 +460,7 @@ export default function PwaPreferences() {
       setPushPrefsFeedback("Preferences de notifications enregistrees.");
     } catch (err: any) {
       playActionDeniedSound();
-      setPushPrefsError(err?.message || "Impossible d'enregistrer les preferences.");
+      setPushPrefsError(err?.message || "Impossible d'enregistrer les préférences.");
     } finally {
       setPushPrefsSaving(false);
     }
@@ -473,16 +473,16 @@ export default function PwaPreferences() {
       <main className="pwaPreferencesPage container">
         <header className="pwaPreferencesHero">
           <div>
-            <span>App installee</span>
-            <h1>Preferences de l'app</h1>
+            <span>App installée</span>
+            <h1>Préférences de l'app</h1>
             <p>
-              Installe l'app, prepare les images de cartes, regle le hors ligne
-              et choisis precisement les notifications qui meritent de vibrer.
+              Installe l'app, prépare les images de cartes, règle le hors ligne
+              et choisis précisément les notifications qui méritent de vibrer.
             </p>
           </div>
 
           <button type="button" className="pwaPreferencesBtn" onClick={handleInstall}>
-            {installed ? "App installee" : "Installer l'app"}
+            {installed ? "App installée" : "Installer l'app"}
           </button>
         </header>
 
@@ -490,23 +490,23 @@ export default function PwaPreferences() {
 
         <section className="pwaPreferencesGrid">
           <article className="pwaPremiumCard">
-            <span>Etat</span>
-            <strong>{online ? "Connectee" : "Hors ligne"}</strong>
-            <em>{installed ? "Mode installe actif" : "Installation disponible selon ton appareil"}</em>
+            <span>État</span>
+            <strong>{online ? "Connectée" : "Hors ligne"}</strong>
+            <em>{installed ? "Mode installé actif" : "Installation disponible selon ton appareil"}</em>
           </article>
           <article className="pwaPremiumCard">
             <span>Notifications</span>
             <strong>{formatPermission(notificationPermission)}</strong>
-            <em>{settings.pwaNotifications ? "Alertes actives dans l'app" : "Alertes desactivees dans l'app"}</em>
+            <em>{settings.pwaNotifications ? "Alertes actives dans l'app" : "Alertes désactivées dans l'app"}</em>
           </article>
           <article className="pwaPremiumCard">
             <span>Images cartes</span>
             <strong>{cacheStatus?.cardImageEntries ?? 0}</strong>
-            <em>{cacheFillPercent}% des images preparees</em>
+            <em>{cacheFillPercent}% des images préparées</em>
           </article>
           <article className="pwaPremiumCard">
             <span>Mode hors ligne</span>
-            <strong>{cacheSupported ? "Pret" : "Non supporte"}</strong>
+            <strong>{cacheSupported ? "Prêt" : "Non supporté"}</strong>
             <em>{cacheStatus?.version ?? "Statut en attente"}</em>
           </article>
         </section>
@@ -514,11 +514,11 @@ export default function PwaPreferences() {
         <section className="pwaStatusPanel">
           <div className="pwaStatusPanel__head">
             <div>
-              <span>Etat de l'app</span>
+              <span>État de l'app</span>
               <h2>Donnees synchronisees</h2>
               <p>
                 Une lecture rapide de ce que l'app peut faire maintenant :
-                connexion, mode hors ligne, images preparees et espace utilise.
+                connexion, mode hors ligne, images préparées et espace utilisé.
               </p>
             </div>
             <button
@@ -534,12 +534,12 @@ export default function PwaPreferences() {
             <article className={["pwaStatusCard", online ? "is-good" : "is-warn"].join(" ")}>
               <span>Connexion</span>
               <strong>{connectionLabel}</strong>
-              <em>{connection?.saveData ? "Mode economie de donnees detecte" : "Pret pour market et openings"}</em>
+              <em>{connection?.saveData ? "Mode économie de données détecté" : "Prêt pour market et openings"}</em>
             </article>
             <article className={["pwaStatusCard", serviceWorkerReady ? "is-good" : "is-warn"].join(" ")}>
               <span>Mode hors ligne</span>
               <strong>{serviceWorkerLabel}</strong>
-              <em>{cacheStatus?.version ? "Pret" : "En preparation"}</em>
+              <em>{cacheStatus?.version ? "Prêt" : "En préparation"}</em>
             </article>
             <article className="pwaStatusCard">
               <span>Elements disponibles</span>
@@ -547,22 +547,22 @@ export default function PwaPreferences() {
               <em>{cacheStatus?.shellEntries ?? 0} pages + {cacheStatus?.runtimeEntries ?? 0} images</em>
             </article>
             <article className="pwaStatusCard">
-              <span>Espace utilise</span>
+              <span>Espace utilisé</span>
               <strong>{storageFillPercent}%</strong>
-              <em>{formatBytes(storageEstimate?.usage)} utilises sur {formatBytes(storageEstimate?.quota)}</em>
+              <em>{formatBytes(storageEstimate?.usage)} utilisés sur {formatBytes(storageEstimate?.quota)}</em>
             </article>
           </div>
 
           <div className="pwaSyncBanner">
             <div>
-              <strong>Derniere verification : {formatStatusTime(lastStatusAt || cacheStatus?.timestamp)}</strong>
+              <strong>Dernière vérification : {formatStatusTime(lastStatusAt || cacheStatus?.timestamp)}</strong>
               <span>
-                Si tu passes hors ligne, garde surtout les pages deja ouvertes et les images de cartes preparees.
+                Si tu passes hors ligne, garde surtout les pages déjà ouvertes et les images de cartes préparées.
               </span>
             </div>
             <div className="pwaSyncBanner__chips">
               <span>{cacheStatus?.cardImageEntries ?? 0} cartes</span>
-              <span>{cacheStatus?.runtimeEntries ?? 0} elements</span>
+              <span>{cacheStatus?.runtimeEntries ?? 0} éléments</span>
               <span>{online ? "Serveur joignable" : "Mode lecture locale"}</span>
             </div>
           </div>
@@ -573,22 +573,22 @@ export default function PwaPreferences() {
             <span>Installation</span>
             <h2>Un raccourci propre, comme une vraie app.</h2>
             <p>
-              Le bouton automatique apparait quand ton appareil autorise
+              Le bouton automatique apparaît quand ton appareil autorise
               l'installation. Sinon, passe par le menu de ton navigateur.
             </p>
           </div>
           <ol>
             <li>Chrome/Edge : bouton Installer ou menu puis Installer l'application.</li>
-            <li>Android : ajoute l'app a l'ecran d'accueil pour ouvrir en plein ecran.</li>
-            <li>iPhone/iPad : menu Partager puis Sur l'ecran d'accueil.</li>
+            <li>Android : ajoute l'app à l'écran d'accueil pour ouvrir en plein écran.</li>
+            <li>iPhone/iPad : menu Partager puis Sur l'écran d'accueil.</li>
           </ol>
         </section>
 
         <section className="pwaPreferencesSection">
           <div className="pwaPreferencesSection__head">
             <div>
-              <h2>Experience installee</h2>
-              <p>Les options qui donnent le cote vraie application mobile.</p>
+              <h2>Expérience installée</h2>
+              <p>Les options qui donnent le côté vraie application mobile.</p>
             </div>
           </div>
 
@@ -596,7 +596,7 @@ export default function PwaPreferences() {
             <div className="pwaPreferenceRow">
               <div>
                 <strong>Notifications de l'app</strong>
-                <span>Autorise l'app a envoyer des alertes meme quand elle est fermee.</span>
+                <span>Autorise l'app à envoyer des alertes même quand elle est fermée.</span>
               </div>
               <button
                 type="button"
@@ -618,7 +618,7 @@ export default function PwaPreferences() {
             <div className="pwaPreferenceRow">
               <div>
                 <strong>Images de cartes hors ligne</strong>
-                <span>Prepare automatiquement les images importantes pour les moments sans connexion.</span>
+                <span>Prépare automatiquement les images importantes pour les moments sans connexion.</span>
               </div>
               <button
                 type="button"
@@ -675,7 +675,7 @@ export default function PwaPreferences() {
 
           {cacheProgress ? (
             <div className="pwaPreferencesNotice">
-              Preparation en cours : {cacheProgress.cached} ok, {cacheProgress.failed} erreur(s), sur {cacheProgress.total}.
+              Préparation en cours : {cacheProgress.cached} ok, {cacheProgress.failed} erreur(s), sur {cacheProgress.total}.
             </div>
           ) : null}
 
@@ -683,10 +683,10 @@ export default function PwaPreferences() {
 
           <div className="pwaPreferencesActions">
             <button type="button" className="pwaPreferencesBtn" disabled={cacheBusy} onClick={() => void cacheOwnedCards()}>
-              Preparer ma collection
+              Préparer ma collection
             </button>
             <button type="button" className="pwaPreferencesBtn" disabled={cacheBusy} onClick={() => void cacheSmartCatalog()}>
-              Preparer les images utiles
+              Préparer les images utiles
             </button>
             <button type="button" className="pwaPreferencesBtn pwaPreferencesBtn--danger" disabled={cacheBusy} onClick={() => void clearImages()}>
               Vider images
@@ -703,7 +703,7 @@ export default function PwaPreferences() {
           </div>
 
           {pushPrefsLoading ? (
-            <div className="pwaPreferencesNotice">Chargement des preferences de notifications...</div>
+            <div className="pwaPreferencesNotice">Chargement des préférences de notifications...</div>
           ) : pushPrefs ? (
             <>
               <div className="pwaPreferenceRows">
@@ -758,7 +758,7 @@ export default function PwaPreferences() {
             </>
           ) : (
             <div className="pwaPreferencesNotice pwaPreferencesNotice--error">
-              {pushPrefsError || "Impossible de charger les preferences de notifications."}
+              {pushPrefsError || "Impossible de charger les préférences de notifications."}
             </div>
           )}
         </section>

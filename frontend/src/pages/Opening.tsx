@@ -162,11 +162,11 @@ function getRarityHitLabel(rarityKey: string) {
     case "u2":
       return "U2";
     case "leg-bronze":
-      return "Legendaire bronze";
+      return "Légendaire bronze";
     case "leg-silver":
-      return "Legendaire argent";
+      return "Légendaire argent";
     case "leg-gold":
-      return "Legendaire or";
+      return "Légendaire or";
     case "gold-ticket-winner":
       return "Ticket gagnant";
     case "gold-ticket":
@@ -1336,7 +1336,7 @@ export default function Opening() {
               <div className="openingStatsStrip">
                 <div>
                   <span>Valeur totale</span>
-                  <b>+{currentSummaryStats.totalValue} credits</b>
+                  <b>+{currentSummaryStats.totalValue} crédits</b>
                 </div>
                 <div>
                   <span>Nouvelles</span>
@@ -1373,7 +1373,7 @@ export default function Opening() {
                           <div>
                             <span>{isNew ? "Nouvelle carte" : getRarityHitLabel(rk)}</span>
                             <b>{c?.name ?? "Carte"}</b>
-                            <small>{c?.rarity ?? "Rarete inconnue"}</small>
+                            <small>{c?.rarity ?? "Rareté inconnue"}</small>
                           </div>
                         </div>
                       );
@@ -1460,7 +1460,7 @@ export default function Opening() {
               <div className="openingStatsStrip openingStatsStrip--display">
                 <div>
                   <span>Valeur totale</span>
-                  <b>+{displayFinalStats.totalValue} credits</b>
+                  <b>+{displayFinalStats.totalValue} crédits</b>
                 </div>
                 <div>
                   <span>Nouvelles</span>
@@ -1497,7 +1497,7 @@ export default function Opening() {
                           <div>
                             <span>{isNew ? "Nouvelle carte" : getRarityHitLabel(rk)}</span>
                             <b>{c?.name ?? "Carte"}</b>
-                            <small>{c?.rarity ?? "Rarete inconnue"}</small>
+                            <small>{c?.rarity ?? "Rareté inconnue"}</small>
                           </div>
                         </div>
                       );

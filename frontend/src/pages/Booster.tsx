@@ -9,7 +9,6 @@ import AppNavbar from "../components/AppNavbar";
 import SmartImage from "../components/SmartImage";
 
 import { useAuth } from "../auth/AuthContext";
-import { API_BASE } from "../api/http";
 import { getEconomyMe, formatCooldown, type EconomySnapshot } from "../api/economy";
 import {
   getBoosterSeasons,
@@ -24,6 +23,7 @@ import { readAppSettings, subscribeAppSettings } from "../utils/appSettings";
 import {
   collectOpeningCardImageUrls,
   preloadImages,
+  resolveImageAssetUrl,
   runWhenIdle,
 } from "../utils/imagePerformance";
 import { warmCardImageCache } from "../utils/pwaCache";
@@ -77,11 +77,23 @@ function formatSeasonMeta(season: BoosterSeasonInfo) {
 }
 
 function resolveHistoryImg(imageUrl?: string | null) {
-  const url = (imageUrl ?? "").trim();
-  if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  if (url.startsWith("/")) return `${API_BASE}${url}`;
-  return `${API_BASE}/${url}`;
+  return resolveImageAssetUrl(imageUrl);
+}
+
+type HistoryCoverProps = {
+  src: string;
+  alt: string;
+  fallback: string;
+};
+
+function HistoryCover({ src, alt, fallback }: HistoryCoverProps) {
+  const [hasError, setHasError] = useState(false);
+
+  if (!src || hasError) {
+    return <span className="openingHistoryCard__fallback">{fallback}</span>;
+  }
+
+  return <SmartImage src={src} alt={alt} onError={() => setHasError(true)} />;
 }
 
 async function prepareOpeningImages(result: any) {
@@ -151,7 +163,7 @@ export default function Booster() {
       setOpeningHistoryTotal(historyRes.total ?? 0);
       setOpeningHistoryTotalPages(historyRes.totalPages ?? 1);
     } catch (e: any) {
-      if (!silent) setError(e?.message || "Impossible de charger l'historique.");
+      if (!silent) setError(e?.message || "Impossible de charger l’historique.");
       setOpeningHistory([]);
       setOpeningHistoryTotal(0);
       setOpeningHistoryTotalPages(1);
@@ -460,10 +472,10 @@ export default function Booster() {
             </div>
           ) : null}
 
-          <div className="boosterPanelSwitch" role="tablist" aria-label="Sections boosters">
+          <div className="uiSegmented boosterPanelSwitch" role="tablist" aria-label="Sections boosters">
             <button
               type="button"
-              className={["boosterPanelSwitch__btn", activePanel === "shop" ? "is-active" : ""].join(" ")}
+              className={["uiSegmented__btn", "boosterPanelSwitch__btn", activePanel === "shop" ? "is-active" : ""].join(" ")}
               onClick={() => switchPanel("shop")}
               role="tab"
               aria-selected={activePanel === "shop"}
@@ -472,13 +484,13 @@ export default function Booster() {
             </button>
             <button
               type="button"
-              className={["boosterPanelSwitch__btn", activePanel === "history" ? "is-active" : ""].join(" ")}
+              className={["uiSegmented__btn", "boosterPanelSwitch__btn", activePanel === "history" ? "is-active" : ""].join(" ")}
               onClick={() => switchPanel("history")}
               role="tab"
               aria-selected={activePanel === "history"}
             >
               Historique
-              {openingHistoryTotal > 0 ? <span>{openingHistoryTotal}</span> : null}
+              {openingHistoryTotal > 0 ? <span className="uiBadge">{openingHistoryTotal}</span> : null}
             </button>
           </div>
 
@@ -486,22 +498,22 @@ export default function Booster() {
             <section className="panel openingHistoryPanel">
               <div className="openingHistoryPanel__header">
                 <div>
-                  <div className="openingHistoryPanel__eyebrow">Opening log</div>
-                  <h2 className="openingHistoryPanel__title">Historique complet</h2>
+                  <div className="uiKicker openingHistoryPanel__eyebrow">Opening log</div>
+                  <h2 className="uiSectionTitle openingHistoryPanel__title">Historique complet</h2>
                 </div>
-                <span className="openingHistoryPanel__count">
+                <span className="uiCounter openingHistoryPanel__count">
                   {openingHistoryTotal} opening{openingHistoryTotal > 1 ? "s" : ""} • page {openingHistoryPage}/{openingHistoryTotalPages}
                 </span>
               </div>
 
               {loadingHistory ? (
-                <div className="openingHistoryEmpty">Chargement de l'historique...</div>
+                <div className="openingHistoryEmpty">Chargement de l’historique...</div>
               ) : openingHistory.length === 0 ? (
                 <div className="openingHistoryEmpty">
-                  Aucun opening dans l'historique pour le moment. Le premier booster va lancer la collection.
+                  Aucun opening dans l’historique pour le moment. Le premier booster va lancer la collection.
                 </div>
               ) : (
-                <div className="openingHistoryList openingHistoryList--paged">
+                <div className="uiScrollArea uiScrollArea--x openingHistoryList openingHistoryList--paged">
                   {openingHistory.map((item, index) => {
                   const cover = resolveHistoryImg(item.coverCard?.imageUrl ?? item.coverCard?.image ?? "");
                   const busy = replayBusyKey === `${item.kind}:${item.id}`;
@@ -517,11 +529,11 @@ export default function Booster() {
                       ].join(" ")}
                     >
                       <div className="openingHistoryCard__visual">
-                        {cover ? (
-                          <SmartImage src={cover} alt={item.coverCard?.name ?? "Carte de l'ouverture"} />
-                        ) : (
-                          <span>{formatHistoryKind(item).slice(0, 1)}</span>
-                        )}
+                        <HistoryCover
+                          src={cover}
+                          alt={item.coverCard?.name ?? "Carte de l'ouverture"}
+                          fallback={formatHistoryKind(item).slice(0, 1)}
+                        />
                       </div>
 
                       <div className="openingHistoryCard__body">
@@ -536,9 +548,9 @@ export default function Booster() {
                         </h3>
 
                         <div className="openingHistoryCard__meta">
-                          <span>+{item.creditsEarnedTotal ?? 0} credits</span>
-                          <span>{item.newCount} NEW</span>
-                          <span>{item.hitCount} hits</span>
+                          <span className="uiPill">+{item.creditsEarnedTotal ?? 0} crédits</span>
+                          <span className="uiPill">{item.newCount} NEW</span>
+                          <span className="uiPill">{item.hitCount} hits</span>
                         </div>
                       </div>
 
@@ -635,7 +647,7 @@ export default function Booster() {
                       </div>
 
                       <button
-                        className="btn btn--primary w-full"
+                        className="btn btn--primary btn--block"
                         data-onboarding={index === 0 ? "booster-open" : undefined}
                         disabled={boosterDisabled}
                         onClick={() => askOpenBooster(s)}
@@ -675,7 +687,7 @@ export default function Booster() {
                       </div>
 
                       <button
-                        className="btn btn--ghost w-full"
+                        className="btn btn--ghost btn--block"
                         disabled={displayDisabled}
                         onClick={() => askOpenDisplay(s)}
                       >

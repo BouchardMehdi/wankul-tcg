@@ -45,7 +45,7 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-card">
         <Link to="/" className="auth-backLink">
-          Retour a l'accueil
+          Retour à l'accueil
         </Link>
 
         <h1>Connexion</h1>

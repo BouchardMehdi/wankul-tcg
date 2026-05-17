@@ -298,7 +298,7 @@ export class AdminService {
       recentEconomicLogs: logs.items,
       rollbackReminder: {
         mode: 'manual_database_restore',
-        note: 'Toujours creer un backup juste avant toute correction economie. Le rollback se fait par restauration SQL controlee, pas par bouton admin.',
+        note: 'Toujours créer un backup juste avant toute correction économie. Le rollback se fait par restauration SQL contrôlée, pas par bouton admin.',
       },
     };
   }

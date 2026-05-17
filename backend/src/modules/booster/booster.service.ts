@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { Card } from '../cards/card.entity';
 import { UsersService } from '../users/users.service';
 import {
@@ -270,7 +270,7 @@ export class BoosterService {
 
     if (!seasonDef.isOpenable) {
       throw new BadRequestException(
-        `La saison ${seasonDef.label} n'est pas ouvrable. Eléments manquants: ${seasonDef.missingRequirements.join(', ')}`,
+        `La saison ${seasonDef.label} n'est pas ouvrable. Éléments manquants: ${seasonDef.missingRequirements.join(', ')}`,
       );
     }
 
@@ -662,6 +662,44 @@ export class BoosterService {
     };
   }
 
+  private async hydrateHistoryCoverCards<T extends { coverCard?: any | null }>(
+    items: T[],
+  ) {
+    const coverIds = Array.from(
+      new Set(
+        items
+          .map((item) => Number(item.coverCard?.id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ),
+    );
+
+    if (coverIds.length === 0) return items;
+
+    const cards = await this.cardRepo.find({
+      where: { id: In(coverIds) },
+      select: ['id', 'key', 'name', 'rarity', 'imageUrl'],
+    });
+    const cardsById = new Map(cards.map((card) => [card.id, card]));
+
+    return items.map((item) => {
+      const cardId = Number(item.coverCard?.id);
+      const freshCard = cardsById.get(cardId);
+      if (!freshCard) return item;
+
+      return {
+        ...item,
+        coverCard: {
+          ...item.coverCard,
+          id: freshCard.id,
+          key: item.coverCard?.key ?? freshCard.key,
+          name: item.coverCard?.name ?? freshCard.name,
+          rarity: item.coverCard?.rarity ?? freshCard.rarity,
+          imageUrl: freshCard.imageUrl,
+        },
+      };
+    });
+  }
+
   async getOpeningHistory(
     userId: number,
     rawPage?: string,
@@ -694,7 +732,7 @@ export class BoosterService {
 
     const total = boosterTotal + displayTotal;
     const totalPages = Math.max(1, Math.ceil(total / perPage));
-    const items = [
+    const rawItems = [
       ...boosters.map((row) => this.buildOpeningHistoryItem('booster', row)),
       ...displays.map((row) => this.buildOpeningHistoryItem('display', row)),
     ]
@@ -704,6 +742,7 @@ export class BoosterService {
           new Date(a.openedAt as any).getTime(),
       )
       .slice(offset, offset + perPage);
+    const items = await this.hydrateHistoryCoverCards(rawItems);
 
     return {
       items,
@@ -738,7 +777,7 @@ export class BoosterService {
 
     if (!item.canReplay) {
       throw new BadRequestException(
-        'Cette ancienne ouverture ne contient pas assez de donnees pour etre rejouee.',
+        'Cette ancienne ouverture ne contient pas assez de données pour être rejouée.',
       );
     }
 

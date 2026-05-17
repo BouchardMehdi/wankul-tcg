@@ -1092,7 +1092,7 @@ export default function Collection() {
 
                   <div className="collectionProgressCard">
                     <div className="collectionProgressCard__head">
-                      <strong>Progression par rarete</strong>
+                      <strong>Progression par rareté</strong>
                       <span>{filters.season || "Global"}</span>
                     </div>
                     <div className="collectionProgressList">
@@ -1116,7 +1116,7 @@ export default function Collection() {
 
                   <div className="collectionFocusCard">
                     <div className="collectionProgressCard__head">
-                      <strong>Cartes a chasser</strong>
+                      <strong>Cartes à chasser</strong>
                       <span>{missingHighlights.length}</span>
                     </div>
                     <div className="collectionMiniRail">
@@ -1586,7 +1586,7 @@ export default function Collection() {
             <div className="collectionModal__head">
               <h3>Tags perso</h3>
               <button type="button" className="collectionModal__close" onClick={closeTagModal}>
-                âœ•
+                ×
               </button>
             </div>
 

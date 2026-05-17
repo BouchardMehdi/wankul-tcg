@@ -18,7 +18,7 @@ const PILLARS = [
   {
     kicker: "Opening",
     title: "Des boosters qui ont une vraie valeur",
-    text: "Chaque ouverture nourrit ta collection, tes doublons et ton economie. Ce n'est pas juste une animation.",
+    text: "Chaque ouverture nourrit ta collection, tes doublons et ton économie. Ce n'est pas juste une animation.",
   },
   {
     kicker: "Collection",
@@ -27,13 +27,13 @@ const PILLARS = [
   },
   {
     kicker: "Market",
-    title: "Un marche communautaire au centre du jeu",
-    text: "Les cartes, les prix et la liquidite passent par le market. Ton espace joueur t'aide a suivre tout ca.",
+    title: "Un marché communautaire au centre du jeu",
+    text: "Les cartes, les prix et la liquidité passent par le market. Ton espace joueur t'aide à suivre tout ça.",
   },
   {
-    kicker: "Economie",
-    title: "Une boucle de credits sous controle",
-    text: "Charges gratuites, quick sell, plafonds et historique de prix gardent le systeme stable et evitablement exploitable.",
+    kicker: "Économie",
+    title: "Une boucle de crédits sous contrôle",
+    text: "Charges gratuites, quick sell, plafonds et historique de prix gardent le système stable et difficilement exploitable.",
   },
 ];
 
@@ -50,7 +50,7 @@ const LOOP_STEPS = [
   },
   {
     step: "03",
-    title: "Vends ou achete",
+    title: "Vends ou achète",
     text: "Le market te permet de transformer tes doublons, de chasser une carte cible et de suivre de vrais prix.",
   },
   {
@@ -74,7 +74,7 @@ const SEASONS = [
   {
     number: 3,
     label: "Battle",
-    note: "Une extension qui renforce le cote chase card et les openings memorables.",
+    note: "Une extension qui renforce le côté chase card et les openings mémorables.",
   },
   {
     number: 4,
@@ -84,9 +84,9 @@ const SEASONS = [
 ];
 
 const HERO_STATS = [
-  { value: "Mobile", label: "Pensee pour mobile et installable comme une app" },
-  { value: "Market", label: "Les prix et la valeur des cartes partent du marche" },
-  { value: "4 saisons", label: "Une progression en extensions plutot qu'une simple liste de cartes" },
+  { value: "Mobile", label: "Pensée pour mobile et installable comme une app" },
+  { value: "Market", label: "Les prix et la valeur des cartes partent du marché" },
+  { value: "4 saisons", label: "Une progression en extensions plutôt qu'une simple liste de cartes" },
 ];
 
 const SHOWCASE_FOOTER_POINTS = [
@@ -100,7 +100,7 @@ const SHOWCASE_FOOTER_POINTS = [
   },
   {
     title: "Market",
-    text: "Des cartes qui gardent une vraie utilite apres l'ouverture.",
+    text: "Des cartes qui gardent une vraie utilité après l'ouverture.",
   },
 ];
 
@@ -126,7 +126,7 @@ export default function Home() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [installMessage, setInstallMessage] = useState(
-    "Installe Wankul TCG pour le retrouver directement sur ton ecran d'accueil.",
+    "Installe Wankul TCG pour le retrouver directement sur ton écran d'accueil.",
   );
 
   useEffect(() => {
@@ -138,7 +138,7 @@ export default function Home() {
 
       if (installed) {
         setInstallPrompt(null);
-        setInstallMessage("Wankul TCG est deja installee sur cet appareil.");
+        setInstallMessage("Wankul TCG est déjà installée sur cet appareil.");
       }
     };
 
@@ -152,7 +152,7 @@ export default function Home() {
       setIsInstalled(true);
       setInstallPrompt(null);
       playSoundEffect("pwa.installed");
-      setInstallMessage("Wankul TCG est installee. Tu peux maintenant l'ouvrir comme une vraie app.");
+      setInstallMessage("Wankul TCG est installée. Tu peux maintenant l'ouvrir comme une vraie app.");
     };
 
     syncInstallState();
@@ -181,7 +181,7 @@ export default function Home() {
       setInstallPrompt(null);
 
       if (outcome === "accepted") {
-        setInstallMessage("Installation lancee. L'app sera accessible depuis ton ecran d'accueil.");
+        setInstallMessage("Installation lancée. L'app sera accessible depuis ton écran d'accueil.");
       } else {
         playActionDeniedSound();
         setInstallMessage("Tu peux relancer l'installation quand tu veux depuis ce bouton.");
@@ -193,12 +193,12 @@ export default function Home() {
     const isAppleMobile = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
 
     if (isAppleMobile) {
-      setInstallMessage("Sur iPhone ou iPad, ouvre Partager puis choisis Sur l'ecran d'accueil.");
+      setInstallMessage("Sur iPhone ou iPad, ouvre Partager puis choisis Sur l'écran d'accueil.");
       return;
     }
 
     setInstallMessage(
-      "L'installation apparait seulement quand ton appareil la propose. Tu peux aussi passer par le menu de ton navigateur.",
+      "L'installation apparaît seulement quand ton appareil la propose. Tu peux aussi passer par le menu de ton navigateur.",
     );
     playActionDeniedSound();
   }
@@ -254,12 +254,12 @@ export default function Home() {
             </div>
 
             <h1 className="homeHero__title">
-              Le Wankul TCG pense comme une <span>experience de collection vivante</span>, faite pour donner envie de revenir.
+              Le Wankul TCG pense comme une <span>expérience de collection vivante</span>, faite pour donner envie de revenir.
             </h1>
 
             <p className="homeHero__text">
               Ouvre des boosters, fais grossir ta collection, exploite le market et suis ton compte depuis ton espace joueur.
-              Le coeur du projet, c'est la boucle opening - collection - economie - marche.
+              Le cœur du projet, c'est la boucle opening - collection - économie - marché.
             </p>
 
             <div className="homeHero__actions">
@@ -269,7 +269,7 @@ export default function Home() {
                     Entrer dans la collection
                   </Link>
                   <Link className="homeButton homeButton--ghost homeButton--large" to="/login">
-                    J'ai deja un compte
+                    J'ai déjà un compte
                   </Link>
                 </>
               ) : (
@@ -291,7 +291,7 @@ export default function Home() {
                 onClick={handleInstallClick}
                 disabled={isInstalled}
               >
-                {isInstalled ? "App installee" : "Installer l'app"}
+                {isInstalled ? "App installée" : "Installer l'app"}
               </button>
               <p className="homeHero__installNote">{installMessage}</p>
             </div>
@@ -349,7 +349,7 @@ export default function Home() {
               <div className="homeShowcase__insights">
                 <div className="homeFloatingCard">
                   <span>Market</span>
-                  <strong>Prix reels, historique, lots et quick sell toujours a portee de main</strong>
+                  <strong>Prix réels, historique, lots et quick sell toujours à portée de main</strong>
                 </div>
 
                 <div className="homeFloatingCard">
@@ -371,7 +371,7 @@ export default function Home() {
                   <SmartImage src={terracidImg} alt="Terracid" />
                   <div>
                     <strong>Terracid</strong>
-                    <span>Il a payé 8 balles au 118 218 pourr gagner un faux million</span>
+                    <span>Il a payé 8 balles au 118 218 pour gagner un faux million</span>
                   </div>
                 </div>
               </div>
@@ -394,9 +394,9 @@ export default function Home() {
         <section className="homeSection homeShell">
           <div className="homeSection__head">
             <span className="homeSection__kicker">Le projet</span>
-            <h2>Une app de collection orientee economie, avec le market comme repere principal.</h2>
+            <h2>Une app de collection orientée économie, avec le market comme repère principal.</h2>
             <p>
-              L'objectif n'est pas de reproduire le gameplay papier, mais de capter le plaisir d'ouvrir, posseder, traquer
+              L'objectif n'est pas de reproduire le gameplay papier, mais de capter le plaisir d'ouvrir, posséder, traquer
               et echanger de la valeur autour des cartes.
             </p>
           </div>
@@ -415,11 +415,11 @@ export default function Home() {
         <section className="homeSection homeShell">
           <div className="homeEconomyGrid">
             <article className="homeEconomyCard homeEconomyCard--main">
-              <div className="homeSection__kicker">Le coeur du systeme</div>
+              <div className="homeSection__kicker">Le cœur du système</div>
               <h2>Le market pilote la valeur, le quick sell reste en dessous, et ton espace joueur explique tout.</h2>
               <p>
-                Les cartes tirent leur prix du marche, l'economie est cadre par des garde-fous, et tes pages details
-                te montrent comment une carte evolue dans le temps. L'ouverture n'est donc jamais deconnectee du reste.
+                Les cartes tirent leur prix du marché, l'économie est cadrée par des garde-fous, et tes pages détails
+                te montrent comment une carte évolue dans le temps. L'ouverture n'est donc jamais déconnectée du reste.
               </p>
 
               <div className="homeMarketBands">
@@ -429,7 +429,7 @@ export default function Home() {
                 </div>
                 <div className="homeMarketBands__row">
                   <span>Quick sell</span>
-                  <b>Toujours sous le marche</b>
+                  <b>Toujours sous le marché</b>
                 </div>
                 <div className="homeMarketBands__row">
                   <span>Protection</span>
@@ -444,17 +444,17 @@ export default function Home() {
                 <strong>Nouvelle carte mieux valorisee que le doublon</strong>
               </div>
               <p>
-                Les ouvertures servent la collection sans exploser l'economie. Les doublons nourrissent les credits, les
-                nouvelles cartes poussent la retention.
+                Les ouvertures servent la collection sans exploser l'économie. Les doublons nourrissent les crédits, les
+                nouvelles cartes poussent la rétention.
               </p>
               <div className="homeEconomyList">
                 <div className="homeEconomyList__item">
                   <b>Nouvelle carte</b>
-                  <span>Elle doit donner le sentiment d'avoir vraiment avance dans ta collection.</span>
+                  <span>Elle doit donner le sentiment d'avoir vraiment avancé dans ta collection.</span>
                 </div>
                 <div className="homeEconomyList__item">
                   <b>Doublon</b>
-                  <span>Il garde une utilite immediate en credits au lieu de devenir une mauvaise surprise.</span>
+                  <span>Il garde une utilité immédiate en crédits au lieu de devenir une mauvaise surprise.</span>
                 </div>
                 <div className="homeEconomyList__item">
                   <b>Jackpot</b>
@@ -465,11 +465,11 @@ export default function Home() {
 
             <article className="homeEconomyCard">
               <div className="homeMiniMetric">
-                <span>Card details</span>
+                <span>Détails carte</span>
                 <strong>Un prix lisible sur mobile</strong>
               </div>
               <p>
-                L'historique des prix aide a comprendre ce que vaut une carte avant de la garder, la vendre ou la chasser
+                L'historique des prix aide à comprendre ce que vaut une carte avant de la garder, la vendre ou la chasser
                 sur le market.
               </p>
               <div className="homeEconomyList">
@@ -479,7 +479,7 @@ export default function Home() {
                 </div>
                 <div className="homeEconomyList__item">
                   <b>Lecture rapide</b>
-                  <span>Le min, le max et la derniere valeur donnent un contexte utile sans noyer l'utilisateur.</span>
+                  <span>Le min, le max et la dernière valeur donnent un contexte utile sans noyer l'utilisateur.</span>
                 </div>
                 <div className="homeEconomyList__item">
                   <b>Decision</b>
@@ -493,7 +493,7 @@ export default function Home() {
         <section className="homeSection homeShell">
           <div className="homeSection__head homeSection__head--tight">
             <span className="homeSection__kicker">Boucle de jeu</span>
-            <h2>Le flow principal est simple a lire, mais suffisamment riche pour donner envie d'y revenir.</h2>
+            <h2>Le flow principal est simple à lire, mais suffisamment riche pour donner envie d'y revenir.</h2>
           </div>
 
           <div className="homeLoopGrid">
@@ -510,7 +510,7 @@ export default function Home() {
         <section className="homeSection homeShell">
           <div className="homeSection__head homeSection__head--tight">
             <span className="homeSection__kicker">Saisons</span>
-            <h2>Chaque extension reste identifiable, utile a collectionner et exploitable dans l'economie du compte.</h2>
+            <h2>Chaque extension reste identifiable, utile à collectionner et exploitable dans l'économie du compte.</h2>
           </div>
 
           <div className="homeSeasonGrid">
@@ -538,8 +538,8 @@ export default function Home() {
               <span className="homeSection__kicker">Projet fan</span>
               <h2>Un accueil public pour entrer dans l'univers, un espace joueur pour jouer vraiment.</h2>
               <p>
-                Wankul TCG est un projet de fan non officiel, realise comme projet de fin d'annee d'etude.
-                Il sert a imaginer une experience de collection numerique autour de l'univers Wankil.
+                Wankul TCG est un projet de fan non officiel, réalisé comme projet de fin d'année d'étude.
+                Il sert à imaginer une expérience de collection numérique autour de l'univers Wankil.
               </p>
             </div>
 
@@ -556,7 +556,7 @@ export default function Home() {
               ) : (
                 <>
                   <Link className="homeButton homeButton--primary homeButton--large" to="/dashboard">
-                    Retour a mon espace
+                    Retour à mon espace
                   </Link>
                   <Link className="homeButton homeButton--ghost homeButton--large" to="/market">
                     Aller au market
@@ -570,7 +570,7 @@ export default function Home() {
 
       <footer className="homeFooter homeShell">
         <span>Wankul TCG - projet fan non officiel</span>
-        <span>Projet de fin d'annee d'etude</span>
+        <span>Projet de fin d'année d'étude</span>
       </footer>
     </div>
   );

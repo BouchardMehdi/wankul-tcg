@@ -18,7 +18,7 @@ function formatSyncTime(timestamp?: number) {
   if (!timestamp) return "En attente";
 
   const diff = Math.max(0, Date.now() - timestamp);
-  if (diff < 60_000) return "A l'instant";
+  if (diff < 60_000) return "À l'instant";
   if (diff < 3_600_000) return `Il y a ${Math.round(diff / 60_000)} min`;
   return `Il y a ${Math.round(diff / 3_600_000)} h`;
 }
@@ -110,19 +110,19 @@ export default function PwaStatusOverlay() {
         <div className="pwaOfflinePanel__content">
           <strong>Mode hors ligne actif</strong>
           <span>
-            Tu peux garder l'app ouverte, consulter les pages deja chargees et
-            les images deja preparees. Les achats, ventes et openings reprendront des
+            Tu peux garder l'app ouverte, consulter les pages déjà chargées et
+            les images déjà préparées. Les achats, ventes et openings reprendront dès
             que le serveur sera joignable.
           </span>
 
           <div className="pwaOfflinePanel__stats">
-            <span><b>{cacheStatus?.cardImageEntries ?? 0}</b> cartes pretes</span>
-            <span><b>{cacheStatus?.shellEntries ?? 0}</b> elements prets</span>
-            <span><b>{formatSyncTime(cacheStatus?.timestamp)}</b> derniere mise a jour</span>
+            <span><b>{cacheStatus?.cardImageEntries ?? 0}</b> cartes prêtes</span>
+            <span><b>{cacheStatus?.shellEntries ?? 0}</b> éléments prêts</span>
+            <span><b>{formatSyncTime(cacheStatus?.timestamp)}</b> dernière mise à jour</span>
           </div>
         </div>
         <div className="pwaOfflinePanel__actions">
-          <Link to="/pwa-preferences">Etat de l'app</Link>
+          <Link to="/pwa-preferences">État de l'app</Link>
           <button type="button" onClick={() => window.location.reload()}>
             Reessayer
           </button>
@@ -142,11 +142,11 @@ export default function PwaStatusOverlay() {
           <strong>Donnees synchronisees</strong>
           <span>
             Connexion revenue. {cacheStatus?.cardImageEntries ?? 0}
-            {" "}image(s) de cartes prete(s) et {cacheStatus?.runtimeEntries ?? 0} element(s) app.
+            {" "}image(s) de cartes prête(s) et {cacheStatus?.runtimeEntries ?? 0} élément(s) app.
           </span>
           {cacheProgress ? (
             <em>
-              Derniere preparation : {cacheProgress.cached} ok, {cacheProgress.failed} erreur(s).
+              Dernière préparation : {cacheProgress.cached} ok, {cacheProgress.failed} erreur(s).
             </em>
           ) : null}
         </div>

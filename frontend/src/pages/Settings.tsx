@@ -56,14 +56,14 @@ const SETTING_ROWS: SettingRow[] = [
   {
     key: "themeMode",
     title: "Apparence",
-    desc: "Suit le theme de ton appareil par defaut, ou force le mode clair/sombre.",
+    desc: "Suit le thème de ton appareil par défaut, ou force le mode clair/sombre.",
     kind: "select",
     section: "general",
   },
   {
     key: "pwaNotifications",
     title: "Notifications de l'app",
-    desc: "Recoit une alerte pour les boosters ou displays gratuits et les ventes du market pretes a etre recuperees.",
+    desc: "Reçoit une alerte pour les boosters ou displays gratuits et les ventes du market prêtes à être récupérées.",
     kind: "toggle",
     section: "general",
   },
@@ -191,19 +191,19 @@ const SETTING_ROWS: SettingRow[] = [
 const SECTION_META = {
   general: {
     title: "Application",
-    desc: "Preferences globales de l'app, de la collection et des openings.",
+    desc: "Préférences globales de l'app, de la collection et des openings.",
   },
   market: {
     title: "Market",
-    desc: "Preferences de securite et de confort pour les achats et ventes.",
+    desc: "Préférences de sécurité et de confort pour les achats et ventes.",
   },
   notifications: {
     title: "Notifications",
-    desc: "Alertes de l'app pour le market, les charges gratuites, la watchlist et le recap quotidien.",
+    desc: "Alertes de l'app pour le market, les charges gratuites, la watchlist et le récap quotidien.",
   },
   support: {
     title: "Support",
-    desc: "Signale un bug, un probleme visuel ou un comportement anormal rencontre dans l'application.",
+    desc: "Signale un bug, un problème visuel ou un comportement anormal rencontré dans l'application.",
   },
 } as const;
 
@@ -477,7 +477,7 @@ export default function Settings() {
     try {
       const saved = await updatePushPreferences(pushPrefs);
       setPushPrefs(saved);
-      setPushPrefsFeedback("Preferences push enregistrees.");
+      setPushPrefsFeedback("Préférences push enregistrées.");
     } catch (err: any) {
       playActionDeniedSound();
       setPushPrefsError(err?.message || "Impossible d'enregistrer les notifications.");
@@ -594,7 +594,7 @@ export default function Settings() {
             >
               {isThemeSelect ? (
                 <>
-                  <option value="system">Automatique systeme</option>
+                  <option value="system">Automatique système</option>
                   <option value="dark">Mode sombre</option>
                   <option value="light">Mode clair</option>
                 </>
@@ -646,7 +646,7 @@ export default function Settings() {
             <div className="section-title settingsHeading">
               <div>
                 <h2>Paramètres</h2>
-                <p className="small">Preferences de ton application.</p>
+                <p className="small">Préférences de ton application.</p>
               </div>
 
               <div className="settingsSummary small">
@@ -667,7 +667,7 @@ export default function Settings() {
 
                 <div className="settingsPwaShortcut">
                   <div>
-                    <div className="settingsPwaShortcut__title">Preferences de l'app installee</div>
+                    <div className="settingsPwaShortcut__title">Préférences de l'app installée</div>
                     <div className="settingsPwaShortcut__desc">
                       Installation, images de cartes hors ligne et notifications par type.
                     </div>
@@ -702,8 +702,8 @@ export default function Settings() {
                   <div className="settingsList">
                     <div className="settingsRow">
                       <div className="settingsRow__content">
-                        <div className="settingsRow__title">Vente terminee</div>
-                        <div className="settingsRow__desc">Notif quand une recompense vendeur est disponible.</div>
+                        <div className="settingsRow__title">Vente terminée</div>
+                        <div className="settingsRow__desc">Notif quand une récompense vendeur est disponible.</div>
                       </div>
                       <button
                         type="button"
@@ -720,7 +720,7 @@ export default function Settings() {
 
                     <div className="settingsRow">
                       <div className="settingsRow__content">
-                        <div className="settingsRow__title">Charges gratuites pretes</div>
+                        <div className="settingsRow__title">Charges gratuites prêtes</div>
                         <div className="settingsRow__desc">Notif quand un booster ou une display gratuite est disponible.</div>
                       </div>
                       <button
@@ -738,7 +738,7 @@ export default function Settings() {
 
                     <div className="settingsRow">
                       <div className="settingsRow__content">
-                        <div className="settingsRow__title">Charge gratuite bientot prete</div>
+                        <div className="settingsRow__title">Charge gratuite bientôt prête</div>
                         <div className="settingsRow__desc">Alerte quand une charge gratuite arrive dans moins de X minutes.</div>
                       </div>
                       <button
@@ -756,7 +756,7 @@ export default function Settings() {
 
                     <div className="settingsRow">
                       <div className="settingsRow__content">
-                        <div className="settingsRow__title">Fenetre avant recharge</div>
+                        <div className="settingsRow__title">Fenêtre avant recharge</div>
                         <div className="settingsRow__desc">Nombre de minutes avant recharge pour recevoir l'alerte.</div>
                       </div>
                       <div className="settingsRow__control">
@@ -797,7 +797,7 @@ export default function Settings() {
                     <div className="settingsRow">
                       <div className="settingsRow__content">
                         <div className="settingsRow__title">Annonce perso trop longue</div>
-                        <div className="settingsRow__desc">Rappel quand une annonce reste invendue apres un certain temps.</div>
+                        <div className="settingsRow__desc">Rappel quand une annonce reste invendue après un certain temps.</div>
                       </div>
                       <button
                         type="button"
@@ -1056,7 +1056,7 @@ export default function Settings() {
                       <div>
                         <div className="settingsSupportCard__title">Historique de tes signalements</div>
                         <div className="settingsSupportCard__desc">
-                          Les signalements corriges et rejetes sont masques par defaut pour garder un affichage plus lisible.
+                          Les signalements corrigés et rejetés sont masqués par défaut pour garder un affichage plus lisible.
                         </div>
                       </div>
 
@@ -1268,7 +1268,7 @@ export default function Settings() {
             <div className="settingsDangerZone">
               <div className="settingsDangerZone__title">Compte</div>
               <div className="settingsDangerZone__desc">
-                Gere ton profil public, ton avatar et tes badges, ou deconnecte-toi de l'application sur cet appareil.
+                Gère ton profil public, ton avatar et tes badges, ou déconnecte-toi de l'application sur cet appareil.
               </div>
 
               <Link to="/profile" className="btn settingsProfileBtn">

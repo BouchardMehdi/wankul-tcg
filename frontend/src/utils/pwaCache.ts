@@ -45,7 +45,7 @@ export function isPwaCacheSupported() {
 
 export async function getPwaServiceWorkerRegistration() {
   if (!("serviceWorker" in navigator)) {
-    throw new Error("Service worker non supporte.");
+    throw new Error("Service worker non supporté.");
   }
 
   const existing = await navigator.serviceWorker.getRegistration("/sw.js");

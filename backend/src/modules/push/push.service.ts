@@ -333,7 +333,7 @@ export class PushService {
     const rewardParts: string[] = [];
 
     if (args.rewardCredits > 0) {
-      rewardParts.push(`${args.rewardCredits} credits`);
+      rewardParts.push(`${args.rewardCredits} crédits`);
     }
 
     if (args.rewardCardQuantity > 0 && args.rewardCardName) {
@@ -341,11 +341,11 @@ export class PushService {
     }
 
     const rewardLabel =
-      rewardParts.length > 0 ? rewardParts.join(' + ') : 'ta recompense';
+      rewardParts.length > 0 ? rewardParts.join(' + ') : 'ta récompense';
 
     return this.sendToUser(args.sellerId, {
       title: 'Ta vente a fait mouche',
-      body: `${args.soldCardName} a trouve preneur. Passe sur le market pour recuperer ${rewardLabel}.`,
+      body: `${args.soldCardName} a trouvé preneur. Passe sur le market pour récupérer ${rewardLabel}.`,
       url: '/market',
       tag: `market-reward-${args.transactionId}`,
       kind: 'market-reward',
@@ -534,7 +534,7 @@ export class PushService {
       if (currentPrice <= item.targetPriceCredits && !item.targetReachedNotified) {
         const result = await this.sendToUser(item.user.id, {
           title: 'Ta cible passe sous le seuil',
-          body: `${item.card.name} descend a ${currentPrice} credits, sous ton objectif de ${item.targetPriceCredits}.`,
+          body: `${item.card.name} descend à ${currentPrice} crédits, sous ton objectif de ${item.targetPriceCredits}.`,
           url: `/collection/card/${item.card.id}`,
           tag: `watchlist-${item.id}`,
           kind: 'watchlist-price',
@@ -658,7 +658,7 @@ export class PushService {
           title: `${item.card.name} est en vraie bonne affaire`,
           body: `Une annonce est disponible autour de ${Math.round(
             dealCandidate.requestedValue,
-          )} credits, soit ${dealPercent}% sous la valeur du marche.`,
+          )} crédits, soit ${dealPercent}% sous la valeur du marché.`,
           url: '/market',
           tag: `watchlist-deal-${item.id}-${dealCandidate.listing.id}`,
           kind: 'watchlist-deal',
@@ -667,7 +667,7 @@ export class PushService {
           requireInteraction: true,
           vibrate: [120, 40, 120],
           actions: [
-            { action: 'open-market', title: 'Voir l annonce', url: '/market' },
+            { action: 'open-market', title: 'Voir l’annonce', url: '/market' },
             {
               action: 'open-card',
               title: 'Voir la carte',
@@ -708,10 +708,10 @@ export class PushService {
       }
 
       const result = await this.sendToUser(item.user.id, {
-        title: `${item.card.name} vient d apparaitre sur le market`,
-        body: `Une annonce correspond a ta watchlist avec une valeur autour de ${Math.round(
+        title: `${item.card.name} vient d’apparaître sur le market`,
+        body: `Une annonce correspond à ta watchlist avec une valeur autour de ${Math.round(
           listingCandidate.requestedValue,
-        )} credits pour ta cible fixee a ${item.targetPriceCredits}.`,
+        )} crédits pour ta cible fixée à ${item.targetPriceCredits}.`,
         url: '/market',
         tag: `watchlist-listing-${item.id}-${listingCandidate.listing.id}`,
         kind: 'watchlist-listing',
@@ -763,7 +763,7 @@ export class PushService {
 
       const result = await this.sendToUser(listing.seller.id, {
         title: 'Ton annonce refroidit',
-        body: `${listing.card.name} n'a toujours pas bouge apres ${preferences.staleListingHours}h. Tu peux ajuster le prix pour relancer l'interet.`,
+        body: `${listing.card.name} n'a toujours pas bougé après ${preferences.staleListingHours}h. Tu peux ajuster le prix pour relancer l'intérêt.`,
         url: '/market',
         tag: `stale-listing-${listing.id}`,
         kind: 'stale-listing',
@@ -851,9 +851,9 @@ export class PushService {
 
       const body =
         `${activeListingsCount} annonce(s) active(s), ` +
-        `${pendingRewardsCount} recompense(s) en attente, ` +
+        `${pendingRewardsCount} récompense(s) en attente, ` +
         `${salesToday} vente(s) et ${purchasesToday} achat(s) aujourd'hui. ` +
-        `Volume global du jour: ${(todayStats?.marketVolume ?? 0).toLocaleString('fr-FR')} credits.`;
+        `Volume global du jour: ${(todayStats?.marketVolume ?? 0).toLocaleString('fr-FR')} crédits.`;
 
       const result = await this.sendToUser(userId, {
         title: 'Le market du jour en bref',
@@ -864,7 +864,7 @@ export class PushService {
         accent: 'gold',
         image: '/push-recap.svg',
         actions: [
-          { action: 'open-market', title: 'Lire le recap', url: '/market' },
+          { action: 'open-market', title: 'Lire le récap', url: '/market' },
           { action: 'dismiss', title: 'Plus tard' },
         ],
       });

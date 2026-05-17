@@ -216,14 +216,14 @@ Wankul TCG`;
     const mail = this.buildAuthMail({
       username,
       code,
-      subject: 'Code de verification Wankul TCG',
-      eyebrow: 'Creation de compte',
+      subject: 'Code de vérification Wankul TCG',
+      eyebrow: 'Création de compte',
       title: 'Valide ton compte.',
       intro:
-        'Entre ce code dans la page de verification pour activer ton compte et recuperer ton bonus de depart.',
-      codeLabel: 'Code de verification',
+        'Entre ce code dans la page de vérification pour activer ton compte et récupérer ton bonus de départ.',
+      codeLabel: 'Code de vérification',
       securityNote:
-        "Si tu n'es pas a l'origine de cette creation de compte, ignore simplement cet email.",
+        "Si tu n'es pas à l'origine de cette création de compte, ignore simplement cet email.",
       ctaLabel: 'Retourner sur Wankul TCG',
     });
 
@@ -242,10 +242,10 @@ Wankul TCG`;
       eyebrow: 'Securite du compte',
       title: 'Change ton mot de passe.',
       intro:
-        'Utilise ce code pour confirmer la reinitialisation de ton mot de passe Wankul TCG.',
-      codeLabel: 'Code de reinitialisation',
+        'Utilise ce code pour confirmer la réinitialisation de ton mot de passe Wankul TCG.',
+      codeLabel: 'Code de réinitialisation',
       securityNote:
-        "Si tu n'es pas a l'origine de cette demande, ton compte reste protege et tu peux ignorer cet email.",
+        "Si tu n'es pas à l'origine de cette demande, ton compte reste protégé et tu peux ignorer cet email.",
       ctaLabel: 'Retourner sur Wankul TCG',
     });
 

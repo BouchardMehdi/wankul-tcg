@@ -142,9 +142,9 @@ function formatOfferType(offerType: MarketListingRow["offerType"]) {
     case "CREDITS_ONLY":
       return "Credits";
     case "CARD_ONLY":
-      return "Echange";
+      return "Échange";
     case "CARD_AND_CREDITS":
-      return "Carte + credits";
+      return "Carte + crédits";
     default:
       return offerType;
   }
@@ -153,8 +153,8 @@ function formatOfferType(offerType: MarketListingRow["offerType"]) {
 function formatOffer(listing: MarketListingRow) {
   if (listing.offerType === "CREDITS_ONLY") {
     return listing.listingMode === "LOT"
-      ? `${listing.priceCredits.toLocaleString("fr-FR")} credits le lot`
-      : `${listing.priceCredits.toLocaleString("fr-FR")} credits / carte`;
+      ? `${listing.priceCredits.toLocaleString("fr-FR")} crédits le lot`
+      : `${listing.priceCredits.toLocaleString("fr-FR")} crédits / carte`;
   }
 
   const wantedCard = listing.wantedCardName ?? `Carte #${listing.wantedCardId}`;
@@ -165,8 +165,8 @@ function formatOffer(listing: MarketListingRow) {
   }
 
   return listing.listingMode === "LOT"
-    ? `${listing.wantedCardQuantity}x ${wantedCard} + ${listing.priceCredits.toLocaleString("fr-FR")} credits`
-    : `${listing.wantedCardQuantity}x ${wantedCard} + ${listing.priceCredits.toLocaleString("fr-FR")} credits / carte`;
+    ? `${listing.wantedCardQuantity}x ${wantedCard} + ${listing.priceCredits.toLocaleString("fr-FR")} crédits`
+    : `${listing.wantedCardQuantity}x ${wantedCard} + ${listing.priceCredits.toLocaleString("fr-FR")} crédits / carte`;
 }
 
 function getSaleUnitValue(tx: MarketSaleHistoryRow) {
@@ -381,7 +381,7 @@ function CardDetails() {
       setAllCards(cardsRes ?? []);
     } catch (e: any) {
       playUiErrorSound();
-      setMarketError(e?.message || "Impossible de charger le market lie a cette carte.");
+      setMarketError(e?.message || "Impossible de charger le market lié à cette carte.");
     } finally {
       setMarketLoading(false);
     }
@@ -723,7 +723,7 @@ function CardDetails() {
 
     if (!Number.isInteger(target) || target < 1) {
       playUiErrorSound();
-      setWatchlistError("Entre un prix cible valide en credits.");
+      setWatchlistError("Entre un prix cible valide en crédits.");
       return;
     }
 
@@ -902,7 +902,7 @@ function CardDetails() {
                 <div className="cardDetailsWatchlist__head">
                   <div>
                     <h2>Watchlist prix</h2>
-                    <p>Recois une notif push quand cette carte descend sous ton prix cible.</p>
+                    <p>Reçois une notif push quand cette carte descend sous ton prix cible.</p>
                   </div>
 
                   <div className="cardDetailsWatchlist__current">
@@ -939,7 +939,7 @@ function CardDetails() {
                         disabled={watchlistSaving}
                         onClick={handleSaveWatchlist}
                       >
-                        {watchlistSaving ? "Enregistrement..." : watchlistItem ? "Mettre a jour l'alerte" : "Ajouter a la watchlist"}
+                        {watchlistSaving ? "Enregistrement..." : watchlistItem ? "Mettre à jour l'alerte" : "Ajouter à la watchlist"}
                       </button>
 
                       {watchlistItem ? (
@@ -956,7 +956,7 @@ function CardDetails() {
 
                     {watchlistItem ? (
                       <div className="cardDetailsWatchlist__meta">
-                        Alerte active a {formatCredits(watchlistItem.targetPriceCredits)}.
+                        Alerte active à {formatCredits(watchlistItem.targetPriceCredits)}.
                       </div>
                     ) : null}
 
@@ -978,7 +978,7 @@ function CardDetails() {
               <div className="cardDetailsMarketPanel">
                 <div className="cardDetailsMarketPanel__head">
                   <div>
-                    <h2>Market lie a cette carte</h2>
+                    <h2>Market lié à cette carte</h2>
                     <p>Offres actives, dernieres ventes et editions associees.</p>
                   </div>
                   <Link className="btn" to={`/market?search=${encodeURIComponent(card.name)}`}>
@@ -1027,7 +1027,7 @@ function CardDetails() {
                                 <span>{listing.remainingQuantity} / {listing.quantity}</span>
                                 <strong>{formatCredits(listing.referenceRequestedValue)}</strong>
                                 {listing.priceDifferencePercent !== null ? (
-                                  <em>{formatSignedPercent(listing.priceDifferencePercent)} vs marche</em>
+                                  <em>{formatSignedPercent(listing.priceDifferencePercent)} vs marché</em>
                                 ) : null}
                               </div>
 

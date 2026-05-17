@@ -116,11 +116,11 @@ function getFlavorText(payload: InAppNotificationPayload) {
     case "free-openings-ready":
       return "Le frisson de l'ouverture peut repartir tout de suite";
     case "free-openings-soon":
-      return "Ta prochaine charge approche a grands pas";
+      return "Ta prochaine charge approche à grands pas";
     case "stale-listing":
-      return "Ton annonce merite peut-etre un petit coup de boost";
+      return "Ton annonce mérite peut-être un petit coup de boost";
     case "daily-market-recap":
-      return "Le marche du jour resume en un clin d'oeil";
+      return "Le marché du jour résumé en un clin d'œil";
     default:
       return "Nouvelle alerte dans ton univers Wankul";
   }

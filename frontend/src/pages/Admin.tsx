@@ -92,7 +92,7 @@ function getSecurityActionLabel(action?: string) {
     case "QUICK_SELL":
       return "Quick sell";
     case "MARKET_LISTING_CREATE":
-      return "Creation annonce";
+      return "Création annonce";
     case "MARKET_LISTING_CANCEL":
       return "Annulation annonce";
     case "MARKET_BUY":
@@ -211,7 +211,7 @@ export default function Admin() {
       });
       setEcoLogs(res);
     } catch (err: any) {
-      setEcoLogsError(err?.message || "Impossible de charger les logs economie.");
+      setEcoLogsError(err?.message || "Impossible de charger les logs économie.");
     } finally {
       setEcoLogsLoading(false);
     }
@@ -380,7 +380,7 @@ export default function Admin() {
       link.remove();
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      setEcoError(err?.message || "Export economie impossible.");
+      setEcoError(err?.message || "Export économie impossible.");
     } finally {
       setEcoExporting(null);
     }
@@ -451,7 +451,7 @@ export default function Admin() {
               <div>
                 <h2>Administration</h2>
                 <p className="small">
-                  Suivi economie + gestion des signalements dans une seule console admin.
+                  Suivi économie + gestion des signalements dans une seule console admin.
                 </p>
               </div>
 
@@ -481,7 +481,7 @@ export default function Admin() {
                 className={`adminTabBtn ${activeTab === "dashboard" ? "is-active" : ""}`}
                 onClick={() => setActiveTab("dashboard")}
               >
-                Suivi economie
+                Suivi économie
               </button>
               <button
                 type="button"
@@ -530,7 +530,7 @@ export default function Admin() {
                 </div>
 
                 {ecoError ? <div className="adminError">{ecoError}</div> : null}
-                {ecoLoading ? <div className="adminEmpty">Chargement du suivi economie...</div> : null}
+                {ecoLoading ? <div className="adminEmpty">Chargement du suivi économie...</div> : null}
 
                 {!ecoLoading ? (
                   <>
@@ -553,7 +553,7 @@ export default function Admin() {
                       <div className={`adminStatCard adminStatCard--risk is-${riskLevel}`}>
                         <div className="adminStatCard__value">{riskScore}/100</div>
                         <div className="adminStatCard__label">
-                          Risque economie - {getRiskLabel(riskLevel)}
+                          Risque économie - {getRiskLabel(riskLevel)}
                         </div>
                       </div>
 
@@ -575,11 +575,11 @@ export default function Admin() {
 
                     <div className={`adminRiskStrip is-${riskLevel}`}>
                       <div className="adminRiskStrip__main">
-                        <span>Sante economie</span>
+                        <span>Santé économie</span>
                         <strong>{getRiskLabel(riskLevel)}</strong>
                         <p>
-                          {formatSignedNumber(health?.netInflation ?? ecoInflation)} credits nets sur {ecoOverview?.days ?? ecoDays} jours.
-                          Quick sell = {formatPercent(quickSellShareOfCreatedPercent, false)} des credits crees.
+                          {formatSignedNumber(health?.netInflation ?? ecoInflation)} crédits nets sur {ecoOverview?.days ?? ecoDays} jours.
+                          Quick sell = {formatPercent(quickSellShareOfCreatedPercent, false)} des crédits créés.
                         </p>
                       </div>
                       <div className="adminRiskStrip__metrics">
@@ -592,7 +592,7 @@ export default function Admin() {
                           <b>{formatPercent(quickSellToMarketPercent, false)}</b>
                         </div>
                         <div>
-                          <span>Opening / creation</span>
+                          <span>Opening / création</span>
                           <b>{formatPercent(openingShareOfCreatedPercent, false)}</b>
                         </div>
                       </div>
@@ -600,9 +600,9 @@ export default function Admin() {
 
                     <section className="adminDashboardPanel adminSecurityPanel">
                       <div className="adminDashboardPanel__head">
-                        <h3>Securite anti-abus</h3>
+                        <h3>Sécurité anti-abus</h3>
                         <p className="small">
-                          Limites d'action, prix hors cadre et transactions suspectes sur la periode.
+                          Limites d'action, prix hors cadre et transactions suspectes sur la période.
                         </p>
                       </div>
 
@@ -626,7 +626,7 @@ export default function Admin() {
                       </div>
 
                       <div className="adminSecurityEvents">
-                        {ecoLogsLoading ? <div className="adminEmpty">Chargement des logs economie...</div> : null}
+                        {ecoLogsLoading ? <div className="adminEmpty">Chargement des logs économie...</div> : null}
                         {ecoLogsError ? <div className="adminError">{ecoLogsError}</div> : null}
                         {recentSecurityEvents.length > 0 ? (
                           recentSecurityEvents.map((event) => (
@@ -639,7 +639,7 @@ export default function Admin() {
                                 <span>
                                   {getSecurityStatusLabel(event.status)}
                                   {event.userId ? ` par user #${event.userId}` : ""}
-                                  {event.valueCredits ? ` - ${formatNumber(event.valueCredits)} credits` : ""}
+                                  {event.valueCredits ? ` - ${formatNumber(event.valueCredits)} crédits` : ""}
                                 </span>
                               </div>
                               <time>{formatDate(event.createdAt)}</time>
@@ -647,7 +647,7 @@ export default function Admin() {
                             </article>
                           ))
                         ) : (
-                          <div className="adminEmpty">Aucun signal anti-abus sur cette periode.</div>
+                          <div className="adminEmpty">Aucun signal anti-abus sur cette période.</div>
                         )}
                       </div>
 
@@ -797,15 +797,15 @@ export default function Admin() {
                     <div className="adminDashboardGrid adminDashboardGrid--analytics">
                       <section className="adminDashboardPanel">
                         <div className="adminDashboardPanel__head">
-                          <h3>Raretes trop rentables</h3>
-                          <p className="small">Raretés avec trop de volume, de rewards ou d'ecart au prix marche.</p>
+                          <h3>Raretés trop rentables</h3>
+                          <p className="small">Raretés avec trop de volume, de rewards ou d'écart au prix marché.</p>
                         </div>
 
                         <div className="adminDataTableWrap">
                           <table className="adminDataTable adminDataTable--compact">
                             <thead>
                               <tr>
-                                <th>Rarete</th>
+                                <th>Rareté</th>
                                 <th>Score</th>
                                 <th>Ventes</th>
                                 <th>Prix moy.</th>
@@ -831,7 +831,7 @@ export default function Admin() {
                                 ))
                               ) : (
                                 <tr>
-                                  <td colSpan={6}>Pas assez de ventes pour detecter une rarete a risque.</td>
+                                  <td colSpan={6}>Pas assez de ventes pour détecter une rareté à risque.</td>
                                 </tr>
                               )}
                             </tbody>
@@ -842,7 +842,7 @@ export default function Admin() {
                       <section className="adminDashboardPanel">
                         <div className="adminDashboardPanel__head">
                           <h3>Utilisateurs suspects</h3>
-                          <p className="small">Scores heuristiques: volume, ecarts prix, annulations, openings.</p>
+                          <p className="small">Scores heuristiques: volume, écarts prix, annulations, openings.</p>
                         </div>
 
                         <div className="adminSuspiciousList">
@@ -865,12 +865,12 @@ export default function Admin() {
                                 <p>
                                   {user.reasons.length > 0
                                     ? user.reasons.join(" • ")
-                                    : "Signal faible, a surveiller."}
+                                    : "Signal faible, à surveiller."}
                                 </p>
                               </article>
                             ))
                           ) : (
-                            <div className="adminEmpty">Aucun utilisateur suspect sur cette periode.</div>
+                            <div className="adminEmpty">Aucun utilisateur suspect sur cette période.</div>
                           )}
                         </div>
                       </section>
@@ -878,8 +878,8 @@ export default function Admin() {
 
                     <section className="adminDashboardPanel adminDashboardPanel--full">
                       <div className="adminDashboardPanel__head">
-                        <h3>Cartes possiblement manipulees</h3>
-                        <p className="small">Ecart au prix snapshot, volatilite historique et trades outliers.</p>
+                        <h3>Cartes possiblement manipulées</h3>
+                        <p className="small">Écart au prix snapshot, volatilité historique et trades outliers.</p>
                       </div>
 
                       <div className="adminDataTableWrap">
@@ -887,12 +887,12 @@ export default function Admin() {
                           <thead>
                             <tr>
                               <th>Carte</th>
-                              <th>Rarete</th>
+                              <th>Rareté</th>
                               <th>Score</th>
                               <th>Ventes</th>
                               <th>Prix moy.</th>
-                              <th>Ecart marche</th>
-                              <th>Volatilite</th>
+                              <th>Écart marché</th>
+                              <th>Volatilité</th>
                               <th>Outliers</th>
                             </tr>
                           </thead>
@@ -915,7 +915,7 @@ export default function Admin() {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={8}>Aucune carte manipulee detectee sur cette periode.</td>
+                                <td colSpan={8}>Aucune carte manipulée détectée sur cette période.</td>
                               </tr>
                             )}
                           </tbody>

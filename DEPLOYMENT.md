@@ -1,25 +1,25 @@
 # Wankul TCG - mise en production Hostinger
 
-Ce document sert de checklist pour une mise en ligne propre sur Hostinger Node.js Web App / Cloud. Pour un VPS, les memes variables restent utiles, mais tu peux ajouter Docker plus tard.
+Ce document sert de checklist pour une mise en ligne propre sur Hostinger Node.js Web App / Cloud. Pour un VPS, les mêmes variables restent utiles, mais tu peux ajouter Docker plus tard.
 
 ## 1. Domaine et HTTPS
 
 1. Pointer le domaine vers Hostinger.
 2. Activer le certificat SSL/HTTPS dans hPanel.
-3. Verifier que le site public repond en `https://`.
+3. Vérifier que le site public répond en `https://`.
 4. Utiliser uniquement l'URL HTTPS dans les variables ci-dessous.
 
 La PWA, les push notifications et le service worker ont besoin de HTTPS en production.
 
 ## 2. Frontend
 
-Créer `frontend/.env.production` a partir de `frontend/.env.production.example`.
+Créer `frontend/.env.production` à partir de `frontend/.env.production.example`.
 
 ```env
 VITE_API_URL=https://ton-domaine.fr
 ```
 
-Important: ne pas ajouter `/api` a la fin. Le code frontend ajoute `/api` tout seul.
+Important: ne pas ajouter `/api` à la fin. Le code frontend ajoute `/api` tout seul.
 
 Build:
 
@@ -33,7 +33,7 @@ Le dossier a servir est `frontend/dist`.
 
 ## 3. Backend
 
-Créer `backend/.env` a partir de `backend/.env.production.example`.
+Créer `backend/.env` à partir de `backend/.env.production.example`.
 
 Variables critiques:
 
@@ -56,7 +56,7 @@ npm run build
 npm run start:prod
 ```
 
-Sur Hostinger Node App, le script de demarrage doit pointer vers:
+Sur Hostinger Node App, le script de démarrage doit pointer vers:
 
 ```bash
 npm run start:prod
@@ -64,15 +64,15 @@ npm run start:prod
 
 ## 4. MySQL propre
 
-1. Creer une base MySQL de production separee de la base locale.
-2. Creer un utilisateur MySQL dedie a cette base.
-3. Importer le schema/data initial si necessaire.
-4. Garder `DB_SYNCHRONIZE=false` en production apres le premier setup.
-5. Toujours faire un backup avant de seed, modifier l'economie ou deployer une grosse feature.
+1. Créer une base MySQL de production séparée de la base locale.
+2. Créer un utilisateur MySQL dédié à cette base.
+3. Importer le schéma/data initial si nécessaire.
+4. Garder `DB_SYNCHRONIZE=false` en production après le premier setup.
+5. Toujours faire un backup avant de seed, modifier l'économie ou déployer une grosse feature.
 
-Si tu dois initialiser une nouvelle base sans migrations, tu peux temporairement mettre `DB_SYNCHRONIZE=true`, lancer l'API une fois, verifier les tables, puis repasser immediatement a `false`.
+Si tu dois initialiser une nouvelle base sans migrations, tu peux temporairement mettre `DB_SYNCHRONIZE=true`, lancer l'API une fois, vérifier les tables, puis repasser immédiatement à `false`.
 
-## 5. SMTP reel
+## 5. SMTP réel
 
 Configurer un vrai SMTP dans `backend/.env`:
 
@@ -88,14 +88,14 @@ SUPPORT_EMAIL=support@ton-domaine.fr
 
 Tester:
 
-1. Creation de compte.
-2. Verification email.
-3. Mot de passe oublie.
+1. Création de compte.
+2. Vérification email.
+3. Mot de passe oublié.
 4. Signalement support si tu l'utilises.
 
 ## 6. VAPID push
 
-Generer les cles:
+Générer les clés:
 
 ```bash
 cd backend
@@ -114,20 +114,20 @@ Tester sur mobile:
 
 1. Installer la PWA.
 2. Autoriser les notifications.
-3. Creer une watchlist.
-4. Verifier qu'une notif systeme s'affiche quand une alerte est envoyee.
+3. Créer une watchlist.
+4. Vérifier qu'une notif système s'affiche quand une alerte est envoyée.
 
 ## 7. Service worker / PWA
 
 Checklist:
 
 1. `frontend/public/manifest.webmanifest` existe.
-2. `frontend/public/sw.js` est bien servi a la racine du domaine.
+2. `frontend/public/sw.js` est bien servi à la racine du domaine.
 3. `offline.html`, `pwa-192.png`, `pwa-512.png`, `favicon.png` sont accessibles.
 4. Le site est en HTTPS.
-5. Apres un deploy important, tester: charger le site, fermer, ouvrir hors ligne, puis revenir en ligne.
+5. Après un deploy important, tester: charger le site, fermer, ouvrir hors ligne, puis revenir en ligne.
 
-## 8. Sauvegarde economie
+## 8. Sauvegarde économie
 
 Backup complet DB:
 
@@ -136,9 +136,9 @@ cd backend
 npm run db:backup
 ```
 
-Le dump est cree dans `backend/backups` par defaut. Ce dossier est ignore par Git.
+Le dump est créé dans `backend/backups` par défaut. Ce dossier est ignoré par Git.
 
-Export economie consultable:
+Export économie consultable:
 
 ```bash
 cd backend
@@ -147,18 +147,18 @@ npm run economy:export -- --days=30
 
 Dans l'admin, tu as aussi:
 
-1. Export JSON economie.
-2. Export CSV economie.
-3. Logs anti-abus/economie pagines.
+1. Export JSON économie.
+2. Export CSV économie.
+3. Logs anti-abus/économie paginés.
 
-## 9. Rollback manuel en cas de bug economie
+## 9. Rollback manuel en cas de bug économie
 
-Procedure conseillee:
+Procédure conseillée:
 
 1. Couper temporairement les actions sensibles si le bug est actif.
 2. Faire une copie du dump actuel avec `npm run db:backup`.
 3. Identifier le dernier dump sain.
-4. Restaurer uniquement si tu es sur de ton choix.
+4. Restaurer uniquement si tu es sûr de ton choix.
 
 Commande:
 
@@ -167,15 +167,15 @@ cd backend
 ALLOW_DB_RESTORE=YES npm run db:restore -- ./backups/nom-du-backup.sql
 ```
 
-Le script refuse de restaurer sans `ALLOW_DB_RESTORE=YES` pour eviter un accident.
+Le script refuse de restaurer sans `ALLOW_DB_RESTORE=YES` pour éviter un accident.
 
-## 10. Verifications avant ouverture publique
+## 10. Vérifications avant ouverture publique
 
 1. Register / login / reset password.
 2. Ouverture booster et display.
-3. Collection et card details.
+3. Collection et détails carte.
 4. Achat / vente market.
 5. Watchlist + push.
 6. PWA install + offline.
-7. Admin economie + export.
+7. Admin économie + export.
 8. Backup DB manuel.

@@ -30,7 +30,7 @@ function fileToDataUrl(file: File) {
 
 function rewardLabel(badge: ProfileBadge) {
   const parts = [];
-  if (badge.reward.credits > 0) parts.push(`${badge.reward.credits} credits`);
+  if (badge.reward.credits > 0) parts.push(`${badge.reward.credits} crédits`);
   if (badge.reward.freeBoosters > 0) {
     parts.push(`${badge.reward.freeBoosters} booster${badge.reward.freeBoosters > 1 ? "s" : ""}`);
   }
@@ -43,7 +43,7 @@ function progressLabel(badge: ProfileBadge) {
 }
 
 function formatUnlockedAt(value?: string | null) {
-  if (!value) return "Pas encore debloque";
+  if (!value) return "Pas encore débloqué";
   return new Date(value).toLocaleDateString("fr-FR");
 }
 
@@ -105,7 +105,7 @@ export default function Profile() {
     try {
       const data = await updateProfileAvatar({ mode: "default", defaultAvatarId });
       setProfile(data);
-      setFeedback("Avatar mis a jour.");
+      setFeedback("Avatar mis à jour.");
       playSettingToggleSound(true);
     } catch (err: any) {
       playActionDeniedSound();
@@ -180,7 +180,7 @@ export default function Profile() {
     try {
       const data = await updateProfile(input);
       setProfile(data);
-      setFeedback("Style d'avatar mis a jour.");
+      setFeedback("Style d'avatar mis à jour.");
       playSettingToggleSound(true);
     } catch (err: any) {
       playActionDeniedSound();
@@ -318,7 +318,7 @@ export default function Profile() {
             ) : (
               <div className="profileFeaturedBadge">
                 <span>Badge en avant</span>
-                <strong>Choisis un badge debloque</strong>
+                <strong>Choisis un badge débloqué</strong>
               </div>
             )}
           </div>
@@ -348,7 +348,7 @@ export default function Profile() {
               </strong>
             </div>
             <p>
-              Recompense ajoutee automatiquement :
+              Récompense ajoutée automatiquement :
               {" "}
               {profile.newlyUnlocked.map(rewardLabel).join(" + ")}.
             </p>
@@ -489,7 +489,7 @@ export default function Profile() {
           <div className="profileBadgeGrid">
             {unlockedBadges.length ? unlockedBadges.map(renderBadge) : (
               <div className="profileEmptyState">
-                Aucun badge debloque pour le moment. Ouvre un booster et la machine se lance.
+                Aucun badge débloqué pour le moment. Ouvre un booster et la machine se lance.
               </div>
             )}
           </div>
@@ -499,7 +499,7 @@ export default function Profile() {
           <div className="profileBadgesSection__head">
             <div>
               <span>A venir</span>
-              <h2>Objectifs a viser</h2>
+              <h2>Objectifs à viser</h2>
             </div>
             <strong>{lockedBadges.length} restants</strong>
           </div>

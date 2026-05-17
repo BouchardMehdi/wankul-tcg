@@ -41,7 +41,7 @@ export default function AppPopups() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(() => isStandalonePwaMode());
   const [installMessage, setInstallMessage] = useState(
-    "Ajoute Wankul TCG a ton ecran d'accueil pour ouvrir tes boosters plus vite.",
+    "Ajoute Wankul TCG à ton écran d'accueil pour ouvrir tes boosters plus vite.",
   );
   const [onboardingState, setOnboardingState] = useState<OnboardingState | null>(null);
 
@@ -186,7 +186,7 @@ export default function AppPopups() {
         }
       } catch {
         setInstallPrompt(null);
-        setInstallMessage("L'installation n'est plus disponible ici. Reviens sur Home pour reessayer.");
+        setInstallMessage("L'installation n'est plus disponible ici. Reviens sur Home pour réessayer.");
         playActionDeniedSound();
       }
 
@@ -194,12 +194,12 @@ export default function AppPopups() {
     }
 
     if (isAppleMobile()) {
-      setInstallMessage("Sur iPhone ou iPad: Partager, puis Ajouter a l'ecran d'accueil.");
+      setInstallMessage("Sur iPhone ou iPad: Partager, puis Ajouter à l'écran d'accueil.");
       return;
     }
 
     playActionDeniedSound();
-    setInstallMessage("Si le bouton n'apparait pas, essaie Chrome ou Edge apres quelques secondes.");
+    setInstallMessage("Si le bouton n'apparaît pas, essaie Chrome ou Edge après quelques secondes.");
   }
 
   function closeInstallPopup() {
@@ -230,7 +230,7 @@ export default function AppPopups() {
 
             <div className="appPopupReward">
               <span>Bonus offert</span>
-              <strong>{WELCOME_BONUS_CREDITS.toLocaleString("fr-FR")} credits</strong>
+              <strong>{WELCOME_BONUS_CREDITS.toLocaleString("fr-FR")} crédits</strong>
             </div>
 
             <div className="appPopupSteps" aria-label="Ce que le tuto va montrer">
@@ -266,13 +266,13 @@ export default function AppPopups() {
               <img src="/favicon.png" alt="" />
             </div>
 
-            <p className="appPopupCard__eyebrow">App prete a installer</p>
+            <p className="appPopupCard__eyebrow">App prête à installer</p>
             <h2 id="install-popup-title">Installe Wankul TCG sur ton appareil.</h2>
             <p className="appPopupCard__text">{installMessage}</p>
 
             <div className="appPopupPerks">
               <span>Acces rapide</span>
-              <span>Mode installe</span>
+              <span>Mode installé</span>
               <span>Notifications</span>
             </div>
 

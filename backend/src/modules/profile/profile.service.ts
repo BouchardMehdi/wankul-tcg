@@ -76,8 +76,8 @@ const AVATAR_FRAMES = [
   { id: 'neon-pink', label: 'Neon rose', cssValue: 'linear-gradient(135deg, #ff4d6d, #9b5cff)' },
   { id: 'cyan-rift', label: 'Faille cyan', cssValue: 'linear-gradient(135deg, #4cc9f0, #65e6a2)' },
   { id: 'gold-hit', label: 'Hit dore', cssValue: 'linear-gradient(135deg, #f6c945, #ff9f1c)' },
-  { id: 'bronze-legend', label: 'Bronze legendaire', cssValue: 'linear-gradient(135deg, #b87333, #f0a66b)' },
-  { id: 'silver-legend', label: 'Argent legendaire', cssValue: 'linear-gradient(135deg, #cbd5e1, #94a3b8)' },
+  { id: 'bronze-legend', label: 'Bronze légendaire', cssValue: 'linear-gradient(135deg, #b87333, #f0a66b)' },
+  { id: 'silver-legend', label: 'Argent légendaire', cssValue: 'linear-gradient(135deg, #cbd5e1, #94a3b8)' },
   { id: 'terra-red', label: 'Rouge chaos', cssValue: 'linear-gradient(135deg, #ef4444, #f97316)' },
   { id: 'campus-green', label: 'Vert campus', cssValue: 'linear-gradient(135deg, #22c55e, #84cc16)' },
   { id: 'stellar-violet', label: 'Violet stellar', cssValue: 'linear-gradient(135deg, #8b5cf6, #ec4899)' },
@@ -172,8 +172,8 @@ const BADGE_DEFINITIONS: BadgeDefinition[] = [
   },
   {
     code: 'FIRST_DISPLAY',
-    title: 'Display pose sur la table',
-    description: 'Ouvre ta premiere display.',
+    title: 'Display posé sur la table',
+    description: 'Ouvre ta première display.',
     category: 'Opening',
     tier: 'silver',
     reward: { credits: 350 },
@@ -237,8 +237,8 @@ const BADGE_DEFINITIONS: BadgeDefinition[] = [
   {
     code: 'FIRST_BIG_HIT',
     title: 'Gros hit',
-    description: 'Possede une U1, U2, legendaire, ticket ou Booster Gold.',
-    category: 'Rarete',
+    description: 'Possède une U1, U2, légendaire, ticket ou Booster Gold.',
+    category: 'Rareté',
     tier: 'gold',
     reward: { credits: 900 },
     progress: (ctx) => clampProgress(ctx.bigHitCount, 1),
@@ -254,8 +254,8 @@ const BADGE_DEFINITIONS: BadgeDefinition[] = [
   },
   {
     code: 'FIRST_SALE',
-    title: 'Premiere vente',
-    description: 'Realise ta premiere vente sur le market.',
+    title: 'Première vente',
+    description: 'Réalise ta première vente sur le market.',
     category: 'Market',
     tier: 'bronze',
     reward: { credits: 300 },
@@ -263,8 +263,8 @@ const BADGE_DEFINITIONS: BadgeDefinition[] = [
   },
   {
     code: 'MARKET_25_SALES',
-    title: 'Vendeur installe',
-    description: 'Realise 25 ventes sur le market.',
+    title: 'Vendeur installé',
+    description: 'Réalise 25 ventes sur le market.',
     category: 'Market',
     tier: 'gold',
     reward: { credits: 1500, freeBoosters: 1 },
@@ -383,7 +383,7 @@ export class ProfileService {
         });
 
         if (!unlocked) {
-          throw new BadRequestException('Badge non debloque.');
+          throw new BadRequestException('Badge non débloqué.');
         }
 
         profile.featuredBadgeCode = code;
@@ -403,7 +403,7 @@ export class ProfileService {
       );
 
       if (!defaultAvatar) {
-        throw new BadRequestException('Avatar par defaut invalide.');
+        throw new BadRequestException('Avatar par défaut invalide.');
       }
 
       profile.avatarUrl = defaultAvatar.url;

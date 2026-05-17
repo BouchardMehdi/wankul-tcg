@@ -186,7 +186,7 @@ export class MarketService {
 
       if (quantity > maxSellableQuantity) {
         throw new BadRequestException(
-          `You can sell at most ${maxSellableQuantity} copie(s) of this card while keeping ${MARKET_KEEP_MIN_COPIES} reserve copie(s).`,
+          `Tu peux vendre au maximum ${maxSellableQuantity} copie(s) de cette carte en gardant ${MARKET_KEEP_MIN_COPIES} copie(s) en réserve.`,
         );
       }
 
@@ -360,13 +360,13 @@ export class MarketService {
 
       if (availableToList <= 0) {
         throw new BadRequestException(
-          'You do not have enough available duplicates to create a listing.',
+          "Tu n'as pas assez de doublons disponibles pour créer une annonce.",
         );
       }
 
       if (normalized.quantity > availableToList) {
         throw new BadRequestException(
-          `You can list at most ${availableToList} copie(s) of this card while keeping ${MARKET_KEEP_MIN_COPIES} reserve copie(s).`,
+          `Tu peux créer une annonce avec au maximum ${availableToList} copie(s) de cette carte en gardant ${MARKET_KEEP_MIN_COPIES} copie(s) en réserve.`,
         );
       }
 
@@ -397,7 +397,7 @@ export class MarketService {
       });
 
       if (!hydratedListing) {
-        throw new NotFoundException('Listing creation failed unexpectedly.');
+        throw new NotFoundException("La création de l'annonce a échoué.");
       }
 
       return {
@@ -532,7 +532,7 @@ export class MarketService {
       }
 
       if (listing.seller.id !== userId) {
-        throw new BadRequestException('You can only cancel your own listing.');
+        throw new BadRequestException('Tu peux seulement annuler tes propres annonces.');
       }
 
       if (listing.status !== MarketListingStatus.ACTIVE) {
@@ -638,7 +638,7 @@ export class MarketService {
       }
 
       if (listing.seller.id === userId) {
-        throw new BadRequestException('You cannot buy your own listing.');
+        throw new BadRequestException('Tu ne peux pas acheter ta propre annonce.');
       }
 
       const purchaseQuantity = this.resolvePurchaseQuantity(
@@ -746,7 +746,7 @@ export class MarketService {
         }
 
         if (buyerEconomy.credits < requiredCredits) {
-          throw new BadRequestException('Not enough credits to buy this listing.');
+          throw new BadRequestException("Tu n'as pas assez de crédits pour acheter cette annonce.");
         }
 
         sellerEconomy = await userEconomyRepo
@@ -974,7 +974,7 @@ export class MarketService {
 
       if (transaction.seller.id !== userId) {
         throw new BadRequestException(
-          'You can only claim rewards for your own sales.',
+          'Tu peux seulement récupérer les récompenses de tes propres ventes.',
         );
       }
 
@@ -1238,7 +1238,7 @@ export class MarketService {
 
     if (requestedQuantity > listing.remainingQuantity) {
       throw new BadRequestException(
-        `You can buy at most ${listing.remainingQuantity} copie(s) from this listing.`,
+        `Tu peux acheter au maximum ${listing.remainingQuantity} copie(s) sur cette annonce.`,
       );
     }
 

@@ -1016,7 +1016,7 @@ export default function Market() {
 
     if (!cardId) {
       playActionDeniedSound();
-      setWatchlistFeedback("Choisis d'abord une carte a suivre.");
+      setWatchlistFeedback("Choisis d'abord une carte à suivre.");
       return;
     }
 
@@ -1049,7 +1049,7 @@ export default function Market() {
         const next = [item, ...current.filter((entry) => entry.cardId !== item.cardId)];
         return next.sort((a, b) => a.cardName.localeCompare(b.cardName, "fr"));
       });
-      setWatchlistFeedback("Carte ajoutee a la watchlist market.");
+      setWatchlistFeedback("Carte ajoutée à la watchlist market.");
       playSoundEffect("ui.toggle-on");
       hydrateWatchlistForm(item);
     } catch (e: any) {
@@ -1738,7 +1738,7 @@ export default function Market() {
             <article className="marketPulseCard marketPulseCard--deal">
               <span>Bonnes affaires</span>
               <strong>{marketPulse.dealCount}</strong>
-              <em>Annonces a -10% ou mieux</em>
+              <em>Annonces à -10% ou mieux</em>
             </article>
             <article className="marketPulseCard">
               <span>Ventes 24h</span>
@@ -1891,8 +1891,8 @@ export default function Market() {
                 <h2>Watchlist market</h2>
                 <span>
                   Suis les cartes que tu recherches absolument, lance une recherche
-                  en un clic et recois une notif si une annonce colle a tes
-                  parametres ou sort vraiment sous le marche.
+                  en un clic et reçois une notif si une annonce colle à tes
+                  paramètres ou sort vraiment sous le marché.
                 </span>
               </div>
               <span>{watchlistItems.length} carte(s) suivie(s)</span>
@@ -1900,7 +1900,7 @@ export default function Market() {
 
             <div className="marketWatchlistComposer">
               <label className="marketField marketField--watchlistSearch">
-                <span>Carte a suivre</span>
+                <span>Carte à suivre</span>
                 <input
                   type="text"
                   value={watchlistForm.search}
@@ -1911,7 +1911,7 @@ export default function Market() {
                       selectedCardId: null,
                     }))
                   }
-                  placeholder="Nom, rarete, saison, identifiant..."
+                  placeholder="Nom, rareté, saison, identifiant..."
                 />
               </label>
 
@@ -1982,7 +1982,7 @@ export default function Market() {
                   disabled={watchlistSaving}
                   onClick={handleSaveWatchlist}
                 >
-                  {watchlistSaving ? "Enregistrement..." : "Ajouter / mettre a jour"}
+                  {watchlistSaving ? "Enregistrement..." : "Ajouter / mettre à jour"}
                 </button>
 
                 <button
@@ -2103,7 +2103,7 @@ export default function Market() {
                             <strong>{formatCredits(item.targetPriceCredits)}</strong>
                           </div>
                           <div>
-                            <span className="marketLabel">Prix marche</span>
+                            <span className="marketLabel">Prix marché</span>
                             <strong>{formatCredits(item.currentMarketPrice)}</strong>
                           </div>
                           <div>
@@ -2122,7 +2122,7 @@ export default function Market() {
                             <span className="marketLabel">Alerte deal</span>
                             <strong>
                               {item.marketDealAlertEnabled
-                                ? `Oui a -${item.marketDealThresholdPercent}%`
+                                ? `Oui à -${item.marketDealThresholdPercent}%`
                                 : "Non"}
                             </strong>
                           </div>
@@ -2134,7 +2134,7 @@ export default function Market() {
                             <strong>{formatCredits(bestListing.referenceRequestedValue)}</strong>
                             <em>
                               {bestListing.priceDifferencePercent !== null
-                                ? `${bestListing.priceDifferencePercent}% vs marche`
+                                ? `${bestListing.priceDifferencePercent}% vs marché`
                                 : "Comparaison indisponible"}
                             </em>
                           </div>
@@ -2167,7 +2167,7 @@ export default function Market() {
                             className="marketBtn marketBtn--secondary"
                             onClick={() => hydrateWatchlistForm(item)}
                           >
-                            Charger les parametres
+                            Charger les paramètres
                           </button>
 
                           <button

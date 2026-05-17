@@ -79,7 +79,7 @@ export class AuthService {
     );
 
     if (!match) {
-      throw new BadRequestException('Invalid screenshot format');
+      throw new BadRequestException('Format de capture invalide');
     }
 
     const mimeType = match[1].toLowerCase();
@@ -211,7 +211,7 @@ export class AuthService {
     if (!user) throw new NotFoundException('User not found');
 
     if (user.emailVerified) {
-      throw new BadRequestException('Email already verified');
+      throw new BadRequestException('Email déjà vérifié');
     }
 
     const code = generate6DigitCode();
@@ -233,22 +233,22 @@ export class AuthService {
     if (!user) throw new NotFoundException('User not found');
 
     if (user.emailVerified) {
-      return { message: 'Email already verified.' };
+      return { message: 'Email déjà vérifié.' };
     }
 
     if (!user.emailVerificationCodeHash) {
-      throw new BadRequestException('No verification code found. Please resend.');
+      throw new BadRequestException('Aucun code de vérification trouvé. Demande un nouveau code.');
     }
 
     if (
       user.emailVerificationExpiresAt &&
       user.emailVerificationExpiresAt.getTime() < Date.now()
     ) {
-      throw new BadRequestException('Verification code expired. Please resend.');
+      throw new BadRequestException('Code de vérification expiré. Demande un nouveau code.');
     }
 
     const isValid = await bcrypt.compare(code, user.emailVerificationCodeHash);
-    if (!isValid) throw new BadRequestException('Invalid verification code');
+    if (!isValid) throw new BadRequestException('Code de vérification invalide');
 
     user.emailVerified = true;
     user.emailVerificationCodeHash = null;
@@ -259,7 +259,7 @@ export class AuthService {
     if (typeof (this.economy as any).grantSignupBonusIfNeeded === 'function') {
       const bonus = await (this.economy as any).grantSignupBonusIfNeeded(user.id);
       return {
-        message: 'Email verified. Welcome credits granted.',
+        message: 'Email vérifié. Crédits de bienvenue ajoutés.',
         signupBonusGranted: bonus.granted,
         bonusAmount: bonus.amount,
         currentCredits: bonus.credits,
@@ -273,7 +273,7 @@ export class AuthService {
     }
 
     return {
-      message: 'Email verified. Welcome credits granted.',
+      message: 'Email vérifié. Crédits de bienvenue ajoutés.',
       bonusAmount: SIGNUP_BONUS,
     };
   }
@@ -284,7 +284,7 @@ export class AuthService {
     if (!user || !user.emailVerified) {
       return {
         message:
-          'If an account matches this identifier, a password reset code has been sent.',
+          'Si un compte correspond à cet identifiant, un code de réinitialisation a été envoyé.',
       };
     }
 
@@ -298,7 +298,7 @@ export class AuthService {
 
     return {
       message:
-        'If an account matches this identifier, a password reset code has been sent.',
+        'Si un compte correspond à cet identifiant, un code de réinitialisation a été envoyé.',
     };
   }
 
@@ -308,7 +308,7 @@ export class AuthService {
     const newPassword = dto.newPassword;
 
     const user = await this.findUserByUsernameOrEmail(identifier);
-    if (!user) throw new BadRequestException('Invalid reset request');
+    if (!user) throw new BadRequestException('Demande de réinitialisation invalide');
 
     if (!user.passwordResetCodeHash || !user.passwordResetExpiresAt) {
       throw new BadRequestException('No password reset request found');
@@ -319,7 +319,7 @@ export class AuthService {
     }
 
     const isValid = await bcrypt.compare(code, user.passwordResetCodeHash);
-    if (!isValid) throw new BadRequestException('Invalid reset code');
+    if (!isValid) throw new BadRequestException('Code de réinitialisation invalide');
 
     user.passwordHash = await bcrypt.hash(newPassword, 10);
     user.passwordResetCodeHash = null;
@@ -467,14 +467,14 @@ export class AuthService {
     const password = dto.password;
 
     const user = await this.usersRepo.findOne({ where: { username } });
-    if (!user) throw new ForbiddenException('Invalid credentials');
+    if (!user) throw new ForbiddenException('Identifiants invalides');
 
     if (!user.emailVerified) {
-      throw new ForbiddenException('Email not verified');
+      throw new ForbiddenException('Email non vérifié');
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) throw new ForbiddenException('Invalid credentials');
+    if (!isMatch) throw new ForbiddenException('Identifiants invalides');
 
     const payload = {
       sub: user.id,

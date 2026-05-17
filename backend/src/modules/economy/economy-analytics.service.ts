@@ -212,15 +212,15 @@ export class EconomyAnalyticsService {
 
     if (totalVolume >= 50000) {
       score += 30;
-      reasons.push('Volume market tres eleve');
+      reasons.push('Volume market très élevé');
     } else if (totalVolume >= 15000) {
       score += 16;
-      reasons.push('Volume market eleve');
+      reasons.push('Volume market élevé');
     }
 
     if (user.highDeviationTrades >= 3) {
       score += 22;
-      reasons.push('Trades tres eloignes du prix de marche');
+      reasons.push('Trades très éloignés du prix de marché');
     } else if (user.highDeviationTrades > 0) {
       score += 10;
       reasons.push('Quelques trades atypiques');
@@ -228,17 +228,17 @@ export class EconomyAnalyticsService {
 
     if (user.listingCount >= 6 && cancelRate >= 0.6) {
       score += 18;
-      reasons.push('Beaucoup d annonces annulees');
+      reasons.push('Beaucoup d’annonces annulées');
     }
 
     if (user.openingCount >= 80) {
       score += 14;
-      reasons.push('Rythme d opening tres haut');
+      reasons.push('Rythme d’opening très haut');
     }
 
     if (user.currentCredits >= 100000) {
       score += 14;
-      reasons.push('Solde credits tres haut');
+      reasons.push('Solde crédits très haut');
     }
 
     if (user.salesCount >= 12 && user.purchasesCount >= 12) {
