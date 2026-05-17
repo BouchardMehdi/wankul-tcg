@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed:cards": "ts-node -r tsconfig-paths/register src/database/seed-cards.ts",
     "import:legacy": "node scripts/import-legacy-season.js",
+    "import:special": "node scripts/import-special-cards.js",
     "organize:card-images": "node scripts/organize-card-images.js",
     "db:backup": "node scripts/db-backup.js",
     "db:restore": "node scripts/db-restore.js",

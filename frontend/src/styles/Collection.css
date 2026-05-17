@@ -1612,6 +1612,7 @@
 .cardTile.rarity-u1,
 .cardTile.rarity-u2,
 .cardTile.rarity-duo,
+.cardTile.rarity-legacy-duo,
 .cardTile.rarity-leg-bronze,
 .cardTile.rarity-leg-silver,
 .cardTile.rarity-leg-gold,
@@ -1625,6 +1626,7 @@
 .cardTile.rarity-u1 .cardTile__imgWrap::before,
 .cardTile.rarity-u2 .cardTile__imgWrap::before,
 .cardTile.rarity-duo .cardTile__imgWrap::before,
+.cardTile.rarity-legacy-duo .cardTile__imgWrap::before,
 .cardTile.rarity-leg-bronze .cardTile__imgWrap::before,
 .cardTile.rarity-leg-silver .cardTile__imgWrap::before,
 .cardTile.rarity-leg-gold .cardTile__imgWrap::before,
@@ -1653,6 +1655,7 @@
 .cardTile.rarity-u1 .cardTile__imgWrap::after,
 .cardTile.rarity-u2 .cardTile__imgWrap::after,
 .cardTile.rarity-duo .cardTile__imgWrap::after,
+.cardTile.rarity-legacy-duo .cardTile__imgWrap::after,
 .cardTile.rarity-leg-bronze .cardTile__imgWrap::after,
 .cardTile.rarity-leg-silver .cardTile__imgWrap::after,
 .cardTile.rarity-leg-gold .cardTile__imgWrap::after,
@@ -1690,7 +1693,8 @@
 }
 
 .cardTile.rarity-u2 .cardTile__imgWrap,
-.cardTile.rarity-duo .cardTile__imgWrap {
+.cardTile.rarity-duo .cardTile__imgWrap,
+.cardTile.rarity-starter .cardTile__imgWrap {
   --holo-gradient:
     repeating-linear-gradient(
       110deg,
@@ -1705,6 +1709,29 @@
   --edge: rgba(255, 92, 120, 0.95);
   --glow: rgba(255, 80, 120, 0.40);
   --edgePow: 1.15;
+}
+
+.cardTile.rarity-legacy-duo .cardTile__imgWrap {
+  --holo-gradient:
+    conic-gradient(
+      from 210deg at 50% 50%,
+      rgba(255, 130, 45, 0.68),
+      rgba(255, 226, 92, 0.62),
+      rgba(79, 230, 255, 0.64),
+      rgba(98, 115, 255, 0.62),
+      rgba(255, 75, 145, 0.66),
+      rgba(255, 130, 45, 0.68)
+    ),
+    repeating-linear-gradient(
+      62deg,
+      rgba(255, 255, 255, 0.16) 0 2px,
+      transparent 2px 14px,
+      rgba(255, 147, 63, 0.18) 14px 18px,
+      transparent 18px 30px
+    );
+  --edge: rgba(255, 145, 67, 0.98);
+  --glow: rgba(255, 117, 87, 0.42);
+  --edgePow: 1.26;
 }
 
 .cardTile.rarity-leg-bronze .cardTile__imgWrap {
@@ -1736,8 +1763,7 @@
 }
 
 .cardTile.rarity-leg-gold .cardTile__imgWrap,
-.cardTile.rarity-booster-gold .cardTile__imgWrap,
-.cardTile.rarity-starter .cardTile__imgWrap {
+.cardTile.rarity-booster-gold .cardTile__imgWrap {
   --holo-gradient:
     repeating-linear-gradient(
       120deg,
@@ -1754,6 +1780,7 @@
 .cardTile.rarity-u1:hover .cardTile__imgWrap::before,
 .cardTile.rarity-u2:hover .cardTile__imgWrap::before,
 .cardTile.rarity-duo:hover .cardTile__imgWrap::before,
+.cardTile.rarity-legacy-duo:hover .cardTile__imgWrap::before,
 .cardTile.rarity-leg-bronze:hover .cardTile__imgWrap::before,
 .cardTile.rarity-leg-silver:hover .cardTile__imgWrap::before,
 .cardTile.rarity-leg-gold:hover .cardTile__imgWrap::before,
@@ -1766,6 +1793,7 @@
 .cardTile.rarity-u1:hover .cardTile__imgWrap::after,
 .cardTile.rarity-u2:hover .cardTile__imgWrap::after,
 .cardTile.rarity-duo:hover .cardTile__imgWrap::after,
+.cardTile.rarity-legacy-duo:hover .cardTile__imgWrap::after,
 .cardTile.rarity-leg-bronze:hover .cardTile__imgWrap::after,
 .cardTile.rarity-leg-silver:hover .cardTile__imgWrap::after,
 .cardTile.rarity-leg-gold:hover .cardTile__imgWrap::after,
@@ -1778,6 +1806,7 @@
 .cardTile.rarity-u1:hover .cardTile__imgWrap,
 .cardTile.rarity-u2:hover .cardTile__imgWrap,
 .cardTile.rarity-duo:hover .cardTile__imgWrap,
+.cardTile.rarity-legacy-duo:hover .cardTile__imgWrap,
 .cardTile.rarity-leg-bronze:hover .cardTile__imgWrap,
 .cardTile.rarity-leg-silver:hover .cardTile__imgWrap,
 .cardTile.rarity-leg-gold:hover .cardTile__imgWrap,

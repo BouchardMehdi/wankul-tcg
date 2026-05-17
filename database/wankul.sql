@@ -111,12 +111,18 @@ CREATE TABLE IF NOT EXISTS `cards` (
   `seasonNumber` int DEFAULT NULL,
   `extension` varchar(50) DEFAULT NULL,
   `number` int DEFAULT NULL,
+  `displayNumber` varchar(32) DEFAULT NULL,
   `rarity` varchar(255) NOT NULL,
   `type` varchar(80) DEFAULT NULL,
   `gameplayType` varchar(80) DEFAULT NULL,
   `specialEdition` tinyint NOT NULL DEFAULT '0',
   `artist` varchar(100) DEFAULT NULL,
   `imageUrl` varchar(255) NOT NULL,
+  `specialCategory` varchar(80) DEFAULT NULL,
+  `affiliatedSeason` varchar(50) DEFAULT NULL,
+  `affiliatedSeasonNumber` int DEFAULT NULL,
+  `sourceRarity` varchar(80) DEFAULT NULL,
+  `sourceRaritySlug` varchar(80) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `IDX_c1ccc84e1cc9cf1981f0d21c70` (`key`)
 ) ENGINE=InnoDB AUTO_INCREMENT=750 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

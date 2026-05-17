@@ -580,7 +580,8 @@
 
 .openingCardWrap.rarity-u1,
 .openingCardWrap.rarity-u2,
-.openingCardWrap.rarity-duo {
+.openingCardWrap.rarity-duo,
+.openingCardWrap.rarity-starter {
   --holo-gradient:
     repeating-linear-gradient(
       120deg,
@@ -596,6 +597,30 @@
   --edge: rgba(168, 110, 255, 0.95);
   --glow: rgba(150, 110, 255, 0.34);
   --edgePow: 1.05;
+}
+
+.openingCardWrap.rarity-legacy-duo {
+  --holo-gradient:
+    conic-gradient(
+      from 210deg at 50% 50%,
+      rgba(255, 130, 45, 0.70),
+      rgba(255, 226, 92, 0.62),
+      rgba(79, 230, 255, 0.64),
+      rgba(98, 115, 255, 0.62),
+      rgba(255, 75, 145, 0.66),
+      rgba(255, 130, 45, 0.70)
+    ),
+    repeating-linear-gradient(
+      62deg,
+      rgba(255, 255, 255, 0.18) 0 2px,
+      transparent 2px 14px,
+      rgba(255, 147, 63, 0.20) 14px 18px,
+      transparent 18px 30px
+    );
+  --edge: rgba(255, 145, 67, 0.98);
+  --glow: rgba(255, 117, 87, 0.46);
+  --edgePow: 1.30;
+  --spark-opacity: 0.26;
 }
 
 .openingCardWrap.rarity-leg-bronze {
@@ -674,21 +699,6 @@
   --edgePow: 1.08;
   --foil-opacity: 0.58;
   --spark-opacity: 0.14;
-}
-
-.openingCardWrap.rarity-starter {
-  --holo-gradient:
-    repeating-linear-gradient(
-      120deg,
-      rgba(215, 103, 20, 0.46) 0%,
-      rgba(79, 176, 169, 0.50) 12%,
-      rgba(138, 161, 255, 0.50) 24%,
-      rgba(177, 107, 204, 0.48) 36%,
-      rgba(215, 197, 55, 0.46) 48%
-    );
-  --edge: rgba(125, 214, 255, 0.94);
-  --glow: rgba(125, 214, 255, 0.30);
-  --edgePow: 1.02;
 }
 
 .edgeGlow {
@@ -1014,7 +1024,8 @@
 
 .summaryCardWrap.rarity-u1.is-rare,
 .summaryCardWrap.rarity-u2.is-rare,
-.summaryCardWrap.rarity-duo.is-rare {
+.summaryCardWrap.rarity-duo.is-rare,
+.summaryCardWrap.rarity-starter.is-rare {
   --holo-gradient:
     repeating-linear-gradient(
       120deg,
@@ -1030,6 +1041,30 @@
   --glow: rgba(150, 110, 255, 0.34);
   --edge: rgba(168, 110, 255, 0.95);
   --edgePow: 1.05;
+}
+
+.summaryCardWrap.rarity-legacy-duo.is-rare {
+  --holo-gradient:
+    conic-gradient(
+      from 210deg at 50% 50%,
+      rgba(255, 130, 45, 0.70),
+      rgba(255, 226, 92, 0.62),
+      rgba(79, 230, 255, 0.64),
+      rgba(98, 115, 255, 0.62),
+      rgba(255, 75, 145, 0.66),
+      rgba(255, 130, 45, 0.70)
+    ),
+    repeating-linear-gradient(
+      62deg,
+      rgba(255, 255, 255, 0.18) 0 2px,
+      transparent 2px 14px,
+      rgba(255, 147, 63, 0.20) 14px 18px,
+      transparent 18px 30px
+    );
+  --glow: rgba(255, 117, 87, 0.46);
+  --edge: rgba(255, 145, 67, 0.98);
+  --edgePow: 1.30;
+  --spark-opacity: 0.26;
 }
 
 .summaryCardWrap.rarity-leg-bronze.is-rare {
@@ -1108,21 +1143,6 @@
   --edgePow: 1.08;
   --foil-opacity: 0.58;
   --spark-opacity: 0.14;
-}
-
-.summaryCardWrap.rarity-starter.is-rare {
-  --holo-gradient:
-    repeating-linear-gradient(
-      120deg,
-      rgba(215, 103, 20, 0.46) 0%,
-      rgba(79, 176, 169, 0.50) 12%,
-      rgba(138, 161, 255, 0.50) 24%,
-      rgba(177, 107, 204, 0.48) 36%,
-      rgba(215, 197, 55, 0.46) 48%
-    );
-  --glow: rgba(125, 214, 255, 0.30);
-  --edge: rgba(125, 214, 255, 0.94);
-  --edgePow: 1.02;
 }
 
 .summaryCardWrap.is-rare::before {

@@ -126,6 +126,19 @@ function mapEffigyName(effigy) {
   return effigy.name;
 }
 
+function isLegacyDuoBackSide(detail) {
+  const rarity = mapRarityName(detail.rarity);
+  const rawNumber = String(detail.number ?? '').trim();
+  return rarity === 'Duo' && /B$/i.test(rawNumber);
+}
+
+function getDisplayNumberLabel(detail) {
+  const rawNumber = String(detail.number ?? '').trim();
+  const rarity = mapRarityName(detail.rarity);
+  if (rarity === 'Duo') return rawNumber.replace(/A$/i, '');
+  return rawNumber;
+}
+
 function buildLegacyCard(detail) {
   const rawNumber = String(detail.number ?? '').trim();
   const number = Number.parseInt(rawNumber, 10);
@@ -137,18 +150,19 @@ function buildLegacyCard(detail) {
   const rarityCode = getRarityCode(rarity, detail.rarity?.acronym);
   const kind = rarity === 'Terrain' || detail.effigy?.slug === 'terrain' ? 'terrain' : 'scoreur';
   const type = mapEffigyName(detail.effigy) ?? (kind === 'terrain' ? 'Terrain' : null);
-  const cardNumberLabel = rawNumber || pad3(number);
-  const filename = `Wankul_S${LEGACY_SEASON_NUMBER}_${cardNumberLabel}.png`;
+  const sourceNumberLabel = rawNumber || pad3(number);
+  const displayNumberLabel = getDisplayNumberLabel(detail) || pad3(number);
+  const filename = `Wankul_S${LEGACY_SEASON_NUMBER}_${sourceNumberLabel}.png`;
 
   return {
-    id: `${LEGACY_EXTENSION}:${rarityCode}#${cardNumberLabel}:${detail.id}`,
+    id: `${LEGACY_EXTENSION}:${rarityCode}#${displayNumberLabel}:${detail.id}`,
     name: detail.name,
     season: LEGACY_EXTENSION,
     seasonNumber: LEGACY_SEASON_NUMBER,
     extension: LEGACY_EXTENSION,
     number,
-    displayNumber: cardNumberLabel,
-    reference: `${rarityCode}#${cardNumberLabel}`,
+    displayNumber: displayNumberLabel,
+    reference: `${rarityCode}#${displayNumberLabel}`,
     rarity,
     kind,
     type,
@@ -156,7 +170,7 @@ function buildLegacyCard(detail) {
     specialEdition: false,
     releaseDate: detail.set?.releaseDate ?? null,
     imageUrl: `/cards/${LEGACY_FOLDER}/${filename}`,
-    key: `S${LEGACY_SEASON_NUMBER}:${cardNumberLabel}`,
+    key: `S${LEGACY_SEASON_NUMBER}:${sourceNumberLabel}`,
     rarityCode,
     gameplayType: kind,
   };
@@ -335,7 +349,9 @@ async function main() {
     details.push(await fetchCardDetail(sourceCard.id));
   }
 
-  const legacyCards = details
+  const importableDetails = details.filter((detail) => !isLegacyDuoBackSide(detail));
+
+  const legacyCards = importableDetails
     .map(buildLegacyCard)
     .sort((a, b) => {
       const numberDelta = Number(a.number ?? 0) - Number(b.number ?? 0);
@@ -348,7 +364,7 @@ async function main() {
   assertNoDuplicateKeys(nextCards);
 
   let downloaded = 0;
-  for (const detail of details) {
+  for (const detail of importableDetails) {
     const numberLabel = String(detail.number ?? '').trim();
     const filename = `Wankul_S${LEGACY_SEASON_NUMBER}_${numberLabel}.png`;
     const targetPath = path.join(legacyImagesDir, filename);

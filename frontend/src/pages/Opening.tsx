@@ -18,6 +18,7 @@ import {
   preloadImages,
   runWhenIdle,
 } from "../utils/imagePerformance";
+import { getCardHoloRarity, isHoloRarityKey } from "../utils/cardHolo";
 import { warmCardImageCache } from "../utils/pwaCache";
 import { playOpeningRevealSound, playSoundEffect, primeSound } from "../utils/sound";
 import { getSeasonBoosterImage, getSeasonDisplayImage } from "../utils/seasonAssets";
@@ -606,6 +607,11 @@ export default function Opening() {
 
   const rarityKey = useMemo(() => normalizeRarity(current?.rarity ?? ""), [current?.rarity]);
   const isRare = useMemo(() => isRareForFx(rarityKey), [rarityKey]);
+  const holoRarityKey = useMemo(() => getCardHoloRarity(current), [current]);
+  const hasHoloFx = useMemo(
+    () => isRare || isHoloRarityKey(holoRarityKey),
+    [holoRarityKey, isRare],
+  );
   const isSurprise11 = useMemo(() => index === 10, [index]);
 
   const currentId = current?.id ?? current?.cardId ?? current?.key ?? index;
@@ -1110,9 +1116,7 @@ export default function Opening() {
   const canSkipOpening =
     phase === "display-intro" || phase === "opening" || phase === "reveal";
 
-  const rarityCls = normalizeRarity(current?.rarity ?? "")
-    ? `rarity-${normalizeRarity(current?.rarity ?? "")}`
-    : "";
+  const rarityCls = holoRarityKey ? `rarity-${holoRarityKey}` : "";
 
   return (
     <div className="app-shell">
@@ -1295,9 +1299,9 @@ export default function Opening() {
                   className={[
                     "openingCardWrap",
                     settings.disableHoloEffects ? "" : rarityCls,
-                    isRare && !settings.disableHoloEffects ? "is-rare" : "",
+                    hasHoloFx && !settings.disableHoloEffects ? "is-rare" : "",
                     isCurrentNew ? "is-new" : "",
-                    phase === "reveal" && isRare && !settings.disableHoloEffects ? "rare-appear" : "",
+                    phase === "reveal" && hasHoloFx && !settings.disableHoloEffects ? "rare-appear" : "",
                     phase === "reveal" && isSurprise11 && !settings.disableHoloEffects ? "surprise-appear" : "",
                     flyOut ? "fly-out" : "",
                     isDragging ? "is-dragging" : "",
@@ -1316,7 +1320,7 @@ export default function Opening() {
                     ["--throw-ms" as any]: `${throwMs}ms`,
                   }}
                 >
-                  {isRare && !settings.disableHoloEffects ? <span className="edgeGlow" aria-hidden="true" /> : null}
+                  {hasHoloFx && !settings.disableHoloEffects ? <span className="edgeGlow" aria-hidden="true" /> : null}
                   {isSurprise11 && !settings.disableHoloEffects ? <span className="surpriseRing" aria-hidden="true" /> : null}
                   {isSurprise11 && !settings.disableHoloEffects ? <span className="surpriseSparkles" aria-hidden="true" /> : null}
                   {isSurprise11 && !settings.disableHoloEffects ? <span className="surpriseShine" aria-hidden="true" /> : null}
@@ -1401,7 +1405,9 @@ export default function Opening() {
                 {sortedBoosterSummaryCards.map((c, i) => {
                   const rk = normalizeRarity(c?.rarity ?? "");
                   const rare = isRareForFx(rk);
-                  const cls = rk ? `rarity-${rk}` : "";
+                  const holoRarity = getCardHoloRarity(c);
+                  const hasHolo = rare || isHoloRarityKey(holoRarity);
+                  const cls = holoRarity ? `rarity-${holoRarity}` : "";
                   const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
                   const isNew = isCardMarkedNew(c);
 
@@ -1417,11 +1423,11 @@ export default function Opening() {
                       className={[
                         "summaryCardWrap",
                         cls,
-                        rare ? "is-rare" : "",
+                        hasHolo && !settings.disableHoloEffects ? "is-rare" : "",
                         isNew ? "is-new" : "",
                       ].join(" ")}
                     >
-                      {rare && !settings.disableHoloEffects ? <span className="edgeGlow edgeGlow--summary" aria-hidden="true" /> : null}
+                      {hasHolo && !settings.disableHoloEffects ? <span className="edgeGlow edgeGlow--summary" aria-hidden="true" /> : null}
                       {isNew ? <span className="summaryNewTag">NOUVELLE</span> : null}
                       <span className="summaryCreditTag"><CurrencyAmount value={cc} signed compact /></span>
 
@@ -1525,7 +1531,9 @@ export default function Opening() {
                 {displaySummaryCards.map((c, i) => {
                   const rk = normalizeRarity(c?.rarity ?? "");
                   const rare = isRareForFx(rk);
-                  const cls = rk ? `rarity-${rk}` : "";
+                  const holoRarity = getCardHoloRarity(c);
+                  const hasHolo = rare || isHoloRarityKey(holoRarity);
+                  const cls = holoRarity ? `rarity-${holoRarity}` : "";
                   const cid = c?.id ?? c?.cardId ?? c?.key ?? i;
                   const isNew = isCardMarkedNew(c);
 
@@ -1541,11 +1549,11 @@ export default function Opening() {
                       className={[
                         "summaryCardWrap",
                         cls,
-                        rare ? "is-rare" : "",
+                        hasHolo && !settings.disableHoloEffects ? "is-rare" : "",
                         isNew ? "is-new" : "",
                       ].join(" ")}
                     >
-                      {rare && !settings.disableHoloEffects ? <span className="edgeGlow edgeGlow--summary" aria-hidden="true" /> : null}
+                      {hasHolo && !settings.disableHoloEffects ? <span className="edgeGlow edgeGlow--summary" aria-hidden="true" /> : null}
                       {isNew ? <span className="summaryNewTag">NOUVELLE</span> : null}
                       <span className="summaryCreditTag"><CurrencyAmount value={cc} signed compact /></span>
 

@@ -25,6 +25,9 @@ export class Card {
   @Column({ type: 'int', nullable: true })
   number: number | null;
 
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  displayNumber: string | null;
+
   @Column()
   rarity: string;
 
@@ -42,4 +45,19 @@ export class Card {
 
   @Column()
   imageUrl: string;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  specialCategory: string | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  affiliatedSeason: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  affiliatedSeasonNumber: number | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  sourceRarity: string | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  sourceRaritySlug: string | null;
 }

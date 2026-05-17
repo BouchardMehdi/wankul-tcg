@@ -18,6 +18,7 @@ import {
   subscribeAppSettings,
 } from "../utils/appSettings";
 import { saveMarketCreateSelectedCardId } from "../utils/marketCreateSelection";
+import { getCardHoloRarity } from "../utils/cardHolo";
 import {
   playActionDeniedSound,
   playSoundEffect,
@@ -170,12 +171,52 @@ function percent(part: number, total: number) {
   return Math.round((part / total) * 100);
 }
 
+function normalizePlain(value?: string | null) {
+  return (value ?? "")
+    .toString()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/['’]/g, " ")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getCardSeasonLabel(card: any) {
+  const seasonNumber = Number(card?.seasonNumber);
+  const extension = String(card?.extension ?? "").trim();
+  const season = String(card?.season ?? "").trim();
+  const extensionKey = normalizePlain(extension);
+
+  if (extensionKey.includes("hors serie")) return "Hors Série";
+  if (season) return season;
+  if (extension) return extension;
+  if (!Number.isInteger(seasonNumber) || seasonNumber <= 0) return "Hors Série";
+  return `Saison ${seasonNumber}`;
+}
+
+function getCardNumberLabel(card: any) {
+  const displayNumber = String(card?.displayNumber ?? "").trim();
+  if (displayNumber) return displayNumber;
+  if (typeof card?.number === "number") return String(card.number);
+  if (typeof card?.number === "string" && card.number.trim()) return card.number.trim();
+  return "";
+}
+
+function getCardNumberRank(card: any) {
+  const label = getCardNumberLabel(card);
+  const numeric = Number.parseInt(label.replace(/^[^\d]*/, ""), 10);
+  if (Number.isFinite(numeric)) return numeric;
+  return 999999;
+}
+
 function uniqSeasonOptions(cards: any[]) {
   return Array.from(
     new Map(
       cards
         .map((card) => ({
-          label: (card.season ?? card.extension ?? "").trim(),
+          label: getCardSeasonLabel(card),
           season: card.season ?? null,
           extension: card.extension ?? null,
           seasonNumber: card.seasonNumber ?? null,
@@ -200,11 +241,14 @@ function seasonRank(
   seasonNumber?: number | null,
 ) {
   if (typeof seasonNumber === "number" && seasonNumber > 0) return seasonNumber;
-  const s = (season ?? extension ?? "").toLowerCase();
+  const s = normalizePlain(season ?? extension ?? "");
   if (s.includes("origins")) return 1;
   if (s.includes("campus")) return 2;
   if (s.includes("battle")) return 3;
   if (s.includes("stellar")) return 4;
+  if (s.includes("legacy")) return 5;
+  if (s.includes("hors serie")) return 90;
+  if (s.includes("special")) return 91;
   return 99;
 }
 
@@ -213,9 +257,13 @@ function compareCards(a: any, b: any) {
   const sb = seasonRank(b.season, b.extension, b.seasonNumber ?? null);
   if (sa !== sb) return sa - sb;
 
-  const na = typeof a.number === "number" ? a.number : 999999;
-  const nb = typeof b.number === "number" ? b.number : 999999;
+  const na = getCardNumberRank(a);
+  const nb = getCardNumberRank(b);
   if (na !== nb) return na - nb;
+
+  const labelA = getCardNumberLabel(a);
+  const labelB = getCardNumberLabel(b);
+  if (labelA !== labelB) return labelA.localeCompare(labelB, "fr");
 
   return (a.key ?? "").localeCompare(b.key ?? "");
 }
@@ -297,14 +345,14 @@ function resolveImg(imageUrl?: string | null) {
 }
 
 function getCardDisplayNumber(card: any) {
+  const numberLabel = getCardNumberLabel(card);
+  if (numberLabel) return `#${numberLabel}`;
   if (card?.key) return String(card.key);
-  if (typeof card?.number === "number") return `#${card.number}`;
-  if (typeof card?.number === "string" && card.number.trim()) return card.number.trim();
   return `#${card?.id ?? "—"}`;
 }
 
 function getCardDisplaySeason(card: any) {
-  return card?.season ?? card?.extension ?? "—";
+  return getCardSeasonLabel(card);
 }
 
 function getCardDisplayType(card: any) {
@@ -595,7 +643,7 @@ export default function Collection() {
       if (activeView === "favorites" && !c.isFavorite) return false;
       if (activeView === "objective" && !c.isObjective) return false;
 
-      if (filters.season && (c.season ?? c.extension ?? "") !== filters.season) return false;
+      if (filters.season && getCardSeasonLabel(c) !== filters.season) return false;
       if (filters.rarity && (c.rarity ?? "") !== filters.rarity) return false;
       if (filters.type && (c.type ?? "") !== filters.type) return false;
       if (filters.artist && (c.artist ?? "") !== filters.artist) return false;
@@ -605,7 +653,7 @@ export default function Collection() {
 
       if (q) {
         const hay =
-          `${c.name} ${c.key ?? ""} ${c.number ?? ""} ${c.rarity ?? ""} ${c.type ?? ""} ${c.artist ?? ""} ${(c.personalTags ?? []).join(" ")}`.toLowerCase();
+          `${c.name} ${c.key ?? ""} ${getCardNumberLabel(c)} ${c.rarity ?? ""} ${c.type ?? ""} ${c.artist ?? ""} ${c.specialCategory ?? ""} ${c.affiliatedSeason ?? ""} ${c.sourceRarity ?? ""} ${(c.personalTags ?? []).join(" ")}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
 
@@ -650,7 +698,7 @@ export default function Collection() {
     >();
 
     for (const card of merged) {
-      const label = card.season ?? card.extension ?? "Hors serie";
+      const label = getCardSeasonLabel(card);
       const entry =
         map.get(label) ??
         {
@@ -675,7 +723,7 @@ export default function Collection() {
 
   const rarityProgress = useMemo(() => {
     const source = filters.season
-      ? merged.filter((card) => (card.season ?? card.extension ?? "") === filters.season)
+      ? merged.filter((card) => getCardSeasonLabel(card) === filters.season)
       : merged;
     const map = new Map<string, { rarity: string; total: number; owned: number }>();
 
@@ -1347,7 +1395,8 @@ export default function Collection() {
                   const src = resolveImg(c.imageUrl ?? c.image ?? c.img ?? "");
                   const priorityImage = index < 8;
                   const rk = normalizeRarity(c.rarity);
-                  const rarityCls = rk ? `rarity-${rk}` : "";
+                  const holoRarity = getCardHoloRarity(c);
+                  const rarityCls = holoRarity ? `rarity-${holoRarity}` : "";
 
                   const isTerrain = String(c.type ?? "").toLowerCase().includes("terrain");
                   const isLatestNew =
@@ -1509,9 +1558,11 @@ export default function Collection() {
                         <div className="cardTile__sub">
                           <span className="pill">{c.rarity}</span>
                           <span className="pill">
-                            {c.season ?? c.extension ?? "—"}{" "}
-                            {typeof c.number === "number" ? `#${c.number}` : ""}
+                            {getCardSeasonLabel(c)}{" "}
+                            {getCardNumberLabel(c) ? `#${getCardNumberLabel(c)}` : ""}
                           </span>
+                          {c.specialCategory && <span className="pill">{c.specialCategory}</span>}
+                          {c.affiliatedSeason && <span className="pill">Affiliée {c.affiliatedSeason}</span>}
                           {isFavorite && <span className="pill pill--favorite">Favori</span>}
                           {isObjective && <span className="pill pill--objective">Objectif</span>}
                           {sellableQuantity > 0 && (

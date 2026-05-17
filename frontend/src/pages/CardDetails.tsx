@@ -34,6 +34,8 @@ import {
   upsertPushWatchlistItem,
   type PushWatchlistItem,
 } from "../api/push";
+import { readAppSettings, subscribeAppSettings } from "../utils/appSettings";
+import { getCardHoloRarity, isHoloRarityKey } from "../utils/cardHolo";
 import { playSoundEffect, playUiErrorSound, primeSound } from "../utils/sound";
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -351,6 +353,7 @@ function CardDetails() {
   const [allCards, setAllCards] = useState<CardDto[]>([]);
   const [buyingListingId, setBuyingListingId] = useState<number | null>(null);
   const [marketFeedback, setMarketFeedback] = useState("");
+  const [settings, setSettings] = useState(() => readAppSettings());
 
   const chartWrapRef = useRef<HTMLDivElement | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
@@ -361,6 +364,8 @@ function CardDetails() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  useEffect(() => subscribeAppSettings(() => setSettings(readAppSettings())), []);
 
   async function loadMarketData() {
     if (!Number.isInteger(cardId) || cardId < 1) {
@@ -724,6 +729,11 @@ function CardDetails() {
 
   const imageSrc = resolveImg(card?.imageUrl);
   const chartTone = chart?.tone ?? "flat";
+  const cardHoloRarity = getCardHoloRarity(card);
+  const cardHoloClass =
+    !settings.disableHoloEffects && isHoloRarityKey(cardHoloRarity)
+      ? `is-holo rarity-${cardHoloRarity}`
+      : "";
 
   async function handleSaveWatchlist() {
     const target = Number(watchlistTarget);
@@ -825,7 +835,7 @@ function CardDetails() {
             <>
               <div className="cardDetailsHero">
                 <div className="cardDetailsHero__mediaCol">
-                  <div className="cardDetailsHero__media">
+                  <div className={`cardDetailsHero__media ${cardHoloClass}`}>
                     {imageSrc ? (
                       <SmartImage
                         src={imageSrc}

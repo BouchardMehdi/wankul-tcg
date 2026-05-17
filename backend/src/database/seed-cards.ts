@@ -13,12 +13,18 @@ type RawCard = {
   seasonNumber?: number | null;
   extension?: string | null;
   number?: number | null;
+  displayNumber?: string | null;
   rarity?: string;
   type?: string | null;
   gameplayType?: string | null;
   specialEdition?: boolean;
   artist?: string | null;
   imageUrl?: string | null;
+  specialCategory?: string | null;
+  affiliatedSeason?: string | null;
+  affiliatedSeasonNumber?: number | null;
+  sourceRarity?: string | null;
+  sourceRaritySlug?: string | null;
 };
 
 function pad3(n: number) {
@@ -166,12 +172,18 @@ async function main() {
         seasonNumber: c.seasonNumber ?? null,
         extension: c.extension ?? null,
         number: c.number ?? null,
+        displayNumber: c.displayNumber ?? (c.number != null ? String(c.number) : null),
         rarity,
         type: c.type ?? null,
         gameplayType: c.gameplayType ?? null,
         specialEdition: Boolean(c.specialEdition ?? false),
         artist: c.artist ?? null,
         imageUrl: finalImageUrl,
+        specialCategory: c.specialCategory ?? null,
+        affiliatedSeason: c.affiliatedSeason ?? null,
+        affiliatedSeasonNumber: c.affiliatedSeasonNumber ?? null,
+        sourceRarity: c.sourceRarity ?? null,
+        sourceRaritySlug: c.sourceRaritySlug ?? null,
       };
     })
     .filter((x): x is Partial<Card> => Boolean(x));

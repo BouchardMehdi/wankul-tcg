@@ -58,12 +58,163 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.04);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  position: relative;
 }
 
 .cardDetailsHero__media img {
   display: block;
   width: 100%;
   height: auto;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes cardDetailsFoilShift {
+  0% { background-position: 0% 0%, 0% 0%; transform: translate3d(-1%, -1%, 0) rotate(0deg); }
+  50% { background-position: 100% 65%, 70% 100%; transform: translate3d(1%, 1%, 0) rotate(1deg); }
+  100% { background-position: 0% 0%, 0% 0%; transform: translate3d(-1%, -1%, 0) rotate(0deg); }
+}
+
+@keyframes cardDetailsSparkle {
+  0% { background-position: 0 0; opacity: 0; }
+  50% { background-position: 18px 26px; opacity: 0.22; }
+  100% { background-position: 0 0; opacity: 0; }
+}
+
+.cardDetailsHero__media.is-holo {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(215, 103, 20, 0.52) 0%,
+      rgba(28, 78, 73, 0.52) 10%,
+      rgba(215, 197, 55, 0.52) 15%,
+      rgba(126, 201, 64, 0.52) 20%,
+      rgba(79, 176, 169, 0.52) 25%,
+      rgba(138, 161, 255, 0.52) 30%,
+      rgba(177, 107, 204, 0.52) 35%,
+      rgba(215, 103, 20, 0.52) 45%
+    );
+  --holo-edge: rgba(168, 110, 255, 0.95);
+  --holo-glow: rgba(150, 110, 255, 0.34);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.28),
+    0 0 28px var(--holo-glow),
+    0 0 72px color-mix(in srgb, var(--holo-glow), transparent 24%);
+}
+
+.cardDetailsHero__media.rarity-u2,
+.cardDetailsHero__media.rarity-duo,
+.cardDetailsHero__media.rarity-starter {
+  --holo-gradient:
+    repeating-linear-gradient(
+      110deg,
+      rgba(255, 80, 120, 0.65) 0%,
+      rgba(255, 170, 70, 0.58) 10%,
+      rgba(255, 236, 120, 0.62) 16%,
+      rgba(110, 235, 255, 0.62) 24%,
+      rgba(120, 135, 255, 0.64) 32%,
+      rgba(220, 100, 255, 0.66) 40%,
+      rgba(255, 80, 120, 0.65) 52%
+    );
+  --holo-edge: rgba(255, 92, 120, 0.95);
+  --holo-glow: rgba(255, 80, 120, 0.40);
+}
+
+.cardDetailsHero__media.rarity-legacy-duo {
+  --holo-gradient:
+    conic-gradient(
+      from 210deg at 50% 50%,
+      rgba(255, 130, 45, 0.70),
+      rgba(255, 226, 92, 0.62),
+      rgba(79, 230, 255, 0.64),
+      rgba(98, 115, 255, 0.62),
+      rgba(255, 75, 145, 0.66),
+      rgba(255, 130, 45, 0.70)
+    ),
+    repeating-linear-gradient(
+      62deg,
+      rgba(255, 255, 255, 0.18) 0 2px,
+      transparent 2px 14px,
+      rgba(255, 147, 63, 0.20) 14px 18px,
+      transparent 18px 30px
+    );
+  --holo-edge: rgba(255, 145, 67, 0.98);
+  --holo-glow: rgba(255, 117, 87, 0.46);
+}
+
+.cardDetailsHero__media.rarity-leg-bronze {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(205, 127, 50, 0.58) 0%,
+      rgba(255, 170, 110, 0.52) 20%,
+      rgba(150, 85, 40, 0.56) 40%,
+      rgba(205, 127, 50, 0.58) 60%
+    );
+  --holo-edge: rgba(255, 170, 110, 0.92);
+  --holo-glow: rgba(255, 170, 110, 0.38);
+}
+
+.cardDetailsHero__media.rarity-leg-silver {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(220, 230, 240, 0.58) 0%,
+      rgba(180, 200, 220, 0.56) 20%,
+      rgba(240, 245, 255, 0.62) 40%,
+      rgba(200, 210, 220, 0.56) 60%
+    );
+  --holo-edge: rgba(230, 245, 255, 0.95);
+  --holo-glow: rgba(210, 230, 255, 0.42);
+}
+
+.cardDetailsHero__media.rarity-leg-gold,
+.cardDetailsHero__media.rarity-booster-gold,
+.cardDetailsHero__media.rarity-gold-ticket,
+.cardDetailsHero__media.rarity-gold-ticket-winner {
+  --holo-gradient:
+    repeating-linear-gradient(
+      120deg,
+      rgba(255, 215, 0, 0.62) 0%,
+      rgba(255, 230, 120, 0.60) 20%,
+      rgba(200, 160, 0, 0.60) 40%,
+      rgba(255, 215, 0, 0.62) 60%
+    );
+  --holo-edge: rgba(255, 230, 150, 0.98);
+  --holo-glow: rgba(255, 220, 120, 0.48);
+}
+
+.cardDetailsHero__media.is-holo::before,
+.cardDetailsHero__media.is-holo::after {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: color-dodge;
+}
+
+.cardDetailsHero__media.is-holo::before {
+  opacity: 0.66;
+  background-image:
+    radial-gradient(
+      320px 220px at 45% 28%,
+      rgba(255, 255, 255, 0.55),
+      rgba(255, 255, 255, 0.12) 32%,
+      transparent 68%
+    ),
+    var(--holo-gradient);
+  background-size: 140% 140%, 220% 220%;
+  animation: cardDetailsFoilShift 7s ease-in-out infinite;
+}
+
+.cardDetailsHero__media.is-holo::after {
+  inset: 0;
+  opacity: 0.18;
+  mix-blend-mode: overlay;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.34) 1px, transparent 1.9px);
+  background-size: 16px 16px;
+  animation: cardDetailsSparkle 5s ease-in-out infinite;
 }
 
 .cardDetailsHero__placeholder {

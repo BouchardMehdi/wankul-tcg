@@ -161,6 +161,10 @@ export class BoosterService {
       (card as any).family,
       (card as any).extension,
       (card as any).season,
+      (card as any).specialCategory,
+      (card as any).affiliatedSeason,
+      (card as any).sourceRarity,
+      (card as any).sourceRaritySlug,
       (card as any).description,
     ];
 
@@ -175,15 +179,55 @@ export class BoosterService {
   }
 
   private isTicketOrCard(card: Card) {
-    return this.cardMatches(card, 'ticket', 'or') && !this.cardMatches(card, 'gagnant');
+    const rarity = this.normalizeText((card as any).rarity);
+    const category = this.normalizeText((card as any).specialCategory);
+    const sourceRarity = this.normalizeText((card as any).sourceRarity);
+
+    const isPureTicket =
+      rarity === "ticket d'or" ||
+      rarity === 'ticket d or' ||
+      category === "ticket d'or" ||
+      category === 'ticket d or' ||
+      sourceRarity === "ticket d'or" ||
+      sourceRarity === 'ticket d or';
+
+    return isPureTicket && !this.isGtoCard(card);
   }
 
   private isGtoCard(card: Card) {
-    return this.cardMatches(card, 'gagnant', 'ticket', 'or');
+    const values = [
+      (card as any).rarity,
+      (card as any).specialCategory,
+      (card as any).sourceRarity,
+      (card as any).sourceRaritySlug,
+    ].map((value) => this.normalizeText(value));
+
+    return values.some(
+      (value) =>
+        value.includes('gagnant') &&
+        value.includes('ticket') &&
+        value.includes('or'),
+    );
   }
 
   private isGoldBoosterCard(card: Card) {
-    return this.cardMatches(card, 'booster', 'gold');
+    const values = [
+      (card as any).rarity,
+      (card as any).specialCategory,
+      (card as any).sourceRarity,
+      (card as any).sourceRaritySlug,
+    ].map((value) => this.normalizeText(value));
+
+    return values.some(
+      (value) => value.includes('booster') && value.includes('gold'),
+    );
+  }
+
+  private getOpeningAffiliatedSeasonNumber(card: Card) {
+    return (
+      this.normalizeSeasonNumber((card as any).seasonNumber) ??
+      this.normalizeSeasonNumber((card as any).affiliatedSeasonNumber)
+    );
   }
 
   private getSeasonLabelFromCards(cards: Card[], seasonNumber: number) {
@@ -335,7 +379,7 @@ export class BoosterService {
     const gtoSeason = allCards.filter(
       (c) =>
         this.isGtoCard(c) &&
-        this.normalizeSeasonNumber((c as any).seasonNumber) === seasonNumber,
+        this.getOpeningAffiliatedSeasonNumber(c) === seasonNumber,
     );
     const gtoGlobal = allCards.filter((c) => this.isGtoCard(c));
 
