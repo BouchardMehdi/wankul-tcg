@@ -333,7 +333,7 @@ export class PushService {
     const rewardParts: string[] = [];
 
     if (args.rewardCredits > 0) {
-      rewardParts.push(`${args.rewardCredits} crédits`);
+      rewardParts.push(`${args.rewardCredits} WunkulCoins`);
     }
 
     if (args.rewardCardQuantity > 0 && args.rewardCardName) {
@@ -534,7 +534,7 @@ export class PushService {
       if (currentPrice <= item.targetPriceCredits && !item.targetReachedNotified) {
         const result = await this.sendToUser(item.user.id, {
           title: 'Ta cible passe sous le seuil',
-          body: `${item.card.name} descend à ${currentPrice} crédits, sous ton objectif de ${item.targetPriceCredits}.`,
+          body: `${item.card.name} descend à ${currentPrice} WunkulCoins, sous ton objectif de ${item.targetPriceCredits}.`,
           url: `/collection/card/${item.card.id}`,
           tag: `watchlist-${item.id}`,
           kind: 'watchlist-price',
@@ -658,7 +658,7 @@ export class PushService {
           title: `${item.card.name} est en vraie bonne affaire`,
           body: `Une annonce est disponible autour de ${Math.round(
             dealCandidate.requestedValue,
-          )} crédits, soit ${dealPercent}% sous la valeur du marché.`,
+          )} WunkulCoins, soit ${dealPercent}% sous la valeur du marché.`,
           url: '/market',
           tag: `watchlist-deal-${item.id}-${dealCandidate.listing.id}`,
           kind: 'watchlist-deal',
@@ -711,7 +711,7 @@ export class PushService {
         title: `${item.card.name} vient d’apparaître sur le market`,
         body: `Une annonce correspond à ta watchlist avec une valeur autour de ${Math.round(
           listingCandidate.requestedValue,
-        )} crédits pour ta cible fixée à ${item.targetPriceCredits}.`,
+        )} WunkulCoins pour ta cible fixée à ${item.targetPriceCredits}.`,
         url: '/market',
         tag: `watchlist-listing-${item.id}-${listingCandidate.listing.id}`,
         kind: 'watchlist-listing',
@@ -853,7 +853,7 @@ export class PushService {
         `${activeListingsCount} annonce(s) active(s), ` +
         `${pendingRewardsCount} récompense(s) en attente, ` +
         `${salesToday} vente(s) et ${purchasesToday} achat(s) aujourd'hui. ` +
-        `Volume global du jour: ${(todayStats?.marketVolume ?? 0).toLocaleString('fr-FR')} crédits.`;
+        `Volume global du jour: ${(todayStats?.marketVolume ?? 0).toLocaleString('fr-FR')} WunkulCoins.`;
 
       const result = await this.sendToUser(userId, {
         title: 'Le market du jour en bref',

@@ -4,6 +4,7 @@ import "../styles.css";
 import "../styles/Collection.css";
 
 import AppNavbar from "../components/AppNavbar";
+import CurrencyAmount from "../components/CurrencyAmount";
 import MarketPriceChart from "../components/MarketPriceChart";
 import SmartImage from "../components/SmartImage";
 
@@ -141,6 +142,8 @@ function rarityRankLabel(rarity?: string | null) {
       return 4;
     case "u2":
       return 5;
+    case "duo":
+      return 5.5;
     case "leg-bronze":
       return 6;
     case "leg-silver":
@@ -247,6 +250,7 @@ function normalizeRarity(raw?: string | null) {
   if (s.includes("u2") || s.includes("ultra rare u2") || s.includes("ultra rare 2") || s.includes("ultra 2")) {
     return "u2";
   }
+  if (s.includes("duo")) return "duo";
 
   const isLegendary = s.includes("legendaire") || s.includes("legendary") || s.startsWith("leg ");
   if (isLegendary && s.includes("bronze")) return "leg-bronze";
@@ -910,7 +914,7 @@ export default function Collection() {
       const totalCredits = quickSellModal.sellable.quickSellUnitPrice * qty;
       closeQuickSellModal();
       setGlobalFeedback(
-        `${qty} exemplaire(s) de ${quickSellModal.card.name} vendu(s) pour ${totalCredits} crédits.`,
+        `${qty} exemplaire(s) de ${quickSellModal.card.name} vendu(s) pour ${totalCredits.toLocaleString("fr-FR")} WunkulCoins.`,
       );
       await load();
     } catch (e: any) {
@@ -1716,7 +1720,7 @@ export default function Collection() {
 
                 <div className="collectionModal__total">
                   <span>Gain estimé</span>
-                  <strong>{quickSellTotal} crédits</strong>
+                  <strong><CurrencyAmount value={quickSellTotal} /></strong>
                 </div>
 
                 {quickSellModal.error && (

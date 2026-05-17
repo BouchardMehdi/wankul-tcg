@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "../auth/AuthContext";
+import CurrencyAmount from "./CurrencyAmount";
 import "../styles/AppPopups.css";
 import {
   WELCOME_BONUS_CREDITS,
@@ -230,7 +231,7 @@ export default function AppPopups() {
 
             <div className="appPopupReward">
               <span>Bonus offert</span>
-              <strong>{WELCOME_BONUS_CREDITS.toLocaleString("fr-FR")} crédits</strong>
+              <strong><CurrencyAmount value={WELCOME_BONUS_CREDITS} /></strong>
             </div>
 
             <div className="appPopupSteps" aria-label="Ce que le tuto va montrer">

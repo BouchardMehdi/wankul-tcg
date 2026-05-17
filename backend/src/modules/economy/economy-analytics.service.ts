@@ -238,7 +238,7 @@ export class EconomyAnalyticsService {
 
     if (user.currentCredits >= 100000) {
       score += 14;
-      reasons.push('Solde crédits très haut');
+      reasons.push('Solde WunkulCoins très haut');
     }
 
     if (user.salesCount >= 12 && user.purchasesCount >= 12) {

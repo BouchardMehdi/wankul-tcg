@@ -746,7 +746,7 @@ export class MarketService {
         }
 
         if (buyerEconomy.credits < requiredCredits) {
-          throw new BadRequestException("Tu n'as pas assez de crédits pour acheter cette annonce.");
+          throw new BadRequestException("Tu n'as pas assez de WunkulCoins pour acheter cette annonce.");
         }
 
         sellerEconomy = await userEconomyRepo

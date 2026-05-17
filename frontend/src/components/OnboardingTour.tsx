@@ -59,7 +59,7 @@ const STEPS: TourStep[] = [
     body: "Choisis le bouton encadré pour lancer ta première ouverture. Les displays et l'historique existent aussi, mais on reste simple pour démarrer.",
     bullets: [
       "Un booster ajoute les cartes à ta collection.",
-      "Les doublons rapportent des crédits.",
+      "Les doublons rapportent des WunkulCoins.",
       "Les gros hits sont mis en avant pendant l'ouverture.",
     ],
     route: "/booster",

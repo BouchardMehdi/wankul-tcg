@@ -6,6 +6,12 @@ const boosterImageModules = import.meta.glob(
     "../assets/boosters/season-*/booster.webp",
     "../assets/boosters/season-*/booster.avif",
     "../assets/boosters/season-*/booster.svg",
+    "../assets/boosters/saison-*/booster.png",
+    "../assets/boosters/saison-*/booster.jpg",
+    "../assets/boosters/saison-*/booster.jpeg",
+    "../assets/boosters/saison-*/booster.webp",
+    "../assets/boosters/saison-*/booster.avif",
+    "../assets/boosters/saison-*/booster.svg",
   ],
   {
     eager: true,
@@ -21,6 +27,12 @@ const displayImageModules = import.meta.glob(
     "../assets/boosters/season-*/display.webp",
     "../assets/boosters/season-*/display.avif",
     "../assets/boosters/season-*/display.svg",
+    "../assets/boosters/saison-*/display.png",
+    "../assets/boosters/saison-*/display.jpg",
+    "../assets/boosters/saison-*/display.jpeg",
+    "../assets/boosters/saison-*/display.webp",
+    "../assets/boosters/saison-*/display.avif",
+    "../assets/boosters/saison-*/display.svg",
   ],
   {
     eager: true,
@@ -29,7 +41,7 @@ const displayImageModules = import.meta.glob(
 ) as Record<string, string>;
 
 function extractSeasonNumber(path: string): number | null {
-  const match = path.match(/season-(\d+)\//i);
+  const match = path.match(/(?:season|saison)-(\d+)\//i);
   if (!match) return null;
 
   const value = Number(match[1]);

@@ -4,6 +4,7 @@ import "../styles.css";
 import "../styles/Dashboard.css";
 
 import AppNavbar from "../components/AppNavbar";
+import CurrencyAmount, { CurrencyIcon } from "../components/CurrencyAmount";
 
 import { getMe, getWallet } from "../api/me";
 import type { MeResponse, WalletResponse } from "../api/me";
@@ -28,7 +29,7 @@ type DonutSlice = {
   percent: number;
 };
 
-type LootSeasonFilter = "global" | "Origins" | "Campus" | "Battle" | "Stellar";
+type LootSeasonFilter = "global" | "Origins" | "Campus" | "Battle" | "Stellar" | "Legacy";
 
 function pct(value: number, total: number) {
   if (!total || total <= 0) return 0;
@@ -150,6 +151,7 @@ function seasonClassName(season: string) {
   if (s.includes("campus")) return "campus";
   if (s.includes("battle")) return "battle";
   if (s.includes("stellar")) return "stellar";
+  if (s.includes("legacy")) return "legacy";
   if (s.includes("hors")) return "special";
   return "default";
 }
@@ -273,7 +275,7 @@ export default function Dashboard() {
     };
   }, []);
 
-  const seasonOrder = ["Origins", "Campus", "Battle", "Stellar", "Hors série"];
+  const seasonOrder = ["Origins", "Campus", "Battle", "Stellar", "Legacy", "Hors série"];
 
   const seasons: SeasonProgress[] = useMemo(() => {
     const source = stats?.seasonProgress ?? [];
@@ -291,6 +293,7 @@ export default function Dashboard() {
     if (!map.has("Campus")) map.set("Campus", { season: "Campus", ownedUnique: 0, total: 155 });
     if (!map.has("Battle")) map.set("Battle", { season: "Battle", ownedUnique: 0, total: 180 });
     if (!map.has("Stellar")) map.set("Stellar", { season: "Stellar", ownedUnique: 0, total: 180 });
+    if (!map.has("Legacy")) map.set("Legacy", { season: "Legacy", ownedUnique: 0, total: 185 });
     if (!map.has("Hors série")) map.set("Hors série", { season: "Hors série", ownedUnique: 0, total: 0 });
 
     return seasonOrder.map((name) => map.get(name)!);
@@ -344,6 +347,11 @@ export default function Dashboard() {
         label: "U2",
         value: Number(rarityCounts["U2"] ?? rarityCounts["Ultra rare holo 2"] ?? 0),
         color: "#f06fd1",
+      },
+      {
+        label: "Duo",
+        value: Number(rarityCounts["Duo"] ?? 0),
+        color: "#ff7ac8",
       },
       {
         label: "Légendaire bronze",
@@ -470,8 +478,10 @@ export default function Dashboard() {
             )}
 
             <div className="kpi">
-              <div className="kpi__label">Crédits</div>
-              <div className="kpi__value">{wallet?.credits ?? "—"}</div>
+              <div className="kpi__label"><CurrencyIcon /> WunkulCoins</div>
+              <div className="kpi__value">
+                <CurrencyAmount value={wallet?.credits ?? null} className="currencyAmount--hero" />
+              </div>
             </div>
           </div>
         </div>
@@ -543,6 +553,7 @@ export default function Dashboard() {
                         <option value="Campus">Campus</option>
                         <option value="Battle">Battle</option>
                         <option value="Stellar">Stellar</option>
+                        <option value="Legacy">Legacy</option>
                       </select>
                     </div>
                   ) : null}

@@ -297,12 +297,13 @@ export class BoosterService {
       ['Rare', 3],
       ['Ultra Rare (U1)', 4],
       ['Ultra Rare (U2)', 5],
-      ['Légendaire bronze', 6],
-      ['Légendaire argent', 7],
-      ['Légendaire dorée', 8],
-      ['Booster Gold', 9],
-      ["Gagnant ticket d'or", 10],
-      ["Ticket d'or", 11],
+      ['Duo', 6],
+      ['Légendaire bronze', 7],
+      ['Légendaire argent', 8],
+      ['Légendaire dorée', 9],
+      ['Booster Gold', 10],
+      ["Gagnant ticket d'or", 11],
+      ["Ticket d'or", 12],
     ]);
 
     return [...cards].sort(

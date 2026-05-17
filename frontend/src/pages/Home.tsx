@@ -32,7 +32,7 @@ const PILLARS = [
   },
   {
     kicker: "Économie",
-    title: "Une boucle de crédits sous contrôle",
+    title: "Une boucle de WunkulCoins sous contrôle",
     text: "Charges gratuites, quick sell, plafonds et historique de prix gardent le système stable et difficilement exploitable.",
   },
 ];
@@ -81,12 +81,17 @@ const SEASONS = [
     label: "Stellar",
     note: "La couche la plus recente du format, avec une identite visuelle forte.",
   },
+  {
+    number: 5,
+    label: "Legacy",
+    note: "Une nouvelle vague de cartes à chasser, avec ses propres hits et surprises.",
+  },
 ];
 
 const HERO_STATS = [
   { value: "Mobile", label: "Pensée pour mobile et installable comme une app" },
   { value: "Market", label: "Les prix et la valeur des cartes partent du marché" },
-  { value: "4 saisons", label: "Une progression en extensions plutôt qu'une simple liste de cartes" },
+  { value: "5 saisons", label: "Une progression en extensions plutôt qu'une simple liste de cartes" },
 ];
 
 const SHOWCASE_FOOTER_POINTS = [
@@ -343,6 +348,11 @@ export default function Home() {
                     src={getSeasonBoosterImage(4)}
                     alt="Booster Stellar"
                   />
+                  <SmartImage
+                    className="homeShowcase__booster homeShowcase__booster--five"
+                    src={getSeasonBoosterImage(5)}
+                    alt="Booster Legacy"
+                  />
                 </div>
               </div>
 
@@ -444,7 +454,7 @@ export default function Home() {
                 <strong>Nouvelle carte mieux valorisee que le doublon</strong>
               </div>
               <p>
-                Les ouvertures servent la collection sans exploser l'économie. Les doublons nourrissent les crédits, les
+                Les ouvertures servent la collection sans exploser l'économie. Les doublons nourrissent les WunkulCoins, les
                 nouvelles cartes poussent la rétention.
               </p>
               <div className="homeEconomyList">
@@ -454,7 +464,7 @@ export default function Home() {
                 </div>
                 <div className="homeEconomyList__item">
                   <b>Doublon</b>
-                  <span>Il garde une utilité immédiate en crédits au lieu de devenir une mauvaise surprise.</span>
+                  <span>Il garde une utilité immédiate en WunkulCoins au lieu de devenir une mauvaise surprise.</span>
                 </div>
                 <div className="homeEconomyList__item">
                   <b>Jackpot</b>

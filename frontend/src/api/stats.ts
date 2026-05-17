@@ -22,7 +22,7 @@ export type MyStatsResponse = {
   rarities?: Record<string, number>;
 
   // par saison core
-  raritiesBySeason?: Record<"Origins" | "Campus" | "Battle" | "Stellar", Record<string, number>>;
+  raritiesBySeason?: Record<"Origins" | "Campus" | "Battle" | "Stellar" | "Legacy", Record<string, number>>;
 
   // progression par saison en UNIQUES
   seasonProgress?: SeasonProgress[];

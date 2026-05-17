@@ -259,7 +259,7 @@ export class AuthService {
     if (typeof (this.economy as any).grantSignupBonusIfNeeded === 'function') {
       const bonus = await (this.economy as any).grantSignupBonusIfNeeded(user.id);
       return {
-        message: 'Email vérifié. Crédits de bienvenue ajoutés.',
+        message: 'Email vérifié. WunkulCoins de bienvenue ajoutés.',
         signupBonusGranted: bonus.granted,
         bonusAmount: bonus.amount,
         currentCredits: bonus.credits,
@@ -273,7 +273,7 @@ export class AuthService {
     }
 
     return {
-      message: 'Email vérifié. Crédits de bienvenue ajoutés.',
+      message: 'Email vérifié. WunkulCoins de bienvenue ajoutés.',
       bonusAmount: SIGNUP_BONUS,
     };
   }

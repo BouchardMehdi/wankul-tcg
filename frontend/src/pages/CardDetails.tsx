@@ -11,6 +11,7 @@ import "../styles.css";
 import "../styles/CardDetails.css";
 
 import AppNavbar from "../components/AppNavbar";
+import CurrencyAmount from "../components/CurrencyAmount";
 import SmartImage from "../components/SmartImage";
 import { fetchOwnedCollection } from "../api/collection";
 import { fetchAllCards, type CardDto } from "../api/cards";
@@ -118,12 +119,11 @@ function formatAxisDateLabel(iso: string, range: CardPriceHistoryRange) {
 }
 
 function formatCreditsBase(value: number) {
-  return `${value.toLocaleString("fr-FR")} crédits`;
+  return <CurrencyAmount value={value} />;
 }
 
 function formatSignedCredits(value: number) {
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${value.toLocaleString("fr-FR")} crédits`;
+  return <CurrencyAmount value={value} signed />;
 }
 
 function formatSignedPercent(value: number | null) {
@@ -140,11 +140,11 @@ function formatListingMode(mode: MarketListingRow["listingMode"]) {
 function formatOfferType(offerType: MarketListingRow["offerType"]) {
   switch (offerType) {
     case "CREDITS_ONLY":
-      return "Credits";
+      return "WunkulCoins";
     case "CARD_ONLY":
       return "Échange";
     case "CARD_AND_CREDITS":
-      return "Carte + crédits";
+      return "Carte + WunkulCoins";
     default:
       return offerType;
   }
@@ -152,9 +152,12 @@ function formatOfferType(offerType: MarketListingRow["offerType"]) {
 
 function formatOffer(listing: MarketListingRow) {
   if (listing.offerType === "CREDITS_ONLY") {
-    return listing.listingMode === "LOT"
-      ? `${listing.priceCredits.toLocaleString("fr-FR")} crédits le lot`
-      : `${listing.priceCredits.toLocaleString("fr-FR")} crédits / carte`;
+    return (
+      <>
+        <CurrencyAmount value={listing.priceCredits} />{" "}
+        {listing.listingMode === "LOT" ? "le lot" : "/ carte"}
+      </>
+    );
   }
 
   const wantedCard = listing.wantedCardName ?? `Carte #${listing.wantedCardId}`;
@@ -164,9 +167,13 @@ function formatOffer(listing: MarketListingRow) {
       : `${listing.wantedCardQuantity}x ${wantedCard} / carte`;
   }
 
-  return listing.listingMode === "LOT"
-    ? `${listing.wantedCardQuantity}x ${wantedCard} + ${listing.priceCredits.toLocaleString("fr-FR")} crédits`
-    : `${listing.wantedCardQuantity}x ${wantedCard} + ${listing.priceCredits.toLocaleString("fr-FR")} crédits / carte`;
+  return (
+    <>
+      {listing.wantedCardQuantity}x {wantedCard} +{" "}
+      <CurrencyAmount value={listing.priceCredits} />{" "}
+      {listing.listingMode === "LOT" ? "" : "/ carte"}
+    </>
+  );
 }
 
 function getSaleUnitValue(tx: MarketSaleHistoryRow) {
@@ -723,7 +730,7 @@ function CardDetails() {
 
     if (!Number.isInteger(target) || target < 1) {
       playUiErrorSound();
-      setWatchlistError("Entre un prix cible valide en crédits.");
+      setWatchlistError("Entre un prix cible valide en WunkulCoins.");
       return;
     }
 
@@ -1199,7 +1206,7 @@ function CardDetails() {
                         ))}
 
                         <text className="cardDetailsChartAxisTitle" x={chart.width / 2} y={chart.height - 18} textAnchor="middle">Temps</text>
-                        <text className="cardDetailsChartAxisTitle" transform={`translate(28 ${chart.height / 2}) rotate(-90)`} textAnchor="middle">Prix du marché (crédits)</text>
+                        <text className="cardDetailsChartAxisTitle" transform={`translate(28 ${chart.height / 2}) rotate(-90)`} textAnchor="middle">Prix du marché (WunkulCoins)</text>
 
                         <polygon className="cardDetailsChartArea" points={chart.area} />
                         <path className="cardDetailsChartLine" d={chart.path} />

@@ -30,6 +30,7 @@ const EXTENSION_FOLDERS: Record<string, string> = {
   Campus: 'campus',
   Battle: 'battle',
   Stellar: 'stellar',
+  Legacy: 'legacy',
   Special: 'special',
   'Hors Série': 'hors-serie',
   'Hors Serie': 'hors-serie',
@@ -40,6 +41,7 @@ const SEASON_FOLDERS: Record<number, string> = {
   2: 'campus',
   3: 'battle',
   4: 'stellar',
+  5: 'legacy',
 };
 
 const SPECIAL_IMAGE_BY_KEY: Record<string, string> = {
@@ -131,7 +133,6 @@ async function main() {
   });
 
   const dataSource = app.get(DataSource);
-  const repo = dataSource.getRepository(Card);
 
   // ✅ Chemin JSON (chez toi: backend/data/cards.json)
   const filePath = path.join(process.cwd(), 'data', 'cards.json');
@@ -178,37 +179,47 @@ async function main() {
   console.log(`📦 Seed cards: ${rows.length} lignes prêtes`);
 
 
-  // ✅ Bulk insert par chunks (évite packet trop gros)
-  const chunks = chunk(rows, 500);
-
   await dataSource.transaction(async (trx) => {
+    const repo = trx.getRepository(Card);
+    const existingCards = await repo.find({ select: ['id', 'key'] });
+    const existingIdByKey = new Map(
+      existingCards.map((card) => [card.key, card.id]),
+    );
+    const rowsToInsert: Partial<Card>[] = [];
+    const rowsToUpdate: Array<Partial<Card> & { id: number }> = [];
+
+    for (const row of rows) {
+      const key = row.key;
+      if (!key) continue;
+
+      const existingId = existingIdByKey.get(key);
+      if (existingId) {
+        rowsToUpdate.push({ ...row, id: existingId });
+      } else {
+        rowsToInsert.push(row);
+      }
+    }
+
+    const insertChunks = chunk(rowsToInsert, 500);
     let done = 0;
 
-    for (const part of chunks) {
-      await trx
-        .createQueryBuilder()
-        .insert()
-        .into(Card)
-        .values(part)
-        .orUpdate(
-          [
-            'name',
-            'season',
-            'seasonNumber',
-            'extension',
-            'number',
-            'rarity',
-            'type',
-            'gameplayType',
-            'specialEdition',
-            'artist',
-            'imageUrl',
-          ],
-          ['key'],
-        )
-        .execute();
+    for (const part of insertChunks) {
+      if (part.length) {
+        await repo.insert(part);
+      }
       done += part.length;
-      console.log(`✅ Inséré: ${done}/${rows.length}`);
+      console.log(`✅ Nouvelles cartes insérées: ${done}/${rowsToInsert.length}`);
+    }
+
+    let updated = 0;
+    for (const row of rowsToUpdate) {
+      const { id, ...values } = row;
+      await repo.update(id, values);
+      updated += 1;
+
+      if (updated % 250 === 0 || updated === rowsToUpdate.length) {
+        console.log(`🔁 Cartes mises à jour: ${updated}/${rowsToUpdate.length}`);
+      }
     }
   });
 

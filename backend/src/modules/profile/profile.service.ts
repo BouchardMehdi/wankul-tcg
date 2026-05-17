@@ -127,6 +127,7 @@ function seasonKey(card: Card) {
   if (raw.includes('campus')) return 'Campus';
   if (raw.includes('battle')) return 'Battle';
   if (raw.includes('stellar')) return 'Stellar';
+  if (raw.includes('legacy')) return 'Legacy';
   return null;
 }
 
@@ -136,6 +137,7 @@ function isBigHit(card: Card) {
   return (
     haystack.includes('u1') ||
     haystack.includes('u2') ||
+    haystack.includes('duo') ||
     haystack.includes('legendaire') ||
     haystack.includes('booster gold') ||
     haystack.includes('ticket d or')

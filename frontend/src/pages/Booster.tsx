@@ -6,6 +6,7 @@ import "../styles/Dashboard.css";
 import "../styles/Booster.css";
 
 import AppNavbar from "../components/AppNavbar";
+import CurrencyAmount from "../components/CurrencyAmount";
 import SmartImage from "../components/SmartImage";
 
 import { useAuth } from "../auth/AuthContext";
@@ -258,14 +259,14 @@ export default function Booster() {
     if (!eco) return "Ouvrir Booster";
     if (eco.freeBoosterCharges > 0) return "Ouvrir Booster";
     if (boosterCooldown) return `Cooldown (${boosterCooldown})`;
-    return `Ouvrir Booster • ${eco.costs.booster} crédits`;
+    return <>Ouvrir Booster • <CurrencyAmount value={eco.costs.booster} compact /></>;
   }
 
   function displayBtnLabel() {
     if (!eco) return "Ouvrir Display";
     if (eco.freeDisplayCharges > 0) return "Ouvrir Display";
     if (displayCooldown) return `Cooldown (${displayCooldown})`;
-    return `Ouvrir Display • ${eco.costs.display} crédits`;
+    return <>Ouvrir Display • <CurrencyAmount value={eco.costs.display} compact /></>;
   }
 
   function askOpenBooster(season: SeasonCard) {
@@ -283,7 +284,7 @@ export default function Booster() {
       season,
       price: eco.costs.booster,
       title: `Confirmer l'ouverture du booster ${season.label}`,
-      description: `Cette ouverture te coûtera ${eco.costs.booster} crédits. Aucun débit ne sera effectué tant que tu n’as pas confirmé.`,
+      description: `Cette ouverture te coûtera ${eco.costs.booster.toLocaleString("fr-FR")} WunkulCoins. Aucun débit ne sera effectué tant que tu n’as pas confirmé.`,
     });
   }
 
@@ -302,7 +303,7 @@ export default function Booster() {
       season,
       price: eco.costs.display,
       title: `Confirmer l'ouverture de la display ${season.label}`,
-      description: `Cette ouverture te coûtera ${eco.costs.display} crédits. Aucun débit ne sera effectué tant que tu n’as pas confirmé.`,
+      description: `Cette ouverture te coûtera ${eco.costs.display.toLocaleString("fr-FR")} WunkulCoins. Aucun débit ne sera effectué tant que tu n’as pas confirmé.`,
     });
   }
 
@@ -457,7 +458,7 @@ export default function Booster() {
               <div className="boosterWallet">
                 <div className="boosterWallet__label">Solde</div>
                 <div className="boosterWallet__value">
-                  {typeof credits === "number" ? credits : eco?.credits ?? 0} crédits
+                  <CurrencyAmount value={typeof credits === "number" ? credits : eco?.credits ?? 0} className="currencyAmount--hero" />
                 </div>
                 <div className="boosterWallet__meta muted">
                   Gratuites : {eco?.freeBoosterCharges ?? 0} booster • {eco?.freeDisplayCharges ?? 0} display
@@ -548,7 +549,7 @@ export default function Booster() {
                         </h3>
 
                         <div className="openingHistoryCard__meta">
-                          <span className="uiPill">+{item.creditsEarnedTotal ?? 0} crédits</span>
+                          <span className="uiPill"><CurrencyAmount value={item.creditsEarnedTotal ?? 0} signed compact /></span>
                           <span className="uiPill">{item.newCount} NEW</span>
                           <span className="uiPill">{item.hitCount} hits</span>
                         </div>
@@ -638,7 +639,10 @@ export default function Booster() {
                         }}
                       >
                         <SmartImage
-                          className="boosterPack__img"
+                          className={[
+                            "boosterPack__img",
+                            s.seasonNumber === 5 ? "boosterPack__img--legacy" : "",
+                          ].join(" ")}
                           src={s.boosterImg}
                           alt={`Booster ${s.label}`}
                           loading={index < 2 ? "eager" : "lazy"}
@@ -738,12 +742,14 @@ export default function Booster() {
 
               <div className="confirmModal__priceBox">
                 <span className="confirmModal__priceLabel">Coût</span>
-                <span className="confirmModal__priceValue">{confirmModal.price} crédits</span>
+                <span className="confirmModal__priceValue">
+                  <CurrencyAmount value={confirmModal.price} />
+                </span>
               </div>
 
               <div className="confirmModal__wallet">
                 <span>Solde actuel</span>
-                <b>{typeof credits === "number" ? credits : eco?.credits ?? 0} crédits</b>
+                <b><CurrencyAmount value={typeof credits === "number" ? credits : eco?.credits ?? 0} /></b>
               </div>
             </div>
 

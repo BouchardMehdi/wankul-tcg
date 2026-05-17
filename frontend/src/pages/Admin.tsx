@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import AppNavbar from "../components/AppNavbar";
+import CurrencyAmount from "../components/CurrencyAmount";
 import "../styles.css";
 import "../styles/Dashboard.css";
 import "../styles/Admin.css";
@@ -536,13 +537,13 @@ export default function Admin() {
                   <>
                     <div className="adminStats adminStats--dashboard">
                       <div className="adminStatCard adminStatCard--accent">
-                        <div className="adminStatCard__value">{formatNumber(creditsCreated)}</div>
-                        <div className="adminStatCard__label">Crédits créés</div>
+                        <div className="adminStatCard__value"><CurrencyAmount value={creditsCreated} /></div>
+                        <div className="adminStatCard__label">WunkulCoins créés</div>
                       </div>
 
                       <div className="adminStatCard">
-                        <div className="adminStatCard__value">{formatNumber(creditsDestroyed)}</div>
-                        <div className="adminStatCard__label">Crédits détruits</div>
+                        <div className="adminStatCard__value"><CurrencyAmount value={creditsDestroyed} /></div>
+                        <div className="adminStatCard__label">WunkulCoins détruits</div>
                       </div>
 
                       <div className={`adminStatCard ${ecoInflation >= 0 ? "is-positive" : "is-negative"}`}>
@@ -578,8 +579,8 @@ export default function Admin() {
                         <span>Santé économie</span>
                         <strong>{getRiskLabel(riskLevel)}</strong>
                         <p>
-                          {formatSignedNumber(health?.netInflation ?? ecoInflation)} crédits nets sur {ecoOverview?.days ?? ecoDays} jours.
-                          Quick sell = {formatPercent(quickSellShareOfCreatedPercent, false)} des crédits créés.
+                          <CurrencyAmount value={health?.netInflation ?? ecoInflation} signed /> nets sur {ecoOverview?.days ?? ecoDays} jours.
+                          Quick sell = {formatPercent(quickSellShareOfCreatedPercent, false)} des WunkulCoins créés.
                         </p>
                       </div>
                       <div className="adminRiskStrip__metrics">
@@ -639,7 +640,7 @@ export default function Admin() {
                                 <span>
                                   {getSecurityStatusLabel(event.status)}
                                   {event.userId ? ` par user #${event.userId}` : ""}
-                                  {event.valueCredits ? ` - ${formatNumber(event.valueCredits)} crédits` : ""}
+                                  {event.valueCredits ? <> - <CurrencyAmount value={event.valueCredits} /></> : ""}
                                 </span>
                               </div>
                               <time>{formatDate(event.createdAt)}</time>
@@ -677,7 +678,7 @@ export default function Admin() {
                     <div className="adminDashboardGrid">
                       <section className="adminDashboardPanel">
                         <div className="adminDashboardPanel__head">
-                          <h3>Flux crédits / jour</h3>
+                          <h3>Flux WunkulCoins / jour</h3>
                           <p className="small">Création, destruction et volume de marché.</p>
                         </div>
 
@@ -701,7 +702,7 @@ export default function Admin() {
                                       <div
                                         className="adminBarChartRow__bar is-earned"
                                         style={{ width: `${clampPercent((earned / maxChartValue) * 100)}%` }}
-                                        title={`Crédits créés : ${earned}`}
+                                        title={`WunkulCoins créés : ${earned}`}
                                       >
                                         <span>{formatNumber(earned)}</span>
                                       </div>
@@ -709,7 +710,7 @@ export default function Admin() {
                                       <div
                                         className="adminBarChartRow__bar is-spent"
                                         style={{ width: `${clampPercent((spent / maxChartValue) * 100)}%` }}
-                                        title={`Crédits détruits : ${spent}`}
+                                        title={`WunkulCoins détruits : ${spent}`}
                                       >
                                         <span>{formatNumber(spent)}</span>
                                       </div>
@@ -731,8 +732,8 @@ export default function Admin() {
                         </div>
 
                         <div className="adminChartLegend">
-                          <span><i className="is-earned" /> Crédits créés</span>
-                          <span><i className="is-spent" /> Crédits détruits</span>
+                          <span><i className="is-earned" /> WunkulCoins créés</span>
+                          <span><i className="is-spent" /> WunkulCoins détruits</span>
                           <span><i className="is-market" /> Volume market</span>
                         </div>
                       </section>
@@ -776,7 +777,7 @@ export default function Admin() {
                             <div className="adminInsightCard__value">{formatSignedNumber(ecoInflation)}</div>
                             <div className="adminInsightCard__text">
                               {ecoInflation > 0
-                                ? "Plus de crédits sont créés que détruits sur la période."
+                                ? "Plus de WunkulCoins sont créés que détruits sur la période."
                                 : "L’économie est stable ou déflationniste sur la période."}
                             </div>
                           </div>

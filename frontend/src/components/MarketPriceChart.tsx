@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import "../styles/MarketPriceChart.css";
 
+import CurrencyAmount from "./CurrencyAmount";
 import {
   getMarketCardPriceHistory,
   type MarketPriceHistoryPoint,
@@ -156,11 +157,6 @@ export default function MarketPriceChart({
       ? Number(lastPoint.price || 0) - Number(firstPoint.price || 0)
       : 0;
 
-  const deltaText =
-    points.length >= 2
-      ? `${delta > 0 ? "+" : ""}${delta} crédits`
-      : "Pas assez de données";
-
   return (
     <section className={`marketPriceChart ${compact ? "marketPriceChart--compact" : ""}`}>
       <div className="marketPriceChart__head">
@@ -168,7 +164,7 @@ export default function MarketPriceChart({
           <h3>{title}</h3>
           <p>
             {points.length >= 2
-              ? `Variation : ${deltaText}`
+              ? <>Variation : <CurrencyAmount value={delta} signed compact /></>
               : "Historique du prix du marché"}
           </p>
         </div>

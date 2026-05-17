@@ -444,6 +444,53 @@ img[loading="lazy"] {
   overflow-y: hidden;
 }
 
+/* Currency */
+.currencyAmount,
+.currencyName {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.26em;
+  vertical-align: -0.12em;
+  white-space: nowrap;
+}
+
+.currencyAmount__value {
+  font: inherit;
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+}
+
+.currencyAmount__suffix {
+  margin-left: 0.08em;
+}
+
+.currencyIcon {
+  width: 1.22em;
+  height: 1.22em;
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0.12em 0.22em rgba(0, 0, 0, 0.25));
+}
+
+.currencyAmount--compact {
+  gap: 0.18em;
+}
+
+.currencyAmount--compact .currencyIcon {
+  width: 1.05em;
+  height: 1.05em;
+}
+
+.currencyAmount--hero .currencyIcon {
+  width: 1.35em;
+  height: 1.35em;
+}
+
+[data-theme="light"] .currencyIcon {
+  filter: drop-shadow(0 0.12em 0.18em rgba(120, 70, 12, 0.22));
+}
+
 /* Inputs */
 .input, .select {
   height: 40px;

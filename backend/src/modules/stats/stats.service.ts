@@ -6,7 +6,7 @@ import { BoosterOpening } from '../booster/booster-opening.entity';
 import { DisplayOpening } from '../booster/display-opening.entity';
 import { UserCard } from '../users/user-card.entity';
 
-type CoreSeason = 'Origins' | 'Campus' | 'Battle' | 'Stellar';
+type CoreSeason = 'Origins' | 'Campus' | 'Battle' | 'Stellar' | 'Legacy';
 type MenuSeason = CoreSeason | 'Hors série';
 type Mode = 'unit' | 'display' | 'global';
 
@@ -69,6 +69,7 @@ function normalizeSeasonKey(value?: string | null): CoreSeason | null {
   if (s.includes('campus')) return 'Campus';
   if (s.includes('battle')) return 'Battle';
   if (s.includes('stellar')) return 'Stellar';
+  if (s.includes('legacy')) return 'Legacy';
   return null;
 }
 
@@ -114,6 +115,7 @@ function normalizeRarityBucket(card: {
   if (rarity.includes('terrain') || type.includes('terrain')) return 'Terrain';
   if (rarity.includes('u1') || rarity.includes('ultra rare holo 1') || rarity.includes('ultra rare u1')) return 'U1';
   if (rarity.includes('u2') || rarity.includes('ultra rare holo 2') || rarity.includes('ultra rare u2')) return 'U2';
+  if (rarity.includes('duo')) return 'Duo';
   if (rarity.includes('peu commune') || rarity.includes('peu-commune')) return 'Peu commune';
   if (rarity === 'commune' || rarity.endsWith(' commune') || rarity.startsWith('commune ')) return 'Commune';
   if (rarity === 'rare' || rarity.startsWith('rare ')) return 'Rare';
@@ -157,12 +159,13 @@ export class StatsService {
       inc(rarities, bucket, Number(row.quantity ?? 0));
     }
 
-    // ✅ Par saison (Origins/Campus/Battle/Stellar)
+    // ✅ Par saison (Origins/Campus/Battle/Stellar/Legacy)
     const raritiesBySeason: Record<CoreSeason, Record<string, number>> = {
       Origins: {},
       Campus: {},
       Battle: {},
       Stellar: {},
+      Legacy: {},
     };
 
     for (const row of userCards) {
@@ -274,9 +277,10 @@ export class StatsService {
       Campus: 155,
       Battle: 180,
       Stellar: 180,
+      Legacy: 185,
     };
 
-    const coreSeasons: CoreSeason[] = ['Origins', 'Campus', 'Battle', 'Stellar'];
+    const coreSeasons: CoreSeason[] = ['Origins', 'Campus', 'Battle', 'Stellar', 'Legacy'];
 
     const ownedMap = new Map<CoreSeason, number>();
     for (const season of coreSeasons) ownedMap.set(season, 0);
@@ -351,7 +355,7 @@ export class StatsService {
     const cardById = new Map<number, Card>();
     for (const c of cards) cardById.set(c.id, c);
 
-    const seasons: CoreSeason[] = ['Origins', 'Campus', 'Battle', 'Stellar'];
+    const seasons: CoreSeason[] = ['Origins', 'Campus', 'Battle', 'Stellar', 'Legacy'];
     const seasonFilter = input.season;
 
     const makeAcc = () => ({
@@ -380,6 +384,7 @@ export class StatsService {
       Campus: makeAcc(),
       Battle: makeAcc(),
       Stellar: makeAcc(),
+      Legacy: makeAcc(),
     };
 
     const isGoldBooster = (ids: number[]) => {

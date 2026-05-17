@@ -96,6 +96,11 @@ export function completeOnboarding(userId: number | string) {
 }
 
 export function markOnboardingFirstBoosterOpened(userId: number | string) {
+  const current = readOnboardingState(userId);
+  if (current?.status === "skipped" || current?.status === "completed") {
+    return writeOnboardingState(userId, { firstBoosterOpened: true });
+  }
+
   return writeOnboardingState(userId, {
     firstBoosterOpened: true,
     status: "pending",

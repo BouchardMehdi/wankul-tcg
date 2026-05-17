@@ -14,6 +14,7 @@ const extensionFolders = new Map([
   ['Campus', 'campus'],
   ['Battle', 'battle'],
   ['Stellar', 'stellar'],
+  ['Legacy', 'legacy'],
   ['Hors Série', 'hors-serie'],
   ['Hors Serie', 'hors-serie'],
   ['Special', 'special'],
@@ -24,6 +25,7 @@ const seasonFolders = new Map([
   [2, 'campus'],
   [3, 'battle'],
   [4, 'stellar'],
+  [5, 'legacy'],
 ]);
 
 const explicitSpecialImages = new Map([
@@ -75,6 +77,7 @@ function folderForFilename(filename) {
   if (/^Wankul_S2_/i.test(filename)) return 'campus';
   if (/^Wankul_S3_/i.test(filename)) return 'battle';
   if (/^Wankul_S4_/i.test(filename)) return 'stellar';
+  if (/^Wankul_S5_/i.test(filename)) return 'legacy';
   if (/^ticket_or/i.test(filename)) return 'special';
   return 'hors-serie';
 }

@@ -140,14 +140,14 @@ const SETTING_ROWS: SettingRow[] = [
   {
     key: "confirmPurchases",
     title: "Confirmer les achats",
-    desc: "Demande une confirmation avant d'acheter un booster ou une display avec des crédits.",
+    desc: "Demande une confirmation avant d'acheter un booster ou une display avec des WunkulCoins.",
     kind: "toggle",
     section: "general",
   },
   {
     key: "autoClaimMarketRewards",
     title: "Récupération automatique des récompenses",
-    desc: "Récupère automatiquement les crédits et cartes gagnés quand une vente est terminée.",
+    desc: "Récupère automatiquement les WunkulCoins et cartes gagnés quand une vente est terminée.",
     kind: "toggle",
     section: "market",
   },

@@ -1611,6 +1611,7 @@
 
 .cardTile.rarity-u1,
 .cardTile.rarity-u2,
+.cardTile.rarity-duo,
 .cardTile.rarity-leg-bronze,
 .cardTile.rarity-leg-silver,
 .cardTile.rarity-leg-gold,
@@ -1623,6 +1624,7 @@
 
 .cardTile.rarity-u1 .cardTile__imgWrap::before,
 .cardTile.rarity-u2 .cardTile__imgWrap::before,
+.cardTile.rarity-duo .cardTile__imgWrap::before,
 .cardTile.rarity-leg-bronze .cardTile__imgWrap::before,
 .cardTile.rarity-leg-silver .cardTile__imgWrap::before,
 .cardTile.rarity-leg-gold .cardTile__imgWrap::before,
@@ -1650,6 +1652,7 @@
 
 .cardTile.rarity-u1 .cardTile__imgWrap::after,
 .cardTile.rarity-u2 .cardTile__imgWrap::after,
+.cardTile.rarity-duo .cardTile__imgWrap::after,
 .cardTile.rarity-leg-bronze .cardTile__imgWrap::after,
 .cardTile.rarity-leg-silver .cardTile__imgWrap::after,
 .cardTile.rarity-leg-gold .cardTile__imgWrap::after,
@@ -1686,7 +1689,8 @@
   --edgePow: 1.05;
 }
 
-.cardTile.rarity-u2 .cardTile__imgWrap {
+.cardTile.rarity-u2 .cardTile__imgWrap,
+.cardTile.rarity-duo .cardTile__imgWrap {
   --holo-gradient:
     repeating-linear-gradient(
       110deg,
@@ -1749,6 +1753,7 @@
 
 .cardTile.rarity-u1:hover .cardTile__imgWrap::before,
 .cardTile.rarity-u2:hover .cardTile__imgWrap::before,
+.cardTile.rarity-duo:hover .cardTile__imgWrap::before,
 .cardTile.rarity-leg-bronze:hover .cardTile__imgWrap::before,
 .cardTile.rarity-leg-silver:hover .cardTile__imgWrap::before,
 .cardTile.rarity-leg-gold:hover .cardTile__imgWrap::before,
@@ -1760,6 +1765,7 @@
 
 .cardTile.rarity-u1:hover .cardTile__imgWrap::after,
 .cardTile.rarity-u2:hover .cardTile__imgWrap::after,
+.cardTile.rarity-duo:hover .cardTile__imgWrap::after,
 .cardTile.rarity-leg-bronze:hover .cardTile__imgWrap::after,
 .cardTile.rarity-leg-silver:hover .cardTile__imgWrap::after,
 .cardTile.rarity-leg-gold:hover .cardTile__imgWrap::after,
@@ -1771,6 +1777,7 @@
 
 .cardTile.rarity-u1:hover .cardTile__imgWrap,
 .cardTile.rarity-u2:hover .cardTile__imgWrap,
+.cardTile.rarity-duo:hover .cardTile__imgWrap,
 .cardTile.rarity-leg-bronze:hover .cardTile__imgWrap,
 .cardTile.rarity-leg-silver:hover .cardTile__imgWrap,
 .cardTile.rarity-leg-gold:hover .cardTile__imgWrap,

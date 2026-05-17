@@ -215,6 +215,11 @@
   will-change: transform, clip-path, opacity;
 }
 
+.pack--legacy::before,
+.pack--legacy::after {
+  background-size: 230% auto;
+}
+
 .pack--display::before,
 .pack--display::after {
   clip-path: none;
@@ -334,6 +339,11 @@
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.82);
   filter: drop-shadow(0 16px 26px rgba(0,0,0,0.36));
+}
+
+.displayIntro__booster--legacy {
+  width: 260px;
+  height: 330px;
 }
 
 .displayIntro__booster--1 { animation: displayBoosterOut1 1.4s ease-out forwards; }
@@ -462,9 +472,11 @@
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.18);
   background: rgba(0,0,0,0.45);
+  color: #fff;
   font-weight: 950;
   font-size: 12px;
   letter-spacing: 0.4px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
 }
 
 .openingCardWrap.is-new .newRibbon {
@@ -567,7 +579,8 @@
 }
 
 .openingCardWrap.rarity-u1,
-.openingCardWrap.rarity-u2 {
+.openingCardWrap.rarity-u2,
+.openingCardWrap.rarity-duo {
   --holo-gradient:
     repeating-linear-gradient(
       120deg,
@@ -974,8 +987,10 @@
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.18);
   background: rgba(0,0,0,0.45);
+  color: #fff;
   font-weight: 950;
   font-size: 12px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
 }
 
 .summaryCreditTag {
@@ -998,7 +1013,8 @@
 }
 
 .summaryCardWrap.rarity-u1.is-rare,
-.summaryCardWrap.rarity-u2.is-rare {
+.summaryCardWrap.rarity-u2.is-rare,
+.summaryCardWrap.rarity-duo.is-rare {
   --holo-gradient:
     repeating-linear-gradient(
       120deg,

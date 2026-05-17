@@ -86,7 +86,7 @@ export class EconomyService {
       }
     }
 
-    if (row.credits < cost) throw new ForbiddenException('Crédits insuffisants');
+    if (row.credits < cost) throw new ForbiddenException('WunkulCoins insuffisants');
     row.credits -= cost;
     await this.economyRepo.save(row);
 

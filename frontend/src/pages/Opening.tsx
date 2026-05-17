@@ -6,6 +6,7 @@ import "../styles/Dashboard.css";
 import "../styles/Opening.css";
 
 import AppNavbar from "../components/AppNavbar";
+import CurrencyAmount from "../components/CurrencyAmount";
 import SmartImage from "../components/SmartImage";
 
 import { useAuth } from "../auth/AuthContext";
@@ -76,6 +77,7 @@ function normalizeRarity(raw?: string | null) {
   if (s.includes("ticket")) return "gold-ticket";
   if (s.includes("u1") || s.includes("ultra rare u1") || s.includes("ultra rare 1")) return "u1";
   if (s.includes("u2") || s.includes("ultra rare u2") || s.includes("ultra rare 2")) return "u2";
+  if (s.includes("duo")) return "duo";
   if (s.includes("commune") && s.includes("peu")) return "uncommon";
   if (s === "commune" || s.includes(" commune")) return "common";
   if (s === "rare" || s.startsWith("rare ")) return "rare";
@@ -102,16 +104,18 @@ function boosterSummaryRank(card: any) {
       return 4;
     case "u2":
       return 5;
-    case "leg-bronze":
+    case "duo":
       return 6;
-    case "leg-silver":
+    case "leg-bronze":
       return 7;
-    case "leg-gold":
+    case "leg-silver":
       return 8;
-    case "gold-ticket-winner":
+    case "leg-gold":
       return 9;
-    case "gold-ticket":
+    case "gold-ticket-winner":
       return 10;
+    case "gold-ticket":
+      return 11;
     default:
       return 999;
   }
@@ -128,6 +132,8 @@ function displaySummaryRank(card: any) {
       return 6;
     case "u2":
       return 5;
+    case "duo":
+      return 5.5;
     case "u1":
       return 4;
     case "gold-ticket-winner":
@@ -143,6 +149,7 @@ function isRareForFx(rarityKey: string) {
   return [
     "u1",
     "u2",
+    "duo",
     "leg-bronze",
     "leg-silver",
     "leg-gold",
@@ -161,6 +168,8 @@ function getRarityHitLabel(rarityKey: string) {
       return "U1";
     case "u2":
       return "U2";
+    case "duo":
+      return "Duo";
     case "leg-bronze":
       return "Légendaire bronze";
     case "leg-silver":
@@ -202,6 +211,7 @@ const MARKET_RARITY_BASE_VALUES: Record<string, number> = {
   U2: 110,
   "Ultra Rare (U1)": 70,
   "Ultra Rare (U2)": 110,
+  Duo: 150,
   "Légendaire bronze": 180,
   "Légendaire argent": 320,
   "Légendaire or": 520,
@@ -791,7 +801,7 @@ export default function Opening() {
     const free = (eco?.freeBoosterCharges ?? 0) > 0;
     if (free) return "Ouvrir un autre";
     const price = eco?.costs?.booster;
-    if (typeof price === "number") return `Ouvrir un autre • ${price} crédits`;
+    if (typeof price === "number") return <>Ouvrir un autre • <CurrencyAmount value={price} compact /></>;
     return "Ouvrir un autre";
   }, [eco?.freeBoosterCharges, eco?.costs?.booster]);
 
@@ -799,7 +809,7 @@ export default function Opening() {
     const free = (eco?.freeDisplayCharges ?? 0) > 0;
     if (free) return "Ouvrir une autre display";
     const price = eco?.costs?.display;
-    if (typeof price === "number") return `Ouvrir une autre display • ${price} crédits`;
+    if (typeof price === "number") return <>Ouvrir une autre display • <CurrencyAmount value={price} compact /></>;
     return "Ouvrir une autre display";
   }, [eco?.freeDisplayCharges, eco?.costs?.display]);
 
@@ -1092,6 +1102,10 @@ export default function Opening() {
 
   const idleVisualImg =
     isDisplayMode && !displayStarted ? displayImg : currentPackImg;
+  const isLegacySeason = activeSeasonNumber === 5;
+  const isDisplayIntroVisual = isDisplayMode && !displayStarted;
+  const isLegacyBoosterVisual =
+    isLegacySeason && !isDisplayIntroVisual && !currentDisplayBoosterIsGold;
 
   const canSkipOpening =
     phase === "display-intro" || phase === "opening" || phase === "reveal";
@@ -1146,7 +1160,7 @@ export default function Opening() {
 
               {phase === "reveal" && typeof currentCredits === "number" ? (
                 <>
-                  {" "}• <span className="creditInline">+{currentCredits} crédits</span>
+                  {" "}• <span className="creditInline"><CurrencyAmount value={currentCredits} signed compact /></span>
                 </>
               ) : null}
             </div>
@@ -1179,7 +1193,7 @@ export default function Opening() {
               </div>
             ) : (
               <div className="openingPrice muted">
-                {loadingEco ? "…" : `Prix booster : ${eco?.costs?.booster ?? "?"} crédits`}
+                {loadingEco ? "…" : <>Prix booster : <CurrencyAmount value={eco?.costs?.booster ?? "?"} compact /></>}
               </div>
             )}
           </div>
@@ -1195,6 +1209,7 @@ export default function Opening() {
                   phase === "opening" ? "is-opening" : "",
                   isDisplayMode && !displayStarted ? "pack--display" : "",
                   currentDisplayBoosterIsGold ? "pack--gold" : "",
+                  isLegacyBoosterVisual ? "pack--legacy" : "",
                 ].join(" ")}
                 style={{ ["--pack-img" as any]: `url(${idleVisualImg})` }}
                 onClick={phase === "idle" ? startOpening : undefined}
@@ -1227,11 +1242,11 @@ export default function Opening() {
             <div className="displayIntro">
               <div className="displayIntro__scene">
                 <SmartImage className="displayIntro__display" src={displayImg} alt={`Display ${season}`} loading="eager" fetchPriority="high" />
-                <SmartImage className="displayIntro__booster displayIntro__booster--1" src={defaultBoosterImg} alt="" loading="eager" fetchPriority="high" />
-                <SmartImage className="displayIntro__booster displayIntro__booster--2" src={defaultBoosterImg} alt="" loading="eager" fetchPriority="high" />
-                <SmartImage className="displayIntro__booster displayIntro__booster--3" src={defaultBoosterImg} alt="" loading="lazy" />
-                <SmartImage className="displayIntro__booster displayIntro__booster--4" src={defaultBoosterImg} alt="" loading="lazy" />
-                <SmartImage className="displayIntro__booster displayIntro__booster--5" src={defaultBoosterImg} alt="" loading="lazy" />
+                <SmartImage className={`displayIntro__booster displayIntro__booster--1 ${isLegacySeason ? "displayIntro__booster--legacy" : ""}`} src={defaultBoosterImg} alt="" loading="eager" fetchPriority="high" />
+                <SmartImage className={`displayIntro__booster displayIntro__booster--2 ${isLegacySeason ? "displayIntro__booster--legacy" : ""}`} src={defaultBoosterImg} alt="" loading="eager" fetchPriority="high" />
+                <SmartImage className={`displayIntro__booster displayIntro__booster--3 ${isLegacySeason ? "displayIntro__booster--legacy" : ""}`} src={defaultBoosterImg} alt="" loading="lazy" />
+                <SmartImage className={`displayIntro__booster displayIntro__booster--4 ${isLegacySeason ? "displayIntro__booster--legacy" : ""}`} src={defaultBoosterImg} alt="" loading="lazy" />
+                <SmartImage className={`displayIntro__booster displayIntro__booster--5 ${isLegacySeason ? "displayIntro__booster--legacy" : ""}`} src={defaultBoosterImg} alt="" loading="lazy" />
               </div>
 
               <div className="displayIntro__text">Les boosters sortent de la display…</div>
@@ -1330,13 +1345,13 @@ export default function Opening() {
             <div className="summaryZone">
               <div className="summaryTitle">
                 <span>Résumé {isDisplayMode ? `du booster ${displayBoosterIndex + 1}` : ""}</span>
-                <span className="summaryCreditsPill">Gain total : +{currentBoosterCreditsTotal} crédits</span>
+                <span className="summaryCreditsPill">Gain total : <CurrencyAmount value={currentBoosterCreditsTotal} signed compact /></span>
               </div>
 
               <div className="openingStatsStrip">
                 <div>
                   <span>Valeur totale</span>
-                  <b>+{currentSummaryStats.totalValue} crédits</b>
+                  <b><CurrencyAmount value={currentSummaryStats.totalValue} signed /></b>
                 </div>
                 <div>
                   <span>Nouvelles</span>
@@ -1408,7 +1423,7 @@ export default function Opening() {
                     >
                       {rare && !settings.disableHoloEffects ? <span className="edgeGlow edgeGlow--summary" aria-hidden="true" /> : null}
                       {isNew ? <span className="summaryNewTag">NOUVELLE</span> : null}
-                      <span className="summaryCreditTag">+{cc}</span>
+                      <span className="summaryCreditTag"><CurrencyAmount value={cc} signed compact /></span>
 
                       <SmartImage
                         className="summaryCard"
@@ -1450,7 +1465,7 @@ export default function Opening() {
             <div className="summaryZone">
               <div className="summaryTitle">
                 <span>Résumé de la display</span>
-                <span className="summaryCreditsPill">Gain total : +{computedTotalCredits} crédits</span>
+                <span className="summaryCreditsPill">Gain total : <CurrencyAmount value={computedTotalCredits} signed compact /></span>
               </div>
 
               <div className="muted">
@@ -1460,7 +1475,7 @@ export default function Opening() {
               <div className="openingStatsStrip openingStatsStrip--display">
                 <div>
                   <span>Valeur totale</span>
-                  <b>+{displayFinalStats.totalValue} crédits</b>
+                  <b><CurrencyAmount value={displayFinalStats.totalValue} signed /></b>
                 </div>
                 <div>
                   <span>Nouvelles</span>
@@ -1532,7 +1547,7 @@ export default function Opening() {
                     >
                       {rare && !settings.disableHoloEffects ? <span className="edgeGlow edgeGlow--summary" aria-hidden="true" /> : null}
                       {isNew ? <span className="summaryNewTag">NOUVELLE</span> : null}
-                      <span className="summaryCreditTag">+{cc}</span>
+                      <span className="summaryCreditTag"><CurrencyAmount value={cc} signed compact /></span>
 
                       <SmartImage
                         className="summaryCard"

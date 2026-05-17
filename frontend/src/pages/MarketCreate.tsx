@@ -5,6 +5,7 @@ import "../styles.css";
 import "../styles/MarketCreate.css";
 
 import AppNavbar from "../components/AppNavbar";
+import CurrencyAmount from "../components/CurrencyAmount";
 import MarketPriceChart from "../components/MarketPriceChart";
 import SmartImage from "../components/SmartImage";
 import { fetchAllCards, type CardDto } from "../api/cards";
@@ -93,11 +94,11 @@ function formatListingMode(mode: MarketListingMode) {
 function formatOfferType(offerType: MarketOfferType) {
   switch (offerType) {
     case "CREDITS_ONLY":
-      return "Crédits uniquement";
+      return "WunkulCoins uniquement";
     case "CARD_ONLY":
       return "Échange de carte";
     case "CARD_AND_CREDITS":
-      return "Carte + crédits";
+      return "Carte + WunkulCoins";
     default:
       return offerType;
   }
@@ -320,8 +321,8 @@ export default function MarketCreate() {
           <div>
             <h1>Créer une annonce</h1>
             <p>
-              Mets en vente une carte en crédits, en échange carte, ou en carte
-              + crédits.
+              Mets en vente une carte en WunkulCoins, en échange carte, ou en carte
+              + WunkulCoins.
             </p>
           </div>
 
@@ -388,7 +389,7 @@ export default function MarketCreate() {
                       </div>
                       <div>
                         <small>Prix marché</small>
-                        <b>{selectedSellable.marketPrice}</b>
+                        <b><CurrencyAmount value={selectedSellable.marketPrice} /></b>
                       </div>
                     </div>
                   </div>
@@ -435,17 +436,17 @@ export default function MarketCreate() {
                       updateField("offerType", e.target.value as MarketOfferType)
                     }
                   >
-                    <option value="CREDITS_ONLY">Crédits uniquement</option>
+                    <option value="CREDITS_ONLY">WunkulCoins uniquement</option>
                     <option value="CARD_ONLY">Échange de carte</option>
-                    <option value="CARD_AND_CREDITS">Carte + crédits</option>
+                    <option value="CARD_AND_CREDITS">Carte + WunkulCoins</option>
                   </select>
                 </label>
 
                 <label className="marketCreateField">
                   <span>
                     {form.listingMode === "LOT"
-                      ? "Prix du lot en crédits"
-                      : "Prix par carte en crédits"}
+                      ? "Prix du lot en WunkulCoins"
+                      : "Prix par carte en WunkulCoins"}
                   </span>
                   <input
                     type="number"
@@ -559,7 +560,7 @@ export default function MarketCreate() {
                     </div>
                     <div>
                       <span>Prix du marché</span>
-                      <strong>{selectedSellable.marketPrice}</strong>
+                      <strong><CurrencyAmount value={selectedSellable.marketPrice} /></strong>
                     </div>
                   </div>
 
@@ -579,17 +580,21 @@ export default function MarketCreate() {
                     <div>
                       <span>Référence marché</span>
                       <strong>
-                        {form.listingMode === "LOT"
-                          ? selectedSellable.marketPrice *
-                            Math.max(1, Number(form.quantity || 1))
-                          : selectedSellable.marketPrice}
+                        <CurrencyAmount
+                          value={
+                            form.listingMode === "LOT"
+                              ? selectedSellable.marketPrice *
+                                Math.max(1, Number(form.quantity || 1))
+                              : selectedSellable.marketPrice
+                          }
+                        />
                       </strong>
                     </div>
                   </div>
 
                   <div className="marketCreateSummary__box">
                     <span>Valeur demandée estimée</span>
-                    <strong>{referenceRequestedValue}</strong>
+                    <strong><CurrencyAmount value={referenceRequestedValue} /></strong>
                   </div>
 
                   {selectedWantedCard && (

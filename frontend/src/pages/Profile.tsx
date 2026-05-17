@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import "../styles.css";
 import "../styles/Profile.css";
@@ -13,6 +13,7 @@ import {
   type ProfileResponse,
 } from "../api/profile";
 import AppNavbar from "../components/AppNavbar";
+import CurrencyAmount from "../components/CurrencyAmount";
 import ProfileBadgeIcon from "../components/ProfileBadgeIcon";
 import SmartImage from "../components/SmartImage";
 import { playActionDeniedSound, playSettingToggleSound } from "../utils/sound";
@@ -28,13 +29,26 @@ function fileToDataUrl(file: File) {
   });
 }
 
-function rewardLabel(badge: ProfileBadge) {
+function RewardLabel({ badge }: { badge: ProfileBadge }) {
   const parts = [];
-  if (badge.reward.credits > 0) parts.push(`${badge.reward.credits} crédits`);
+  if (badge.reward.credits > 0) {
+    parts.push(<CurrencyAmount key="credits" value={badge.reward.credits} compact />);
+  }
   if (badge.reward.freeBoosters > 0) {
     parts.push(`${badge.reward.freeBoosters} booster${badge.reward.freeBoosters > 1 ? "s" : ""}`);
   }
-  return parts.length ? parts.join(" + ") : "Cosmetique";
+  if (!parts.length) return <>Cosmétique</>;
+
+  return (
+    <>
+      {parts.map((part, index) => (
+        <Fragment key={typeof part === "string" ? part : part.key ?? index}>
+          {index > 0 ? " + " : null}
+          {part}
+        </Fragment>
+      ))}
+    </>
+  );
 }
 
 function progressLabel(badge: ProfileBadge) {
@@ -230,7 +244,7 @@ export default function Profile() {
 
           <div className="profileBadgeItem__meta">
             <span>{progressLabel(badge)}</span>
-            <span>{rewardLabel(badge)}</span>
+            <span><RewardLabel badge={badge} /></span>
           </div>
 
           <div className="profileBadgeItem__bottom">
@@ -350,7 +364,12 @@ export default function Profile() {
             <p>
               Récompense ajoutée automatiquement :
               {" "}
-              {profile.newlyUnlocked.map(rewardLabel).join(" + ")}.
+              {profile.newlyUnlocked.map((badge, index) => (
+                <Fragment key={badge.code}>
+                  {index > 0 ? " + " : null}
+                  <RewardLabel badge={badge} />
+                </Fragment>
+              ))}.
             </p>
           </section>
         ) : null}

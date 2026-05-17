@@ -5,6 +5,7 @@ import "../styles.css";
 import "../styles/Market.css";
 
 import AppNavbar from "../components/AppNavbar";
+import CurrencyAmount, { CurrencyIcon } from "../components/CurrencyAmount";
 import SmartImage from "../components/SmartImage";
 import { fetchOwnedCollection } from "../api/collection";
 import { fetchAllCards, type CardDto } from "../api/cards";
@@ -142,7 +143,7 @@ function formatCredits(value?: number | null) {
     return "—";
   }
 
-  return `${value.toLocaleString("fr-FR")} crédits`;
+  return <CurrencyAmount value={value} />;
 }
 
 function formatSignedPercent(value?: number | null) {
@@ -243,11 +244,11 @@ function formatPricePosition(position: MarketListingRow["pricePosition"]) {
 function formatOfferType(offerType: MarketOfferType) {
   switch (offerType) {
     case "CREDITS_ONLY":
-      return "Crédits";
+      return "WunkulCoins";
     case "CARD_ONLY":
       return "Échange";
     case "CARD_AND_CREDITS":
-      return "Carte + crédits";
+      return "Carte + WunkulCoins";
     default:
       return offerType;
   }
@@ -279,9 +280,12 @@ function formatStatus(status: MarketListingRow["status"]) {
 
 function formatOffer(listing: MarketListingRow) {
   if (listing.offerType === "CREDITS_ONLY") {
-    return listing.listingMode === "LOT"
-      ? `${listing.priceCredits} crédits le lot`
-      : `${listing.priceCredits} crédits / carte`;
+    return (
+      <>
+        <CurrencyAmount value={listing.priceCredits} />{" "}
+        {listing.listingMode === "LOT" ? "le lot" : "/ carte"}
+      </>
+    );
   }
 
   if (listing.offerType === "CARD_ONLY") {
@@ -292,9 +296,13 @@ function formatOffer(listing: MarketListingRow) {
   }
 
   const wantedCard = listing.wantedCardName ?? `Carte #${listing.wantedCardId}`;
-  return listing.listingMode === "LOT"
-    ? `${listing.wantedCardQuantity}x ${wantedCard} + ${listing.priceCredits} crédits`
-    : `${listing.wantedCardQuantity}x ${wantedCard} + ${listing.priceCredits} crédits / carte`;
+  return (
+    <>
+      {listing.wantedCardQuantity}x {wantedCard} +{" "}
+      <CurrencyAmount value={listing.priceCredits} />{" "}
+      {listing.listingMode === "LOT" ? "" : "/ carte"}
+    </>
+  );
 }
 
 function listingNeedsCard(listing: MarketListingRow) {
@@ -443,10 +451,10 @@ function HistorySection({
                   <span>
                     Type :{" "}
                     {tx.transactionType === "CREDITS_SALE"
-                      ? "Achat en crédits"
+                      ? "Achat en WunkulCoins"
                       : tx.transactionType === "CARD_TRADE"
                         ? "Échange de cartes"
-                        : "Carte + crédits"}
+                        : "Carte + WunkulCoins"}
                   </span>
                 </div>
 
@@ -456,7 +464,7 @@ function HistorySection({
                 </div>
 
                 <div className="marketTransactionCard__meta">
-                  <span>Crédits : {tx.totalPriceCredits}</span>
+                  <span>WunkulCoins : <CurrencyAmount value={tx.totalPriceCredits} /></span>
                   <span>
                     Carte offerte :{" "}
                     {tx.buyerOfferedCardName
@@ -1326,7 +1334,7 @@ export default function Market() {
             </div>
             <div>
               <span className="marketLabel">Prix du marché</span>
-              <strong>{listing.marketPriceSnapshot} crédits</strong>
+              <strong><CurrencyAmount value={listing.marketPriceSnapshot} /></strong>
             </div>
             <div>
               <span className="marketLabel">Offre demandée</span>
@@ -1335,7 +1343,7 @@ export default function Market() {
           </div>
 
           <div className="marketListingCard__details">
-            <span>Écart : {listing.priceDifference} crédits</span>
+            <span>Écart : <CurrencyAmount value={listing.priceDifference} signed /></span>
             <span>
               Différence :{" "}
               {listing.priceDifferencePercent === null
@@ -1453,8 +1461,8 @@ export default function Market() {
               <strong>{tx.quantity}</strong>
             </div>
             <div>
-              <span className="marketLabel">Crédits à récupérer</span>
-              <strong>{tx.pendingRewardCredits}</strong>
+              <span className="marketLabel"><CurrencyIcon /> à récupérer</span>
+              <strong><CurrencyAmount value={tx.pendingRewardCredits} /></strong>
             </div>
             <div>
               <span className="marketLabel">Carte à récupérer</span>
@@ -1646,9 +1654,9 @@ export default function Market() {
                     }
                   >
                     <option value="">Tous</option>
-                    <option value="CREDITS_ONLY">Crédits uniquement</option>
+                    <option value="CREDITS_ONLY">WunkulCoins uniquement</option>
                     <option value="CARD_ONLY">Échange de carte</option>
-                    <option value="CARD_AND_CREDITS">Carte + crédits</option>
+                    <option value="CARD_AND_CREDITS">Carte + WunkulCoins</option>
                   </select>
                 </label>
 
