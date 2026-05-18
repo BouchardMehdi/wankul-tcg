@@ -41,6 +41,25 @@
   border-radius: 8px;
 }
 
+.profileBadgeIcon__emoji {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1.35rem;
+  line-height: 1;
+  filter:
+    drop-shadow(0 2px 1px rgba(0, 0, 0, 0.28))
+    drop-shadow(0 0 8px rgba(255, 255, 255, 0.16));
+  transform: translateY(-1px);
+}
+
+.profileBadgeIcon--sm .profileBadgeIcon__emoji {
+  font-size: 1rem;
+}
+
 .profileBadgeIcon--bronze {
   --badge-main: #c98953;
   --badge-alt: #ff8a4c;
@@ -69,6 +88,13 @@
   --badge-alt: #334155;
   filter: saturate(0.5);
   opacity: 0.78;
+}
+
+.profileBadgeIcon.is-locked .profileBadgeIcon__emoji {
+  opacity: 0.72;
+  filter:
+    grayscale(1)
+    drop-shadow(0 2px 1px rgba(0, 0, 0, 0.28));
 }
 
 .profileBadgeIcon svg {
