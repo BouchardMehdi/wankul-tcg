@@ -239,7 +239,7 @@ const BADGE_DEFINITIONS: BadgeDefinition[] = [
   {
     code: 'FIRST_BIG_HIT',
     title: 'Gros hit',
-    description: 'Possède une U1, U2, légendaire, ticket ou Booster Gold.',
+    description: 'Possède une U1, U2, Duo, légendaire, ticket ou Booster Gold.',
     category: 'Rareté',
     tier: 'gold',
     reward: { credits: 900 },

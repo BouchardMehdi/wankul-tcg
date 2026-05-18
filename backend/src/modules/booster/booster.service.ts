@@ -73,8 +73,8 @@ export class BoosterService {
     { rarity: 'Rare', weight: 10 },
   ];
   private readonly PREMIUM_RARITY_CHANCES: Array<{ rarity: string; chance: number }> = [
-    { rarity: 'Ultra Rare (U1)', chance: 0.224 },
-    { rarity: 'Ultra Rare (U2)', chance: 0.16 },
+    { rarity: 'Ultra Rare (U1)', chance: 0.212 },
+    { rarity: 'Ultra Rare (U2)', chance: 0.151 },
     { rarity: 'Légendaire bronze', chance: 0.08 },
     { rarity: 'Légendaire argent', chance: 0.028 },
     { rarity: 'Légendaire dorée', chance: 0.008 },
@@ -94,7 +94,7 @@ export class BoosterService {
   private readonly CHANCE_TICKET_SLOT = 0.0417;
   private readonly CHANCE_TICKET_OR_AS_11TH = 0.001;
   private readonly LEGACY_SEASON_NUMBER = 5;
-  private readonly CHANCE_LEGACY_DUO_IN_BOOSTER = 0.0023;
+  private readonly CHANCE_LEGACY_DUO_IN_BOOSTER = 0.023;
 
   private readonly DISPLAY_BOOSTERS = 24;
   private readonly CHANCE_DISPLAY_HAS_GOLD = 1 / 6;

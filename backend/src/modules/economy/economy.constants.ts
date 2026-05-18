@@ -2,8 +2,8 @@ export const ECONOMY_RULES = {
   signupBonus: 1500,
 
   cost: {
-    booster: 200,
-    display: 4800,
+    booster: 250,
+    display: 7000,
   },
 
   charges: {
@@ -12,9 +12,9 @@ export const ECONOMY_RULES = {
   },
 
   multipliers: {
-    gtoBooster: 1.35,
-    goldDisplay: 1.15,
+    gtoBooster: 1.15,
+    goldDisplay: 1.05,
   },
 
-  jackpotTicketOr: 6000,
+  jackpotTicketOr: 5000,
 } as const;

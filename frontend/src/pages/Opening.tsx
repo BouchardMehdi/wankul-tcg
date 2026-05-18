@@ -204,30 +204,30 @@ function formatOpeningDate(value?: string | null) {
 }
 
 const MARKET_RARITY_BASE_VALUES: Record<string, number> = {
-  Terrain: 4,
-  Commune: 8,
-  "Peu commune": 14,
-  Rare: 32,
+  Terrain: 3,
+  Commune: 6,
+  "Peu commune": 11,
+  Rare: 26,
   U1: 70,
-  U2: 110,
+  U2: 120,
   "Ultra Rare (U1)": 70,
-  "Ultra Rare (U2)": 110,
-  Duo: 150,
-  "Légendaire bronze": 180,
-  "Légendaire argent": 320,
-  "Légendaire or": 520,
-  "Légendaire dorée": 520,
-  "Booster Gold": 700,
+  "Ultra Rare (U2)": 120,
+  Duo: 520,
+  "Légendaire bronze": 210,
+  "Légendaire argent": 380,
+  "Légendaire or": 650,
+  "Légendaire dorée": 650,
+  "Booster Gold": 780,
   "Ticket d'or": 1800,
-  "Gagnant ticket d'or": 4500,
-  "Carte spéciale": 220,
+  "Gagnant ticket d'or": 1600,
+  "Carte spéciale": 180,
 };
 
-const DEFAULT_MARKET_BASE_VALUE = 20;
+const DEFAULT_MARKET_BASE_VALUE = 15;
 
 const ECON_RATES = {
-  duplicateFromMarket: 0.25,
-  newFromMarket: 1.35,
+  duplicateFromMarket: 0.18,
+  newFromMarket: 1,
 };
 
 function normalizeEconomyRarity(rarity?: string | null) {
@@ -253,7 +253,7 @@ function getMarketBaseValueForRarity(rarity?: string | null) {
 function fallbackCardCredits(card: any, isNew: boolean) {
   const rarity = normalizeEconomyRarity(card?.rarity ?? "");
 
-  if (rarity === "Terrain") return isNew ? 6 : 0;
+  if (rarity === "Terrain") return isNew ? 3 : 0;
   if (rarity === "Ticket d'or") return 0;
 
   const marketBase = getMarketBaseValueForRarity(rarity);

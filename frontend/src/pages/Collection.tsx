@@ -204,6 +204,47 @@ function getCardNumberLabel(card: any) {
   return "";
 }
 
+function formatCollectionPillLabel(value?: string | null) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+
+  const key = normalizePlain(raw);
+  if (key.includes("starter pack")) return "Starter Pack";
+  if (key.includes("gagnant") && key.includes("ticket") && key.includes("or")) {
+    return "Gagnant ticket d'or";
+  }
+
+  return raw;
+}
+
+function addCollectionPill(pills: string[], seen: Set<string>, value?: string | null) {
+  const label = formatCollectionPillLabel(value);
+  if (!label) return;
+
+  const key = normalizePlain(label);
+  if (!key || seen.has(key)) return;
+
+  seen.add(key);
+  pills.push(label);
+}
+
+function getCollectionBasePills(card: any) {
+  const pills: string[] = [];
+  const seen = new Set<string>();
+  const seasonNumber = getCardNumberLabel(card);
+  const seasonLabel = `${getCardSeasonLabel(card)}${seasonNumber ? ` #${seasonNumber}` : ""}`;
+
+  addCollectionPill(pills, seen, card?.rarity);
+  addCollectionPill(pills, seen, seasonLabel);
+  addCollectionPill(pills, seen, card?.specialCategory);
+
+  if (card?.affiliatedSeason) {
+    addCollectionPill(pills, seen, `Affiliée ${card.affiliatedSeason}`);
+  }
+
+  return pills;
+}
+
 function getCardNumberRank(card: any) {
   const label = getCardNumberLabel(card);
   const numeric = Number.parseInt(label.replace(/^[^\d]*/, ""), 10);
@@ -1411,6 +1452,7 @@ export default function Collection() {
                   const isObjective = Boolean(c.isObjective);
                   const personalTags = Array.isArray(c.personalTags) ? c.personalTags : [];
                   const sellableQuantity = Number(c.sellableRow?.sellableQuantity ?? 0);
+                  const basePills = getCollectionBasePills(c);
 
                   return (
                     <div
@@ -1556,13 +1598,11 @@ export default function Collection() {
                         )}
 
                         <div className="cardTile__sub">
-                          <span className="pill">{c.rarity}</span>
-                          <span className="pill">
-                            {getCardSeasonLabel(c)}{" "}
-                            {getCardNumberLabel(c) ? `#${getCardNumberLabel(c)}` : ""}
-                          </span>
-                          {c.specialCategory && <span className="pill">{c.specialCategory}</span>}
-                          {c.affiliatedSeason && <span className="pill">Affiliée {c.affiliatedSeason}</span>}
+                          {basePills.map((pill) => (
+                            <span className="pill" key={pill}>
+                              {pill}
+                            </span>
+                          ))}
                           {isFavorite && <span className="pill pill--favorite">Favori</span>}
                           {isObjective && <span className="pill pill--objective">Objectif</span>}
                           {sellableQuantity > 0 && (
