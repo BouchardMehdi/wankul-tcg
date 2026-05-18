@@ -143,14 +143,14 @@ function rarityRankLabel(rarity?: string | null) {
       return 4;
     case "u2":
       return 5;
-    case "duo":
-      return 5.5;
     case "leg-bronze":
       return 6;
     case "leg-silver":
       return 7;
     case "leg-gold":
       return 8;
+    case "duo":
+      return 8.5;
     case "booster-gold":
       return 9;
     default:

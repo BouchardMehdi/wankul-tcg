@@ -67,17 +67,18 @@ export class BoosterService {
     private readonly dataSource: DataSource,
   ) {}
 
-  private readonly MAIN_WEIGHTS: Array<{ rarity: string; weight: number }> = [
+  private readonly FILLER_WEIGHTS: Array<{ rarity: string; weight: number }> = [
     { rarity: 'Commune', weight: 45 },
     { rarity: 'Peu commune', weight: 30 },
     { rarity: 'Rare', weight: 10 },
-    { rarity: 'Ultra Rare (U1)', weight: 2.24 },
-    { rarity: 'Ultra Rare (U2)', weight: 1.6 },
-    { rarity: 'Légendaire bronze', weight: 0.8 },
-    { rarity: 'Légendaire argent', weight: 0.28 },
-    { rarity: 'Légendaire dorée', weight: 0.08 },
   ];
-  private readonly MAIN_TOTAL = 90;
+  private readonly PREMIUM_RARITY_CHANCES: Array<{ rarity: string; chance: number }> = [
+    { rarity: 'Ultra Rare (U1)', chance: 0.224 },
+    { rarity: 'Ultra Rare (U2)', chance: 0.16 },
+    { rarity: 'Légendaire bronze', chance: 0.08 },
+    { rarity: 'Légendaire argent', chance: 0.028 },
+    { rarity: 'Légendaire dorée', chance: 0.008 },
+  ];
 
   private readonly REQUIRED_OPENING_RARITIES = [
     'Commune',
@@ -92,6 +93,8 @@ export class BoosterService {
 
   private readonly CHANCE_TICKET_SLOT = 0.0417;
   private readonly CHANCE_TICKET_OR_AS_11TH = 0.001;
+  private readonly LEGACY_SEASON_NUMBER = 5;
+  private readonly CHANCE_LEGACY_DUO_IN_BOOSTER = 0.0023;
 
   private readonly DISPLAY_BOOSTERS = 24;
   private readonly CHANCE_DISPLAY_HAS_GOLD = 1 / 6;
@@ -341,10 +344,10 @@ export class BoosterService {
       ['Rare', 3],
       ['Ultra Rare (U1)', 4],
       ['Ultra Rare (U2)', 5],
-      ['Duo', 6],
-      ['Légendaire bronze', 7],
-      ['Légendaire argent', 8],
-      ['Légendaire dorée', 9],
+      ['Légendaire bronze', 6],
+      ['Légendaire argent', 7],
+      ['Légendaire dorée', 8],
+      ['Duo', 9],
       ['Booster Gold', 10],
       ["Gagnant ticket d'or", 11],
       ["Ticket d'or", 12],
@@ -396,14 +399,31 @@ export class BoosterService {
     };
   }
 
-  private pickMainRarity(): string {
-    const r = Math.random() * this.MAIN_TOTAL;
-    let acc = 0;
-    for (const it of this.MAIN_WEIGHTS) {
-      acc += it.weight;
-      if (r <= acc) return it.rarity;
+  private pickFillerRarity(): string {
+    return this.pickWeighted(this.FILLER_WEIGHTS).rarity;
+  }
+
+  private pickOptionalPremiumRarity(args: {
+    seasonNumber: number;
+    pools: LoadedPools;
+  }): string | null {
+    const items = [...this.PREMIUM_RARITY_CHANCES];
+    const duoPool = args.pools.byRarity.get('Duo') ?? [];
+
+    if (args.seasonNumber === this.LEGACY_SEASON_NUMBER && duoPool.length > 0) {
+      items.push({ rarity: 'Duo', chance: this.CHANCE_LEGACY_DUO_IN_BOOSTER });
     }
-    return this.MAIN_WEIGHTS[this.MAIN_WEIGHTS.length - 1].rarity;
+
+    const totalChance = items.reduce((sum, item) => sum + item.chance, 0);
+    if (Math.random() >= totalChance) return null;
+
+    let r = Math.random() * totalChance;
+    for (const item of items) {
+      r -= item.chance;
+      if (r <= 0) return item.rarity;
+    }
+
+    return items[items.length - 1]?.rarity ?? null;
   }
 
   private buildNormalBooster(args: {
@@ -420,17 +440,20 @@ export class BoosterService {
     out.push(terrain);
     picked.add(terrain.id);
 
+    // Un booster ne peut contenir qu'un seul hit premium: U1, U2, légendaire ou Duo.
     const forceLegendary = Boolean(args.forceOneLegendaryInMain);
-    const forcedIndex = forceLegendary ? 1 + this.randInt(9) : -1;
+    const premiumRarity = forceLegendary
+      ? this.legendaryPickRarityProportional()
+      : this.pickOptionalPremiumRarity({ seasonNumber, pools });
+    const premiumIndex = premiumRarity ? 1 + this.randInt(9) : -1;
 
     for (let i = 0; i < 9; i++) {
       const outIndex = 1 + i;
 
-      let rarity = this.pickMainRarity();
-
-      if (outIndex === forcedIndex) {
-        rarity = this.legendaryPickRarityProportional();
-      }
+      let rarity =
+        outIndex === premiumIndex && premiumRarity
+          ? premiumRarity
+          : this.pickFillerRarity();
 
       if (rarity === 'Terrain') rarity = 'Commune';
 

@@ -105,13 +105,13 @@ function boosterSummaryRank(card: any) {
       return 4;
     case "u2":
       return 5;
-    case "duo":
-      return 6;
     case "leg-bronze":
-      return 7;
+      return 6;
     case "leg-silver":
-      return 8;
+      return 7;
     case "leg-gold":
+      return 8;
+    case "duo":
       return 9;
     case "gold-ticket-winner":
       return 10;
@@ -133,10 +133,10 @@ function displaySummaryRank(card: any) {
       return 6;
     case "u2":
       return 5;
-    case "duo":
-      return 5.5;
     case "u1":
       return 4;
+    case "duo":
+      return 9;
     case "gold-ticket-winner":
       return 3;
     case "gold-ticket":
