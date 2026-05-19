@@ -10,6 +10,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import Collection from "./pages/Collection";
 import Booster from "./pages/Booster";
+import Gameplay from "./pages/Gameplay";
 import Opening from "./pages/Opening";
 import Settings from "./pages/Settings";
 import Market from "./pages/Market";
@@ -125,6 +126,14 @@ export default function App() {
           element={
             <PrivateRoute>
               <Booster />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/gameplay"
+          element={
+            <PrivateRoute>
+              <Gameplay />
             </PrivateRoute>
           }
         />

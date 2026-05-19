@@ -441,6 +441,7 @@
 }
 
 .homeShowcase__booster--five {
+  width: min(56%, 320px);
   transform: translateX(calc(-50% + 142px)) rotate(28deg);
 }
 
@@ -845,6 +846,11 @@
   transition: transform 220ms cubic-bezier(.2, .8, .2, 1);
 }
 
+.homeSeasonCard--legacy .homeSeasonCard__media img {
+  width: min(340%, 520px);
+  max-width: none;
+}
+
 .homeSeasonCard__body {
   padding: 0 18px 18px;
 }
@@ -1102,6 +1108,7 @@
   }
 
   .homeShowcase__booster--five {
+    width: min(58vw, 270px);
     transform: translateX(calc(-50% + 88px)) rotate(26deg);
   }
 

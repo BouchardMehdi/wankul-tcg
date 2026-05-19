@@ -525,7 +525,10 @@ export default function Home() {
 
           <div className="homeSeasonGrid">
             {SEASONS.map((season) => (
-              <article key={season.number} className="homeSeasonCard">
+              <article
+                key={season.number}
+                className={`homeSeasonCard ${season.number === 5 ? "homeSeasonCard--legacy" : ""}`}
+              >
                 <div className="homeSeasonCard__media">
                   <SmartImage
                     src={getSeasonBoosterImage(season.number)}

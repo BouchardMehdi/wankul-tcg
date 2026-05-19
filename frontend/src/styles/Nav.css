@@ -261,12 +261,16 @@
     order: 3;
   }
 
-  .topbar__link[data-navkey="market"] {
+  .topbar__link[data-navkey="gameplay"] {
     order: 4;
   }
 
-  .topbar__link[data-navkey="settings"] {
+  .topbar__link[data-navkey="market"] {
     order: 5;
+  }
+
+  .topbar__link[data-navkey="settings"] {
+    display: none;
   }
 
   .topbar__link[data-center="true"] .topbar__icon svg {

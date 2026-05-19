@@ -10,6 +10,7 @@ import SmartImage from "./SmartImage";
 type NavPage =
   | "dashboard"
   | "booster"
+  | "gameplay"
   | "collection"
   | "market"
   | "settings"
@@ -18,7 +19,7 @@ type NavPage =
   | "admin";
 
 type NavItem = {
-  key: "dashboard" | "booster" | "collection" | "market" | "settings" | "admin";
+  key: "dashboard" | "booster" | "gameplay" | "collection" | "market" | "settings" | "admin";
   label: string;
   mobileLabel: string;
   to: string;
@@ -69,6 +70,38 @@ const NAV_ITEMS: NavItem[] = [
           fill="none"
           stroke="currentColor"
           strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    key: "gameplay",
+    label: "Gameplay",
+    mobileLabel: "Game",
+    to: "/gameplay",
+    icon: (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M7.25 5.25h7.5a2 2 0 0 1 2 2v10.5a2 2 0 0 1-2 2h-7.5a2 2 0 0 1-2-2V7.25a2 2 0 0 1 2-2Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M9 8.5h4.5M9 11.5h5.5M9 14.5h3"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        <path
+          d="M15.75 7.25 19 4.75v10.5l-3.25 2.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
           strokeLinejoin="round"
         />
       </svg>
@@ -202,8 +235,8 @@ export default function AppNavbar({
 
   const defaultVisibleItems: Array<NavItem["key"]> =
     role === "admin"
-      ? ["dashboard", "booster", "collection", "market", "settings", "admin"]
-      : ["dashboard", "booster", "collection", "market", "settings"];
+      ? ["dashboard", "booster", "gameplay", "collection", "market", "settings", "admin"]
+      : ["dashboard", "booster", "gameplay", "collection", "market", "settings"];
 
   const allowedItems = visibleItems ?? defaultVisibleItems;
   const links = NAV_ITEMS.filter((item) => allowedItems.includes(item.key));

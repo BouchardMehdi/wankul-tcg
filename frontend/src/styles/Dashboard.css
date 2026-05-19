@@ -93,10 +93,13 @@
 .welcome__right {
   display: flex;
   align-items: stretch;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
-.welcomeProfile {
+.welcomeProfile,
+.welcomeQuickLink {
   min-width: 220px;
   display: flex;
   align-items: center;
@@ -110,9 +113,39 @@
     filter var(--t-fast) var(--ease);
 }
 
-.welcomeProfile:hover {
+.welcomeQuickLink {
+  min-width: 180px;
+}
+
+.welcomeProfile:hover,
+.welcomeQuickLink:hover {
   transform: translateY(-1px);
   filter: brightness(1.06);
+}
+
+.welcomeQuickLink__icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  border-radius: 18px;
+  color: var(--text);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--a-pink) 28%, transparent), color-mix(in srgb, var(--a-violet) 22%, transparent)),
+    rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border2);
+}
+
+.welcomeQuickLink__icon svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: 38px;
+  height: 38px;
+  transform: translate(-50%, -50%);
 }
 
 .welcomeProfile__avatarFrame {
@@ -158,11 +191,28 @@
   line-height: 1.12;
 }
 
+.welcomeQuickLink span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.welcomeQuickLink strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 950;
+  line-height: 1.12;
+}
+
 .welcomeProfile--empty {
   justify-content: center;
 }
 
-[data-theme="light"] .welcomeProfile {
+[data-theme="light"] .welcomeProfile,
+[data-theme="light"] .welcomeQuickLink {
   border-color: rgba(42, 35, 54, 0.12);
   background:
     linear-gradient(180deg, rgba(255, 252, 244, 0.82), rgba(244, 233, 213, 0.66));
@@ -170,9 +220,17 @@
     inset 0 1px 0 rgba(255,255,255,0.66),
     0 12px 28px rgba(94, 68, 41, 0.08);
 }
+
+[data-theme="light"] .welcomeQuickLink__icon {
+  background:
+    linear-gradient(135deg, rgba(233, 79, 85, 0.16), rgba(113, 85, 217, 0.14)),
+    rgba(255, 250, 239, 0.82);
+}
+
 @media (max-width: 860px) {
   .welcome__right { width: 100%; }
   .welcomeProfile,
+  .welcomeQuickLink,
   .kpi { flex: 1 1 0; min-width: 0; }
 }
 @media (max-width: 560px) {
