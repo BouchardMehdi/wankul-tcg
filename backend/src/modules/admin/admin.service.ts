@@ -24,12 +24,16 @@ type GetAllTicketsParams = {
 
 type EconomyLogParams = {
   days?: number;
+  from?: string;
+  to?: string;
   page?: number;
   pageSize?: number;
   action?: string;
   status?: 'allowed' | 'flagged' | 'blocked' | '';
   severity?: 'info' | 'watch' | 'danger' | '';
   userId?: number;
+  cardId?: number;
+  targetType?: string;
 };
 
 @Injectable()

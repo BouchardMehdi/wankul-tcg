@@ -79,15 +79,23 @@ export class AdminController {
     @Query('status') status?: string,
     @Query('severity') severity?: string,
     @Query('userId') userId?: string,
+    @Query('cardId') cardId?: string,
+    @Query('targetType') targetType?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ) {
     return this.adminService.getEconomyLogs({
       days: Number(days ?? 7) || 7,
+      from,
+      to,
       page: Number(page ?? 1) || 1,
       pageSize: Number(pageSize ?? 25) || 25,
       action,
       status: (status as any) ?? '',
       severity: (severity as any) ?? '',
       userId: userId ? Number(userId) : undefined,
+      cardId: cardId ? Number(cardId) : undefined,
+      targetType,
     });
   }
 

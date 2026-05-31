@@ -1,11 +1,15 @@
 .adminPage {
+  width: 100%;
+  max-width: 1560px;
   padding-top: 24px;
   padding-bottom: calc(40px + var(--mobile-nav-offset));
 }
 
 .adminPanel {
-  max-width: 1200px;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
+  overflow: hidden;
 }
 
 .adminUnlockPanel {
@@ -14,6 +18,7 @@
 
 .adminPanel .panel-inner {
   padding: 28px 32px 32px;
+  min-width: 0;
 }
 
 .adminHeader {
@@ -22,6 +27,7 @@
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 18px;
+  min-width: 0;
 }
 
 .adminHeaderActions {
@@ -76,6 +82,7 @@
   justify-content: space-between;
   gap: 14px;
   margin-bottom: 18px;
+  min-width: 0;
 }
 
 .adminToolbar__left {
@@ -90,6 +97,14 @@
   gap: 14px;
   align-items: end;
   margin-bottom: 18px;
+}
+
+.adminFiltersBar--economyLogs {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.035);
 }
 
 .adminFiltersActions {
@@ -163,16 +178,18 @@
 
 .adminStats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
   gap: 12px;
   margin-bottom: 18px;
+  min-width: 0;
 }
 
 .adminStats--dashboard {
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
 }
 
 .adminStatCard {
+  min-width: 0;
   padding: 16px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.08);
@@ -209,8 +226,10 @@
 }
 
 .adminStatCard__value {
+  min-width: 0;
   font-size: 28px;
   font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
 .adminStatCard__label {
@@ -222,19 +241,22 @@
 .adminDashboard {
   display: grid;
   gap: 18px;
+  min-width: 0;
 }
 
 .adminDashboardGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
   gap: 16px;
+  min-width: 0;
 }
 
 .adminDashboardGrid--analytics {
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.9fr);
 }
 
 .adminDashboardPanel {
+  min-width: 0;
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03);
@@ -255,7 +277,7 @@
 
 .adminRiskStrip {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto);
   gap: 18px;
   align-items: center;
   padding: 18px;
@@ -305,9 +327,11 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(110px, 1fr));
   gap: 10px;
+  min-width: 0;
 }
 
 .adminRiskStrip__metrics div {
+  min-width: 0;
   padding: 12px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.08);
@@ -327,11 +351,13 @@
 
 .adminSecurityStats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 10px;
+  min-width: 0;
 }
 
 .adminSecurityPill {
+  min-width: 0;
   padding: 13px 14px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.08);
@@ -373,9 +399,11 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  min-width: 0;
 }
 
 .adminSecurityEvent {
+  min-width: 0;
   padding: 12px 14px;
   border-radius: 15px;
   border: 1px solid rgba(255,255,255,0.08);
@@ -411,9 +439,61 @@
   line-height: 1.4;
 }
 
+.adminSecurityEvent__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.adminSecurityEvent__top time {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.adminSecurityEvent__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.adminSecurityEvent__meta span {
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.045);
+  color: rgba(255,255,255,0.78);
+}
+
+.adminSecurityEvent__details {
+  margin-top: 10px;
+}
+
+.adminSecurityEvent__details summary {
+  cursor: pointer;
+  color: rgba(255,255,255,0.82);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.adminSecurityEvent__details pre {
+  max-height: 190px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.24);
+  color: rgba(255,255,255,0.82);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
 .adminBarChart {
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .adminBarChartRow {
@@ -500,6 +580,7 @@
 }
 
 .adminKpiRow {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -511,7 +592,9 @@
 }
 
 .adminKpiRow span {
+  min-width: 0;
   color: rgba(255,255,255,0.76);
+  overflow-wrap: anywhere;
 }
 
 .adminKpiRow strong {
@@ -524,6 +607,7 @@
 }
 
 .adminInsightCard {
+  min-width: 0;
   padding: 14px;
   border-radius: 16px;
   background: rgba(255,255,255,0.03);
@@ -680,6 +764,7 @@
 }
 
 .adminSuspiciousCard {
+  min-width: 0;
   padding: 14px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.08);
@@ -739,6 +824,7 @@
 }
 
 .adminTicketCard {
+  min-width: 0;
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(255,255,255,0.03);
@@ -1028,6 +1114,7 @@
 [data-theme="light"] .adminRiskStrip,
 [data-theme="light"] .adminSecurityPill,
 [data-theme="light"] .adminSecurityEvent,
+[data-theme="light"] .adminFiltersBar--economyLogs,
 [data-theme="light"] .adminKpiRow,
 [data-theme="light"] .adminInsightCard,
 [data-theme="light"] .adminSuspiciousCard,
@@ -1073,6 +1160,7 @@
 [data-theme="light"] .adminSecurityEvent span,
 [data-theme="light"] .adminSecurityEvent time,
 [data-theme="light"] .adminSecurityEvent p,
+[data-theme="light"] .adminSecurityEvent__details summary,
 [data-theme="light"] .adminBarChartRow__label,
 [data-theme="light"] .adminChartLegend,
 [data-theme="light"] .adminKpiRow span,
@@ -1089,6 +1177,17 @@
 [data-theme="light"] .adminPagination__info,
 [data-theme="light"] .adminEmpty {
   color: rgba(72, 67, 82, 0.74);
+}
+
+[data-theme="light"] .adminSecurityEvent__meta span {
+  border-color: rgba(42, 35, 54, 0.10);
+  background: rgba(255, 250, 239, 0.72);
+  color: rgba(42, 39, 52, 0.78);
+}
+
+[data-theme="light"] .adminSecurityEvent__details pre {
+  background: rgba(42, 35, 54, 0.06);
+  color: rgba(27, 25, 34, 0.86);
 }
 
 [data-theme="light"] .adminField input,

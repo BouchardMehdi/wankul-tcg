@@ -6,12 +6,14 @@ import { EconomyController } from './economy.controller';
 import { UserEconomy } from './user-economy.entity';
 import { EconomyAnalyticsModule } from './economy-analytics.module';
 import { MarketModule } from '../market/market.module';
+import { SecurityModule } from '../security/security.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserEconomy]),
     EconomyAnalyticsModule,
     MarketModule,
+    SecurityModule,
   ],
   providers: [EconomyService],
   controllers: [EconomyController],

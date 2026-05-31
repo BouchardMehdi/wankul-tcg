@@ -84,7 +84,27 @@ function getRiskLabel(level?: string) {
   return "Stable";
 }
 
+const ECONOMY_ACTION_OPTIONS = [
+  { value: "OPEN_BOOSTER", label: "Opening booster" },
+  { value: "OPEN_DISPLAY", label: "Opening display" },
+  { value: "QUICK_SELL", label: "Quick sell" },
+  { value: "MARKET_LISTING_CREATE", label: "Création annonce" },
+  { value: "MARKET_LISTING_CANCEL", label: "Annulation annonce" },
+  { value: "MARKET_BUY", label: "Achat market" },
+  { value: "MARKET_SALE", label: "Vente market" },
+  { value: "MARKET_REWARD_CLAIM", label: "Récompense récupérée" },
+  { value: "BADGE_REWARD", label: "Récompense badge" },
+  { value: "SIGNUP_BONUS", label: "Bonus bienvenue" },
+  { value: "ECONOMY_CREDITS_ADD", label: "Ajout de WunkulCoins" },
+  { value: "ECONOMY_FREE_BOOSTER_ADD", label: "Ajout booster gratuit" },
+  { value: "ECONOMY_RESET", label: "Reset économie" },
+  { value: "ECONOMY_ROLLBACK", label: "Rollback économie" },
+];
+
 function getSecurityActionLabel(action?: string) {
+  const option = ECONOMY_ACTION_OPTIONS.find((item) => item.value === action);
+  if (option) return option.label;
+
   switch (action) {
     case "OPEN_BOOSTER":
       return "Opening booster";
@@ -106,9 +126,40 @@ function getSecurityActionLabel(action?: string) {
 }
 
 function getSecurityStatusLabel(status?: string) {
-  if (status === "blocked") return "Bloque";
-  if (status === "flagged") return "Signale";
+  if (status === "blocked") return "Bloqué";
+  if (status === "flagged") return "Signalé";
   return "OK";
+}
+
+function getSeverityLabel(severity?: string) {
+  if (severity === "danger") return "Critique";
+  if (severity === "watch") return "À surveiller";
+  return "Info";
+}
+
+function formatLogActor(event: AdminEconomyLogsResponse["items"][number]) {
+  if (!event.userId) return "Système";
+  return `${event.username ?? "User"} #${event.userId}`;
+}
+
+function formatRelatedActor(event: AdminEconomyLogsResponse["items"][number]) {
+  if (!event.relatedUserId) return null;
+  return `${event.relatedUsername ?? "User"} #${event.relatedUserId}`;
+}
+
+function getLogHint(event: AdminEconomyLogsResponse["items"][number]) {
+  const metadata = event.metadata ?? {};
+  const parts: string[] = [];
+
+  if (metadata.season) parts.push(String(metadata.season));
+  if (metadata.quantity) parts.push(`${metadata.quantity} carte(s)`);
+  if (metadata.cardName && !event.cardName) parts.push(String(metadata.cardName));
+  if (metadata.badgeCode) parts.push(`Badge ${metadata.badgeCode}`);
+  if (metadata.rewardType) parts.push(String(metadata.rewardType));
+  if (metadata.listingId) parts.push(`Annonce #${metadata.listingId}`);
+  if (metadata.transactionId) parts.push(`Transaction #${metadata.transactionId}`);
+
+  return parts.join(" · ");
 }
 
 const PAGE_SIZE = 5;
@@ -149,6 +200,13 @@ export default function Admin() {
   const [ecoLogsLoading, setEcoLogsLoading] = useState(false);
   const [ecoLogsError, setEcoLogsError] = useState("");
   const [ecoLogsPage, setEcoLogsPage] = useState(1);
+  const [ecoLogAction, setEcoLogAction] = useState("");
+  const [ecoLogStatus, setEcoLogStatus] = useState("");
+  const [ecoLogSeverity, setEcoLogSeverity] = useState("");
+  const [ecoLogUserId, setEcoLogUserId] = useState("");
+  const [ecoLogCardId, setEcoLogCardId] = useState("");
+  const [ecoLogFrom, setEcoLogFrom] = useState("");
+  const [ecoLogTo, setEcoLogTo] = useState("");
   const [ecoExporting, setEcoExporting] = useState<"json" | "csv" | null>(null);
 
   const currentAdminUsername = user?.username ?? me?.username ?? "";
@@ -200,15 +258,42 @@ export default function Admin() {
     }
   }
 
-  async function loadEconomyLogs(nextPage = ecoLogsPage, nextDays = ecoDays) {
+  async function loadEconomyLogs(
+    nextPage = ecoLogsPage,
+    nextDays = ecoDays,
+    overrides?: Partial<{
+      action: string;
+      status: string;
+      severity: string;
+      userId: string;
+      cardId: string;
+      from: string;
+      to: string;
+    }>,
+  ) {
     setEcoLogsLoading(true);
     setEcoLogsError("");
 
     try {
+      const action = overrides?.action ?? ecoLogAction;
+      const status = overrides?.status ?? ecoLogStatus;
+      const severity = overrides?.severity ?? ecoLogSeverity;
+      const userId = overrides?.userId ?? ecoLogUserId;
+      const cardId = overrides?.cardId ?? ecoLogCardId;
+      const from = overrides?.from ?? ecoLogFrom;
+      const to = overrides?.to ?? ecoLogTo;
+
       const res = await getAdminEconomyLogs({
         days: nextDays,
+        from: from || undefined,
+        to: to || undefined,
         page: nextPage,
         pageSize: 25,
+        action: action || undefined,
+        status: status || undefined,
+        severity: severity || undefined,
+        userId: userId ? Number(userId) : undefined,
+        cardId: cardId ? Number(cardId) : undefined,
       });
       setEcoLogs(res);
     } catch (err: any) {
@@ -364,6 +449,33 @@ export default function Admin() {
 
   function goToPage(nextPage: number) {
     setPage(nextPage);
+  }
+
+  function applyEconomyLogFilters() {
+    setEcoLogsPage(1);
+    loadEconomyLogs(1, ecoDays).catch(() => {});
+  }
+
+  function resetEconomyLogFilters() {
+    const emptyFilters = {
+      action: "",
+      status: "",
+      severity: "",
+      userId: "",
+      cardId: "",
+      from: "",
+      to: "",
+    };
+
+    setEcoLogAction("");
+    setEcoLogStatus("");
+    setEcoLogSeverity("");
+    setEcoLogUserId("");
+    setEcoLogCardId("");
+    setEcoLogFrom("");
+    setEcoLogTo("");
+    setEcoLogsPage(1);
+    loadEconomyLogs(1, ecoDays, emptyFilters).catch(() => {});
   }
 
   async function handleEconomyExport(format: "json" | "csv") {
@@ -601,9 +713,9 @@ export default function Admin() {
 
                     <section className="adminDashboardPanel adminSecurityPanel">
                       <div className="adminDashboardPanel__head">
-                        <h3>Sécurité anti-abus</h3>
+                        <h3>Journal économique</h3>
                         <p className="small">
-                          Limites d'action, prix hors cadre et transactions suspectes sur la période.
+                          Historique consultable des openings, ventes, achats, quick sell, récompenses et corrections sensibles.
                         </p>
                       </div>
 
@@ -613,16 +725,91 @@ export default function Admin() {
                           <strong>{formatNumber(securityTotals.allowed)}</strong>
                         </div>
                         <div className="adminSecurityPill is-watch">
-                          <span>Signalees</span>
+                          <span>Signalées</span>
                           <strong>{formatNumber(securityTotals.flagged)}</strong>
                         </div>
                         <div className="adminSecurityPill is-danger">
-                          <span>Bloquees</span>
+                          <span>Bloquées</span>
                           <strong>{formatNumber(securityTotals.blocked)}</strong>
                         </div>
                         <div className="adminSecurityPill">
                           <span>Critiques</span>
                           <strong>{formatNumber(securityTotals.danger)}</strong>
+                        </div>
+                      </div>
+
+                      <div className="adminFiltersBar adminFiltersBar--economyLogs">
+                        <label className="adminField">
+                          <span>Type d'action</span>
+                          <select value={ecoLogAction} onChange={(e) => setEcoLogAction(e.target.value)}>
+                            <option value="">Toutes les actions</option>
+                            {ECONOMY_ACTION_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="adminField">
+                          <span>Statut</span>
+                          <select value={ecoLogStatus} onChange={(e) => setEcoLogStatus(e.target.value)}>
+                            <option value="">Tous</option>
+                            <option value="allowed">OK</option>
+                            <option value="flagged">Signalé</option>
+                            <option value="blocked">Bloqué</option>
+                          </select>
+                        </label>
+
+                        <label className="adminField">
+                          <span>Niveau</span>
+                          <select value={ecoLogSeverity} onChange={(e) => setEcoLogSeverity(e.target.value)}>
+                            <option value="">Tous</option>
+                            <option value="info">Info</option>
+                            <option value="watch">À surveiller</option>
+                            <option value="danger">Critique</option>
+                          </select>
+                        </label>
+
+                        <label className="adminField">
+                          <span>Joueur ID</span>
+                          <input
+                            type="number"
+                            min={1}
+                            value={ecoLogUserId}
+                            onChange={(e) => setEcoLogUserId(e.target.value)}
+                            placeholder="Ex: 12"
+                          />
+                        </label>
+
+                        <label className="adminField">
+                          <span>Carte ID</span>
+                          <input
+                            type="number"
+                            min={1}
+                            value={ecoLogCardId}
+                            onChange={(e) => setEcoLogCardId(e.target.value)}
+                            placeholder="Ex: 405"
+                          />
+                        </label>
+
+                        <label className="adminField">
+                          <span>Du</span>
+                          <input type="date" value={ecoLogFrom} onChange={(e) => setEcoLogFrom(e.target.value)} />
+                        </label>
+
+                        <label className="adminField">
+                          <span>Au</span>
+                          <input type="date" value={ecoLogTo} onChange={(e) => setEcoLogTo(e.target.value)} />
+                        </label>
+
+                        <div className="adminFiltersActions">
+                          <button type="button" className="btn adminPrimaryBtn" onClick={applyEconomyLogFilters} disabled={ecoLogsLoading}>
+                            Appliquer
+                          </button>
+                          <button type="button" className="btn" onClick={resetEconomyLogFilters} disabled={ecoLogsLoading}>
+                            Réinitialiser
+                          </button>
                         </div>
                       </div>
 
@@ -635,20 +822,50 @@ export default function Admin() {
                               className={`adminSecurityEvent is-${event.severity}`}
                               key={event.id}
                             >
-                              <div>
-                                <strong>{getSecurityActionLabel(event.action)}</strong>
-                                <span>
-                                  {getSecurityStatusLabel(event.status)}
-                                  {event.userId ? ` par user #${event.userId}` : ""}
-                                  {event.valueCredits ? <> - <CurrencyAmount value={event.valueCredits} /></> : ""}
-                                </span>
+                              <div className="adminSecurityEvent__top">
+                                <div>
+                                  <strong>{getSecurityActionLabel(event.action)}</strong>
+                                  <span>
+                                    {getSecurityStatusLabel(event.status)} · {getSeverityLabel(event.severity)}
+                                  </span>
+                                </div>
+                                <time>{formatDate(event.createdAt)}</time>
                               </div>
-                              <time>{formatDate(event.createdAt)}</time>
+
+                              <div className="adminSecurityEvent__meta">
+                                <span>Joueur : {formatLogActor(event)}</span>
+                                {formatRelatedActor(event) ? <span>Lié : {formatRelatedActor(event)}</span> : null}
+                                {event.cardId ? (
+                                  <span>
+                                    Carte : {event.cardName ?? "Carte"} #{event.cardId}
+                                    {event.cardRarity ? ` · ${event.cardRarity}` : ""}
+                                  </span>
+                                ) : null}
+                                {event.valueCredits ? (
+                                  <span>
+                                    Valeur : <CurrencyAmount value={event.valueCredits} />
+                                  </span>
+                                ) : null}
+                                {event.targetType ? (
+                                  <span>
+                                    Cible : {event.targetType}
+                                    {event.targetId ? ` #${event.targetId}` : ""}
+                                  </span>
+                                ) : null}
+                              </div>
+
+                              {getLogHint(event) ? <p>{getLogHint(event)}</p> : null}
                               {event.reason ? <p>{event.reason}</p> : null}
+                              {event.metadata ? (
+                                <details className="adminSecurityEvent__details">
+                                  <summary>Détails</summary>
+                                  <pre>{JSON.stringify(event.metadata, null, 2)}</pre>
+                                </details>
+                              ) : null}
                             </article>
                           ))
                         ) : (
-                          <div className="adminEmpty">Aucun signal anti-abus sur cette période.</div>
+                          <div className="adminEmpty">Aucune action économique sur cette période.</div>
                         )}
                       </div>
 
@@ -659,10 +876,10 @@ export default function Admin() {
                           onClick={() => setEcoLogsPage((value) => Math.max(1, value - 1))}
                           disabled={ecoLogsPagination.page <= 1 || ecoLogsLoading}
                         >
-                          Precedent
+                          Précédent
                         </button>
                         <div className="adminPagination__info">
-                          Logs page {ecoLogsPagination.page} / {ecoLogsPagination.totalPages} - {formatNumber(ecoLogsPagination.total)} entree(s)
+                          Journal page {ecoLogsPagination.page} / {ecoLogsPagination.totalPages} - {formatNumber(ecoLogsPagination.total)} entrée(s)
                         </div>
                         <button
                           type="button"

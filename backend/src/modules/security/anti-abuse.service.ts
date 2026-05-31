@@ -5,7 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThanOrEqual, Repository } from 'typeorm';
+import { Brackets, MoreThanOrEqual, Repository } from 'typeorm';
 
 import {
   EconomicActionLog,
@@ -13,6 +13,8 @@ import {
   EconomicActionStatus,
 } from './economic-action-log.entity';
 import { MarketTransaction } from '../market/market-transaction.entity';
+import { User } from '../users/user.entity';
+import { Card } from '../cards/card.entity';
 
 export type EconomicAction =
   | 'OPEN_BOOSTER'
@@ -21,7 +23,14 @@ export type EconomicAction =
   | 'MARKET_LISTING_CREATE'
   | 'MARKET_LISTING_CANCEL'
   | 'MARKET_BUY'
-  | 'MARKET_REWARD_CLAIM';
+  | 'MARKET_SALE'
+  | 'MARKET_REWARD_CLAIM'
+  | 'BADGE_REWARD'
+  | 'SIGNUP_BONUS'
+  | 'ECONOMY_CREDITS_ADD'
+  | 'ECONOMY_FREE_BOOSTER_ADD'
+  | 'ECONOMY_RESET'
+  | 'ECONOMY_ROLLBACK';
 
 type RateLimitRule = {
   windowMs: number;
@@ -30,6 +39,8 @@ type RateLimitRule = {
 
 type LogActionInput = {
   userId?: number | null;
+  relatedUserId?: number | null;
+  cardId?: number | null;
   action: EconomicAction | string;
   status?: EconomicActionStatus;
   severity?: EconomicActionSeverity;
@@ -73,7 +84,7 @@ export type AbuseDecision = {
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 
-const ACTION_RATE_LIMITS: Record<EconomicAction, RateLimitRule[]> = {
+const ACTION_RATE_LIMITS: Partial<Record<EconomicAction, RateLimitRule[]>> = {
   OPEN_BOOSTER: [
     { windowMs: 15 * SECOND, max: 8 },
     { windowMs: MINUTE, max: 24 },
@@ -113,10 +124,14 @@ export class AntiAbuseService {
     private readonly logRepo: Repository<EconomicActionLog>,
     @InjectRepository(MarketTransaction)
     private readonly transactionRepo: Repository<MarketTransaction>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    @InjectRepository(Card)
+    private readonly cardRepo: Repository<Card>,
   ) {}
 
   async assertRateLimit(userId: number, action: EconomicAction) {
-    const rules = ACTION_RATE_LIMITS[action];
+    const rules = ACTION_RATE_LIMITS[action] ?? [];
     const now = Date.now();
 
     for (const rule of rules) {
@@ -156,6 +171,7 @@ export class AntiAbuseService {
     if (decision.status === 'blocked') {
       await this.logAction({
         userId: input.userId,
+        cardId: input.cardId,
         action: input.action,
         status: 'blocked',
         severity: 'danger',
@@ -177,6 +193,7 @@ export class AntiAbuseService {
     if (decision.status === 'flagged') {
       await this.logAction({
         userId: input.userId,
+        cardId: input.cardId,
         action: input.action,
         status: 'flagged',
         severity: decision.severity,
@@ -229,6 +246,8 @@ export class AntiAbuseService {
     if (shouldBlock) {
       await this.logAction({
         userId: input.buyerId,
+        relatedUserId: input.sellerId,
+        cardId: input.cardId,
         action: 'MARKET_BUY',
         status: 'blocked',
         severity: 'danger',
@@ -252,6 +271,8 @@ export class AntiAbuseService {
     if (decision.status === 'flagged') {
       await this.logAction({
         userId: input.buyerId,
+        relatedUserId: input.sellerId,
+        cardId: input.cardId,
         action: 'MARKET_BUY',
         status: 'flagged',
         severity: decision.severity,
@@ -276,6 +297,8 @@ export class AntiAbuseService {
       await this.logRepo.save(
         this.logRepo.create({
           userId: input.userId ?? null,
+          relatedUserId: input.relatedUserId ?? null,
+          cardId: input.cardId ?? null,
           action: input.action,
           status: input.status ?? 'allowed',
           severity: input.severity ?? 'info',
@@ -340,43 +363,36 @@ export class AntiAbuseService {
       };
     });
 
+    const recentEvents = await this.enrichLogRows(recentRows);
+
     return {
       totals,
       byAction,
-      recentEvents: recentRows.map((row) => ({
-        id: row.id,
-        userId: row.userId,
-        action: row.action,
-        status: row.status,
-        severity: row.severity,
-        targetType: row.targetType,
-        targetId: row.targetId,
-        valueCredits: row.valueCredits,
-        reason: row.reason,
-        metadata: row.metadata,
-        createdAt: row.createdAt,
-      })),
+      recentEvents,
     };
   }
 
   async getLogs(params: {
     days?: number;
+    from?: string;
+    to?: string;
     page?: number;
     pageSize?: number;
     action?: string;
     status?: EconomicActionStatus | '';
     severity?: EconomicActionSeverity | '';
     userId?: number;
+    cardId?: number;
+    targetType?: string;
   } = {}) {
-    const safeDays = Math.min(180, Math.max(1, Number(params.days) || 7));
+    const { safeDays, from, to } = this.resolveLogDateRange(params);
     const page = Math.max(1, Number(params.page ?? 1) || 1);
     const pageSize = Math.min(100, Math.max(1, Number(params.pageSize ?? 25) || 25));
-    const since = new Date();
-    since.setDate(since.getDate() - safeDays);
 
     const qb = this.logRepo
       .createQueryBuilder('log')
-      .where('log.createdAt >= :since', { since });
+      .where('log.createdAt >= :from', { from })
+      .andWhere('log.createdAt <= :to', { to });
 
     if (params.action?.trim()) {
       qb.andWhere('log.action = :action', { action: params.action.trim() });
@@ -391,7 +407,52 @@ export class AntiAbuseService {
     }
 
     if (params.userId) {
-      qb.andWhere('log.userId = :userId', { userId: Number(params.userId) });
+      const userId = Number(params.userId);
+      qb.andWhere(
+        new Brackets((subQb) => {
+          subQb
+            .where('log.userId = :userId', { userId })
+            .orWhere('log.relatedUserId = :userId', { userId })
+            .orWhere("JSON_UNQUOTE(JSON_EXTRACT(log.metadata, '$.sellerId')) = :userIdText", {
+              userIdText: String(userId),
+            })
+            .orWhere("JSON_UNQUOTE(JSON_EXTRACT(log.metadata, '$.buyerId')) = :userIdText", {
+              userIdText: String(userId),
+            });
+        }),
+      );
+    }
+
+    if (params.cardId) {
+      const cardId = Number(params.cardId);
+      qb.andWhere(
+        new Brackets((subQb) => {
+          subQb
+            .where('log.cardId = :cardId', { cardId })
+            .orWhere("(log.targetType = 'card' AND log.targetId = :cardId)", { cardId })
+            .orWhere("JSON_UNQUOTE(JSON_EXTRACT(log.metadata, '$.cardId')) = :cardIdText", {
+              cardIdText: String(cardId),
+            })
+            .orWhere("JSON_UNQUOTE(JSON_EXTRACT(log.metadata, '$.wantedCardId')) = :cardIdText", {
+              cardIdText: String(cardId),
+            })
+            .orWhere("JSON_UNQUOTE(JSON_EXTRACT(log.metadata, '$.offeredCardId')) = :cardIdText", {
+              cardIdText: String(cardId),
+            })
+            .orWhere("JSON_UNQUOTE(JSON_EXTRACT(log.metadata, '$.rewards.cardId')) = :cardIdText", {
+              cardIdText: String(cardId),
+            })
+            .orWhere('log.metadata LIKE :cardIdArrayLike', {
+              cardIdArrayLike: `%"cardIds":[%${cardId}%]%`,
+            });
+        }),
+      );
+    }
+
+    if (params.targetType?.trim()) {
+      qb.andWhere('log.targetType = :targetType', {
+        targetType: params.targetType.trim(),
+      });
     }
 
     const [rows, total] = await qb
@@ -400,10 +461,107 @@ export class AntiAbuseService {
       .take(pageSize)
       .getManyAndCount();
 
+    const items = await this.enrichLogRows(rows);
+
     return {
-      items: rows.map((row) => ({
+      items,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+      filters: {
+        days: safeDays,
+        from: from.toISOString(),
+        to: to.toISOString(),
+        action: params.action?.trim() || null,
+        status: params.status || null,
+        severity: params.severity || null,
+        userId: params.userId || null,
+        cardId: params.cardId || null,
+        targetType: params.targetType?.trim() || null,
+      },
+    };
+  }
+
+  private resolveLogDateRange(params: { days?: number; from?: string; to?: string }) {
+    const safeDays = Math.min(180, Math.max(1, Number(params.days) || 7));
+    const fallbackFrom = new Date();
+    fallbackFrom.setDate(fallbackFrom.getDate() - safeDays);
+
+    const parsedFrom = params.from ? new Date(`${params.from}T00:00:00`) : null;
+    const parsedTo = params.to ? new Date(`${params.to}T23:59:59.999`) : null;
+
+    const from =
+      parsedFrom && !Number.isNaN(parsedFrom.getTime()) ? parsedFrom : fallbackFrom;
+    const to =
+      parsedTo && !Number.isNaN(parsedTo.getTime()) ? parsedTo : new Date();
+
+    if (from.getTime() > to.getTime()) {
+      return {
+        safeDays,
+        from: to,
+        to: from,
+      };
+    }
+
+    return {
+      safeDays,
+      from,
+      to,
+    };
+  }
+
+  private async enrichLogRows(rows: EconomicActionLog[]) {
+    const userIds = new Set<number>();
+    const cardIds = new Set<number>();
+
+    for (const row of rows) {
+      const primaryUserId = row.userId ?? null;
+      const relatedUserId = this.getRelatedUserId(row);
+      const cardId = this.getPrimaryCardId(row);
+
+      if (primaryUserId) userIds.add(primaryUserId);
+      if (relatedUserId) userIds.add(relatedUserId);
+      if (cardId) cardIds.add(cardId);
+    }
+
+    const [users, cards] = await Promise.all([
+      userIds.size
+        ? this.userRepo
+            .createQueryBuilder('user')
+            .where('user.id IN (:...ids)', { ids: Array.from(userIds) })
+            .getMany()
+        : Promise.resolve([]),
+      cardIds.size
+        ? this.cardRepo
+            .createQueryBuilder('card')
+            .where('card.id IN (:...ids)', { ids: Array.from(cardIds) })
+            .getMany()
+        : Promise.resolve([]),
+    ]);
+
+    const usersById = new Map(users.map((user) => [user.id, user]));
+    const cardsById = new Map(cards.map((card) => [card.id, card]));
+
+    return rows.map((row) => {
+      const relatedUserId = this.getRelatedUserId(row);
+      const cardId = this.getPrimaryCardId(row);
+      const user = row.userId ? usersById.get(row.userId) : null;
+      const relatedUser = relatedUserId ? usersById.get(relatedUserId) : null;
+      const card = cardId ? cardsById.get(cardId) : null;
+
+      return {
         id: row.id,
         userId: row.userId,
+        username: user?.username ?? null,
+        relatedUserId,
+        relatedUsername: relatedUser?.username ?? null,
+        cardId,
+        cardKey: card?.key ?? null,
+        cardName: card?.name ?? null,
+        cardRarity: card?.rarity ?? null,
         action: row.action,
         status: row.status,
         severity: row.severity,
@@ -413,21 +571,56 @@ export class AntiAbuseService {
         reason: row.reason,
         metadata: row.metadata,
         createdAt: row.createdAt,
-      })),
-      pagination: {
-        page,
-        pageSize,
-        total,
-        totalPages: Math.max(1, Math.ceil(total / pageSize)),
-      },
-      filters: {
-        days: safeDays,
-        action: params.action?.trim() || null,
-        status: params.status || null,
-        severity: params.severity || null,
-        userId: params.userId || null,
-      },
-    };
+      };
+    });
+  }
+
+  private getRelatedUserId(row: EconomicActionLog) {
+    return (
+      row.relatedUserId ??
+      this.getMetadataNumber(row.metadata, 'relatedUserId') ??
+      this.getMetadataNumber(row.metadata, 'sellerId') ??
+      this.getMetadataNumber(row.metadata, 'buyerId') ??
+      null
+    );
+  }
+
+  private getPrimaryCardId(row: EconomicActionLog) {
+    if (row.cardId) return row.cardId;
+    if (row.targetType === 'card' && row.targetId) return row.targetId;
+
+    return (
+      this.getMetadataNumber(row.metadata, 'cardId') ??
+      this.getMetadataNumber(row.metadata, 'soldCardId') ??
+      this.getMetadataNumber(row.metadata, 'wantedCardId') ??
+      this.getMetadataNumber(row.metadata, 'offeredCardId') ??
+      this.getMetadataNumber(row.metadata, 'rewards.cardId') ??
+      this.getFirstMetadataArrayNumber(row.metadata, 'hitCardIds') ??
+      this.getFirstMetadataArrayNumber(row.metadata, 'newCardIds') ??
+      this.getFirstMetadataArrayNumber(row.metadata, 'cardIds') ??
+      null
+    );
+  }
+
+  private getMetadataNumber(metadata: Record<string, any> | null, path: string) {
+    if (!metadata) return null;
+    const value = path
+      .split('.')
+      .reduce<any>((cursor, key) => (cursor && typeof cursor === 'object' ? cursor[key] : undefined), metadata);
+    const num = Number(value);
+    return Number.isFinite(num) && num > 0 ? num : null;
+  }
+
+  private getFirstMetadataArrayNumber(metadata: Record<string, any> | null, key: string) {
+    const value = metadata?.[key];
+    if (!Array.isArray(value)) return null;
+
+    for (const item of value) {
+      const num = Number(item);
+      if (Number.isFinite(num) && num > 0) return num;
+    }
+
+    return null;
   }
 
   private evaluatePriceGuard(input: PriceGuardInput): AbuseDecision {

@@ -13,12 +13,20 @@ export type EconomicActionSeverity = 'info' | 'watch' | 'danger';
 @Index(['createdAt'])
 @Index(['action', 'status'])
 @Index(['userId', 'action', 'createdAt'])
+@Index(['cardId', 'createdAt'])
+@Index(['relatedUserId', 'createdAt'])
 export class EconomicActionLog {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column({ name: 'user_id', type: 'int', nullable: true })
   userId!: number | null;
+
+  @Column({ name: 'related_user_id', type: 'int', nullable: true })
+  relatedUserId!: number | null;
+
+  @Column({ name: 'card_id', type: 'int', nullable: true })
+  cardId!: number | null;
 
   @Column({ type: 'varchar', length: 64 })
   action!: string;

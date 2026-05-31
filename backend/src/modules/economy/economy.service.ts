@@ -6,6 +6,7 @@ import { User } from '../users/user.entity';
 import { MarketPricingService } from '../market/market-pricing.service';
 import { ECONOMY_RULES } from './economy.constants';
 import { applyEconomyRecharge, ensureRechargeDates } from './economy.utils';
+import { AntiAbuseService } from '../security/anti-abuse.service';
 
 export type OpenKind = 'booster' | 'display';
 
@@ -18,12 +19,24 @@ export type CreditBreakdown = {
   total: number;
 };
 
+type EconomyGrantLogOptions = {
+  source?: string;
+  reason?: string;
+  skipLog?: boolean;
+  targetType?: string | null;
+  targetId?: number | null;
+  relatedUserId?: number | null;
+  cardId?: number | null;
+  metadata?: Record<string, any>;
+};
+
 @Injectable()
 export class EconomyService {
   constructor(
     @InjectRepository(UserEconomy)
     private readonly economyRepo: Repository<UserEconomy>,
     private readonly marketPricingService: MarketPricingService,
+    private readonly antiAbuseService: AntiAbuseService,
   ) {}
 
   getCosts() {
@@ -172,18 +185,62 @@ export class EconomyService {
     };
   }
 
-  async addCredits(userId: number, amount: number) {
+  async addCredits(userId: number, amount: number, options: EconomyGrantLogOptions = {}) {
     if (!amount) return;
     const row = await this.ensure(userId);
     row.credits += amount;
     await this.economyRepo.save(row);
+
+    if (!options.skipLog) {
+      await this.antiAbuseService.logAction({
+        userId,
+        relatedUserId: options.relatedUserId ?? null,
+        cardId: options.cardId ?? null,
+        action:
+          options.source ??
+          (options.reason === 'signup_verified'
+            ? 'SIGNUP_BONUS'
+            : 'ECONOMY_CREDITS_ADD'),
+        status: 'allowed',
+        severity: 'info',
+        targetType: options.targetType ?? null,
+        targetId: options.targetId ?? null,
+        valueCredits: amount,
+        reason: options.reason ?? null,
+        metadata: {
+          ...(options.metadata ?? {}),
+          amount,
+          balanceAfter: row.credits,
+        },
+      });
+    }
   }
 
-  async addFreeBoosters(userId: number, amount: number) {
+  async addFreeBoosters(userId: number, amount: number, options: EconomyGrantLogOptions = {}) {
     if (!amount) return;
 
     const row = await this.ensure(userId);
     row.freeBoosterCharges = Math.min(127, row.freeBoosterCharges + amount);
     await this.economyRepo.save(row);
+
+    if (!options.skipLog) {
+      await this.antiAbuseService.logAction({
+        userId,
+        relatedUserId: options.relatedUserId ?? null,
+        cardId: options.cardId ?? null,
+        action: options.source ?? 'ECONOMY_FREE_BOOSTER_ADD',
+        status: 'allowed',
+        severity: 'info',
+        targetType: options.targetType ?? null,
+        targetId: options.targetId ?? null,
+        valueCredits: 0,
+        reason: options.reason ?? null,
+        metadata: {
+          ...(options.metadata ?? {}),
+          freeBoosters: amount,
+          balanceAfter: row.freeBoosterCharges,
+        },
+      });
+    }
   }
 }

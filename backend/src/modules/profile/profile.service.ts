@@ -476,7 +476,7 @@ export class ProfileService {
           }),
         );
 
-        await this.grantReward(userId, definition.reward);
+        await this.grantReward(userId, definition.reward, definition.code);
         existingCodes.add(definition.code);
         newlyUnlocked.push(this.mapBadge(definition, saved, progress));
       } catch {
@@ -585,13 +585,29 @@ export class ProfileService {
     };
   }
 
-  private async grantReward(userId: number, reward: BadgeReward) {
+  private async grantReward(userId: number, reward: BadgeReward, badgeCode: string) {
     if (reward.credits) {
-      await this.economy.addCredits(userId, reward.credits);
+      await this.economy.addCredits(userId, reward.credits, {
+        source: 'BADGE_REWARD',
+        reason: 'badge_reward',
+        targetType: 'badge',
+        metadata: {
+          badgeCode,
+          rewardType: 'credits',
+        },
+      });
     }
 
     if (reward.freeBoosters) {
-      await this.economy.addFreeBoosters(userId, reward.freeBoosters);
+      await this.economy.addFreeBoosters(userId, reward.freeBoosters, {
+        source: 'BADGE_REWARD',
+        reason: 'badge_reward',
+        targetType: 'badge',
+        metadata: {
+          badgeCode,
+          rewardType: 'free_boosters',
+        },
+      });
     }
   }
 

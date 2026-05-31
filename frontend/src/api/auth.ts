@@ -268,6 +268,13 @@ export type AdminEconomyOverviewResponse = {
     recentEvents: Array<{
       id: number;
       userId: number | null;
+      username?: string | null;
+      relatedUserId?: number | null;
+      relatedUsername?: string | null;
+      cardId?: number | null;
+      cardKey?: string | null;
+      cardName?: string | null;
+      cardRarity?: string | null;
       action: string;
       status: 'allowed' | 'flagged' | 'blocked';
       severity: 'info' | 'watch' | 'danger';
@@ -291,10 +298,14 @@ export type AdminEconomyLogsResponse = {
   };
   filters: {
     days: number;
+    from?: string;
+    to?: string;
     action: string | null;
     status: string | null;
     severity: string | null;
     userId: number | null;
+    cardId?: number | null;
+    targetType?: string | null;
   };
 };
 
@@ -429,22 +440,30 @@ export async function getAdminEconomyOverview(days = 7) {
 
 export async function getAdminEconomyLogs(params?: {
   days?: number;
+  from?: string;
+  to?: string;
   page?: number;
   pageSize?: number;
   action?: string;
   status?: string;
   severity?: string;
   userId?: number;
+  cardId?: number;
+  targetType?: string;
 }) {
   const search = new URLSearchParams();
 
   if (params?.days) search.set('days', String(params.days));
+  if (params?.from) search.set('from', params.from);
+  if (params?.to) search.set('to', params.to);
   if (params?.page) search.set('page', String(params.page));
   if (params?.pageSize) search.set('pageSize', String(params.pageSize));
   if (params?.action) search.set('action', params.action);
   if (params?.status) search.set('status', params.status);
   if (params?.severity) search.set('severity', params.severity);
   if (params?.userId) search.set('userId', String(params.userId));
+  if (params?.cardId) search.set('cardId', String(params.cardId));
+  if (params?.targetType) search.set('targetType', params.targetType);
 
   const query = search.toString();
 

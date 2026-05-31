@@ -240,6 +240,7 @@ export class MarketService {
     await this.snapshotCards([cardId], 'quick_sell');
     await this.antiAbuseService.logAction({
       userId,
+      cardId,
       action: 'QUICK_SELL',
       status: 'allowed',
       targetType: 'card',
@@ -247,6 +248,8 @@ export class MarketService {
       valueCredits: result.creditsEarned,
       metadata: {
         quantity,
+        cardName: result.cardName,
+        rarity: result.rarity,
         marketPrice: result.marketPrice,
         quickSellRate: result.quickSellRate,
         remainingQuantity: result.remainingQuantity,
@@ -426,6 +429,7 @@ export class MarketService {
     if (priceDecision.status === 'allowed') {
       await this.antiAbuseService.logAction({
         userId,
+        cardId: normalized.cardId,
         action: 'MARKET_LISTING_CREATE',
         status: 'allowed',
         targetType: 'listing',
@@ -433,11 +437,15 @@ export class MarketService {
         valueCredits: Math.round(referenceRequestedValue),
         metadata: {
           cardId: normalized.cardId,
+          cardName: card.name,
+          rarity: card.rarity,
           quantity: normalized.quantity,
           listingMode: normalized.listingMode,
           offerType: normalized.offerType,
           referenceListedValue,
           referenceRequestedValue,
+          wantedCardId: normalized.wantedCardId ?? null,
+          wantedCardName: wantedCard?.name ?? null,
           priceDecision,
         },
       });
@@ -586,6 +594,7 @@ export class MarketService {
     );
     await this.antiAbuseService.logAction({
       userId,
+      cardId: result.cardId,
       action: 'MARKET_LISTING_CANCEL',
       status: 'allowed',
       targetType: 'listing',
@@ -913,6 +922,8 @@ export class MarketService {
     if (result.abuseDecision?.status === 'allowed') {
       await this.antiAbuseService.logAction({
         userId,
+        relatedUserId: result.transaction.sellerId,
+        cardId: result.transaction.cardId,
         action: 'MARKET_BUY',
         status: 'allowed',
         targetType: 'listing',
@@ -922,10 +933,38 @@ export class MarketService {
           transactionId: result.transaction.id,
           sellerId: result.transaction.sellerId,
           cardId: result.transaction.cardId,
+          cardName: result.transaction.cardName,
           quantity: result.transaction.quantity,
           offerType: result.transaction.offerType,
           listingMode: result.transaction.listingMode,
+          buyerOfferedCardId: result.transaction.buyerOfferedCardId,
+          buyerOfferedCardName: result.transaction.buyerOfferedCardName,
+          buyerOfferedCardQuantity: result.transaction.buyerOfferedCardQuantity,
           abuseDecision: result.abuseDecision,
+        },
+      });
+      await this.antiAbuseService.logAction({
+        userId: result.transaction.sellerId,
+        relatedUserId: result.transaction.buyerId,
+        cardId: result.transaction.cardId,
+        action: 'MARKET_SALE',
+        status: 'allowed',
+        severity: 'info',
+        targetType: 'transaction',
+        targetId: result.transaction.id,
+        valueCredits: result.settlement.creditsPaid,
+        metadata: {
+          listingId,
+          buyerId: result.transaction.buyerId,
+          cardId: result.transaction.cardId,
+          cardName: result.transaction.cardName,
+          quantity: result.transaction.quantity,
+          offerType: result.transaction.offerType,
+          listingMode: result.transaction.listingMode,
+          rewardPending: true,
+          buyerOfferedCardId: result.transaction.buyerOfferedCardId,
+          buyerOfferedCardName: result.transaction.buyerOfferedCardName,
+          buyerOfferedCardQuantity: result.transaction.buyerOfferedCardQuantity,
         },
       });
     }
@@ -1041,6 +1080,9 @@ export class MarketService {
           transaction.buyerOfferedCard?.id ?? null,
         ].filter((value): value is number => typeof value === 'number'),
         transactionId: transaction.id,
+        buyerId: transaction.buyer.id,
+        soldCardId: transaction.card.id,
+        soldCardName: transaction.card.name,
         claimedAt: transaction.sellerRewardClaimedAt,
         rewards: {
           credits: transaction.totalPriceCredits,
@@ -1061,12 +1103,17 @@ export class MarketService {
     await this.snapshotCards(result.snapshotCardIds, 'reward_claimed');
     await this.antiAbuseService.logAction({
       userId,
+      relatedUserId: result.buyerId,
+      cardId: result.soldCardId,
       action: 'MARKET_REWARD_CLAIM',
       status: 'allowed',
       targetType: 'transaction',
       targetId: result.transactionId,
       valueCredits: result.rewards.credits,
       metadata: {
+        buyerId: result.buyerId,
+        soldCardId: result.soldCardId,
+        soldCardName: result.soldCardName,
         rewards: result.rewards,
         claimedAt: result.claimedAt,
       },

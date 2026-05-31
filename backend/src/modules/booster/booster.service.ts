@@ -796,6 +796,47 @@ export class BoosterService {
     };
   }
 
+  private buildOpeningLogDetails(kind: OpeningHistoryKind, result: any) {
+    const flatCards = this.flattenStoredOpeningCards(kind, result);
+    const historyCards = this.getOpeningHistoryCards(kind, result);
+    const cardIds = Array.from(
+      new Set(
+        flatCards
+          .map((card: any) => this.getStoredCardId(card))
+          .filter((id): id is number => Number.isInteger(id) && id > 0),
+      ),
+    );
+    const hitCardIds = Array.from(
+      new Set(
+        historyCards
+          .filter((card: any) => this.isSavedBigHit(card))
+          .map((card: any) => this.getStoredCardId(card))
+          .filter((id): id is number => Number.isInteger(id) && id > 0),
+      ),
+    );
+    const newCardIds = Array.isArray(result?.newCardIds)
+      ? result.newCardIds.filter((id: any) => Number.isInteger(id) && id > 0)
+      : [];
+    const primaryCard =
+      historyCards.find((card: any) => this.isSavedBigHit(card)) ??
+      historyCards[0] ??
+      flatCards[0] ??
+      null;
+
+    return {
+      cardId: this.getStoredCardId(primaryCard),
+      cardIds,
+      hitCardIds,
+      newCardIds,
+      highlights: historyCards.slice(0, 6).map((card: any) => ({
+        id: this.getStoredCardId(card),
+        name: card?.name ?? null,
+        rarity: card?.rarity ?? null,
+        isNew: this.isStoredCardNew(card, result),
+      })),
+    };
+  }
+
   private async hydrateHistoryCoverCards<
     T extends { coverCard?: any | null; previewCards?: any[] },
   >(
@@ -1035,7 +1076,7 @@ export class BoosterService {
           ownedBefore,
         });
 
-      await this.economy.addCredits(userId, breakdown.total);
+      await this.economy.addCredits(userId, breakdown.total, { skipLog: true });
 
       const newIdsSet = new Set(newMeta.newCardIds);
       const firstOccurrenceMarked = new Set<number>();
@@ -1082,8 +1123,10 @@ export class BoosterService {
     await this.economyAnalyticsService.addOpeningReward(
       result.creditsEarnedTotal,
     );
+    const logDetails = this.buildOpeningLogDetails('booster', result);
     await this.antiAbuseService.logAction({
       userId,
+      cardId: logDetails.cardId,
       action: 'OPEN_BOOSTER',
       status: 'allowed',
       severity: 'info',
@@ -1094,6 +1137,9 @@ export class BoosterService {
         season: result.season,
         seasonNumber,
         payment: result.payment,
+        cardIds: logDetails.cardIds,
+        hitCardIds: logDetails.hitCardIds,
+        highlights: logDetails.highlights,
         newCardCount: result.newCardIds?.length ?? 0,
         flags: result.flags,
       },
@@ -1199,7 +1245,7 @@ export class BoosterService {
         goldMultiplier: hasGoldBooster,
       });
 
-      await this.economy.addCredits(userId, displayBreakdown.total);
+      await this.economy.addCredits(userId, displayBreakdown.total, { skipLog: true });
 
       const openingResult = {
         payment,
@@ -1240,8 +1286,10 @@ export class BoosterService {
     await this.economyAnalyticsService.addOpeningReward(
       result.creditsEarnedTotal,
     );
+    const logDetails = this.buildOpeningLogDetails('display', result);
     await this.antiAbuseService.logAction({
       userId,
+      cardId: logDetails.cardId,
       action: 'OPEN_DISPLAY',
       status: 'allowed',
       severity: hasGoldBooster ? 'watch' : 'info',
@@ -1252,6 +1300,9 @@ export class BoosterService {
         season: result.season,
         seasonNumber,
         payment: result.payment,
+        cardIds: logDetails.cardIds,
+        hitCardIds: logDetails.hitCardIds,
+        highlights: logDetails.highlights,
         newCardCount: result.newCardIds?.length ?? 0,
         hasGoldBooster,
         goldIndex: hasGoldBooster ? goldIndex : null,
