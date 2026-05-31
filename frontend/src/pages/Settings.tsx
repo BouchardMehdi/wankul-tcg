@@ -714,7 +714,7 @@ export default function Settings() {
                         <span className="skipToggleBtn__track">
                           <span className="skipToggleBtn__thumb" />
                         </span>
-                        <span className="skipToggleBtn__label">{pushPrefs.saleRewardEnabled ? "Active" : "Desactive"}</span>
+                        <span className="skipToggleBtn__label">{pushPrefs.saleRewardEnabled ? "Activé" : "Désactivé"}</span>
                       </button>
                     </div>
 
@@ -732,7 +732,7 @@ export default function Settings() {
                         <span className="skipToggleBtn__track">
                           <span className="skipToggleBtn__thumb" />
                         </span>
-                        <span className="skipToggleBtn__label">{pushPrefs.freeOpeningsReadyEnabled ? "Active" : "Desactive"}</span>
+                        <span className="skipToggleBtn__label">{pushPrefs.freeOpeningsReadyEnabled ? "Activé" : "Désactivé"}</span>
                       </button>
                     </div>
 
@@ -750,7 +750,7 @@ export default function Settings() {
                         <span className="skipToggleBtn__track">
                           <span className="skipToggleBtn__thumb" />
                         </span>
-                        <span className="skipToggleBtn__label">{pushPrefs.freeOpeningsSoonEnabled ? "Active" : "Desactive"}</span>
+                        <span className="skipToggleBtn__label">{pushPrefs.freeOpeningsSoonEnabled ? "Activé" : "Désactivé"}</span>
                       </button>
                     </div>
 
@@ -790,7 +790,7 @@ export default function Settings() {
                         <span className="skipToggleBtn__track">
                           <span className="skipToggleBtn__thumb" />
                         </span>
-                        <span className="skipToggleBtn__label">{pushPrefs.watchlistPriceAlertEnabled ? "Active" : "Desactive"}</span>
+                        <span className="skipToggleBtn__label">{pushPrefs.watchlistPriceAlertEnabled ? "Activé" : "Désactivé"}</span>
                       </button>
                     </div>
 
@@ -808,7 +808,7 @@ export default function Settings() {
                         <span className="skipToggleBtn__track">
                           <span className="skipToggleBtn__thumb" />
                         </span>
-                        <span className="skipToggleBtn__label">{pushPrefs.staleListingAlertEnabled ? "Active" : "Desactive"}</span>
+                        <span className="skipToggleBtn__label">{pushPrefs.staleListingAlertEnabled ? "Activé" : "Désactivé"}</span>
                       </button>
                     </div>
 
@@ -836,8 +836,8 @@ export default function Settings() {
 
                     <div className="settingsRow">
                       <div className="settingsRow__content">
-                        <div className="settingsRow__title">Recap quotidien market</div>
-                        <div className="settingsRow__desc">Petit point journalier plus engageant sur ton activite et le volume du jour.</div>
+                        <div className="settingsRow__title">Résumé quotidien du market</div>
+                        <div className="settingsRow__desc">Active ou désactive séparément la notification récap du market.</div>
                       </div>
                       <button
                         type="button"
@@ -848,7 +848,7 @@ export default function Settings() {
                         <span className="skipToggleBtn__track">
                           <span className="skipToggleBtn__thumb" />
                         </span>
-                        <span className="skipToggleBtn__label">{pushPrefs.dailyMarketRecapEnabled ? "Active" : "Desactive"}</span>
+                        <span className="skipToggleBtn__label">{pushPrefs.dailyMarketRecapEnabled ? "Activé" : "Désactivé"}</span>
                       </button>
                     </div>
 

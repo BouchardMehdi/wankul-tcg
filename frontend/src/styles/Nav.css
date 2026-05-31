@@ -275,6 +275,10 @@
     display: none;
   }
 
+  .topbar__link[data-navkey="admin"] {
+    display: none;
+  }
+
   .topbar__link[data-center="true"] .topbar__icon svg {
     width: 25px;
     height: 25px;

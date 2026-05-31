@@ -113,8 +113,8 @@ const NOTIFICATION_ROWS: Array<{
   },
   {
     key: "dailyMarketRecapEnabled",
-    title: "Recap market quotidien",
-    desc: "Un résumé léger du market si tu veux plus d'engagement.",
+    title: "Résumé quotidien du market",
+    desc: "Active ou désactive séparément la notification récap du market.",
     kind: "toggle",
   },
 ];
@@ -611,7 +611,7 @@ export default function PwaPreferences() {
                 aria-pressed={settings.pwaNotifications}
               >
                 <span className="skipToggleBtn__track"><span className="skipToggleBtn__thumb" /></span>
-                <span className="skipToggleBtn__label">{settings.pwaNotifications ? "Active" : "Desactive"}</span>
+                <span className="skipToggleBtn__label">{settings.pwaNotifications ? "Activé" : "Désactivé"}</span>
               </button>
             </div>
 
@@ -627,7 +627,7 @@ export default function PwaPreferences() {
                 aria-pressed={settings.pwaAutoCacheCardImages}
               >
                 <span className="skipToggleBtn__track"><span className="skipToggleBtn__thumb" /></span>
-                <span className="skipToggleBtn__label">{settings.pwaAutoCacheCardImages ? "Active" : "Desactive"}</span>
+                <span className="skipToggleBtn__label">{settings.pwaAutoCacheCardImages ? "Activé" : "Désactivé"}</span>
               </button>
             </div>
 
@@ -643,7 +643,7 @@ export default function PwaPreferences() {
                 aria-pressed={settings.pwaOfflineHints}
               >
                 <span className="skipToggleBtn__track"><span className="skipToggleBtn__thumb" /></span>
-                <span className="skipToggleBtn__label">{settings.pwaOfflineHints ? "Active" : "Desactive"}</span>
+                <span className="skipToggleBtn__label">{settings.pwaOfflineHints ? "Activé" : "Désactivé"}</span>
               </button>
             </div>
           </div>
@@ -724,7 +724,7 @@ export default function PwaPreferences() {
                         aria-pressed={Boolean(pushPrefs[row.key])}
                       >
                         <span className="skipToggleBtn__track"><span className="skipToggleBtn__thumb" /></span>
-                        <span className="skipToggleBtn__label">{pushPrefs[row.key] ? "Active" : "Desactive"}</span>
+                        <span className="skipToggleBtn__label">{pushPrefs[row.key] ? "Activé" : "Désactivé"}</span>
                       </button>
                     ) : (
                       <label className="pwaNumberField">

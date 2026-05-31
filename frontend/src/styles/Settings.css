@@ -749,6 +749,15 @@
   filter: brightness(1.06);
 }
 
+[data-theme="light"] .settingsLogoutBtn {
+  color: #191622;
+  border: 1px solid rgba(233, 79, 85, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 244, 0.96), rgba(244, 233, 213, 0.82)),
+    linear-gradient(135deg, rgba(233, 79, 85, 0.16), rgba(241, 154, 53, 0.12));
+  box-shadow: 0 12px 28px rgba(94, 68, 41, 0.10);
+}
+
 .settingsProfileBtn {
   justify-self: flex-start;
   min-width: 200px;

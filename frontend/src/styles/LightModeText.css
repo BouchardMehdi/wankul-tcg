@@ -128,6 +128,11 @@
   -webkit-text-fill-color: var(--btn-danger-text) !important;
 }
 
+[data-theme="light"] .settingsLogoutBtn:not(:disabled) {
+  color: #191622 !important;
+  -webkit-text-fill-color: #191622 !important;
+}
+
 [data-theme="light"] .confirmModal__card {
   border-color: rgba(42, 35, 54, 0.12);
   background:
