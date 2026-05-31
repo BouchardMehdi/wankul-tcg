@@ -418,13 +418,16 @@
 }
 
 .homeShowcase__booster {
-  width: min(24%, 132px);
+  width: auto;
+  height: clamp(214px, 23vw, 266px);
+  max-width: none;
   left: 50%;
   bottom: 8%;
   transform-origin: bottom center;
 }
 
 .homeShowcase__booster--one {
+  height: clamp(205px, 22.1vw, 255px);
   transform: translateX(calc(-50% - 142px)) rotate(-28deg);
 }
 
@@ -441,8 +444,9 @@
 }
 
 .homeShowcase__booster--five {
-  width: min(56%, 320px);
-  transform: translateX(calc(-50% + 142px)) rotate(28deg);
+  width: auto;
+  height: clamp(261px, 28.2vw, 326px);
+  transform: translateX(calc(-50% + 142px)) translateY(24px) rotate(28deg);
 }
 
 .homeShowcase__insights {
@@ -829,25 +833,32 @@
 }
 
 .homeSeasonCard__media {
-  min-height: 220px;
+  height: clamp(286px, 21vw, 320px);
+  min-height: 0;
   display: grid;
   place-items: center;
   padding: 18px 18px 10px;
   background:
     radial-gradient(circle at center, rgba(155, 92, 255, 0.16), transparent 58%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+  overflow: hidden;
 }
 
 .homeSeasonCard__media img {
-  width: min(100%, 168px);
-  height: auto;
+  --home-season-img-y: 0px;
+  width: auto;
+  height: clamp(258px, 22vw, 292px);
+  max-width: min(100%, 190px);
   object-fit: contain;
   filter: drop-shadow(0 16px 36px rgba(0, 0, 0, 0.36));
+  transform: translateY(var(--home-season-img-y));
   transition: transform 220ms cubic-bezier(.2, .8, .2, 1);
 }
 
 .homeSeasonCard--legacy .homeSeasonCard__media img {
+  --home-season-img-y: -46px;
   width: min(340%, 520px);
+  height: auto;
   max-width: none;
 }
 
@@ -900,7 +911,7 @@
   }
 
   .homeSeasonCard:hover .homeSeasonCard__media img {
-    transform: translateY(-4px) scale(1.03);
+    transform: translateY(calc(var(--home-season-img-y, 0px) - 4px)) scale(1.03);
   }
 
   .homeShowcase:hover .homeShowcase__booster--one {
@@ -924,7 +935,7 @@
   }
 
   .homeShowcase:hover .homeShowcase__booster--five {
-    transform: translateX(calc(-50% + 156px)) rotate(30deg);
+    transform: translateX(calc(-50% + 156px)) translateY(26px) rotate(30deg);
     filter: drop-shadow(0 24px 44px rgba(0, 0, 0, 0.46));
   }
 
@@ -1053,7 +1064,15 @@
   }
 
   .homeShowcase__booster {
-    width: min(24vw, 132px);
+    width: auto;
+    height: min(32vw, 244px);
+    max-width: none;
+  }
+
+  .homeShowcase__booster--five {
+    width: auto;
+    height: min(40vw, 302px);
+    transform: translateX(calc(-50% + 142px)) translateY(22px) rotate(28deg);
   }
 }
 
@@ -1088,10 +1107,13 @@
   }
 
   .homeShowcase__booster {
-    width: min(22vw, 108px);
+    width: auto;
+    height: min(44vw, 198px);
+    max-width: none;
   }
 
   .homeShowcase__booster--one {
+    height: min(42vw, 190px);
     transform: translateX(calc(-50% - 88px)) rotate(-26deg);
   }
 
@@ -1108,8 +1130,9 @@
   }
 
   .homeShowcase__booster--five {
-    width: min(58vw, 270px);
-    transform: translateX(calc(-50% + 88px)) rotate(26deg);
+    width: auto;
+    height: min(55vw, 244px);
+    transform: translateX(calc(-50% + 88px)) translateY(18px) rotate(26deg);
   }
 
   .homeMarketBands__row {

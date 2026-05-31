@@ -50,11 +50,13 @@ export type OpeningHistoryItem = {
   seasonNumber: number | null;
   boosterCount: number;
   cardsCount: number;
+  totalCardsCount?: number;
   creditsEarnedTotal: number | null;
   newCount: number;
   hitCount: number;
   hasGoldBooster?: boolean;
   coverCard?: any | null;
+  previewCards?: any[];
   canReplay: boolean;
 };
 

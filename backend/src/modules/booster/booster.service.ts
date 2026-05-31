@@ -46,6 +46,11 @@ type LoadedPools = {
 };
 
 type OpeningHistoryKind = 'booster' | 'display';
+type OpeningHistoryRowRef = {
+  kind: OpeningHistoryKind;
+  id: number;
+  openedAt: Date;
+};
 
 @Injectable()
 export class BoosterService {
@@ -98,6 +103,7 @@ export class BoosterService {
 
   private readonly DISPLAY_BOOSTERS = 24;
   private readonly CHANCE_DISPLAY_HAS_GOLD = 1 / 6;
+  private readonly OPENING_HISTORY_MAX_ITEMS = 50;
 
   private randInt(maxExclusive: number) {
     return Math.floor(Math.random() * maxExclusive);
@@ -594,10 +600,40 @@ export class BoosterService {
     return (
       rarity.includes('u1') ||
       rarity.includes('u2') ||
+      rarity.includes('ultra rare') ||
+      rarity.includes('duo') ||
       rarity.includes('legendaire') ||
       rarity.includes('booster gold') ||
       rarity.includes('ticket')
     );
+  }
+
+  private getStoredCardId(card: any) {
+    const value = Number(card?.id ?? card?.cardId);
+    return Number.isFinite(value) ? value : null;
+  }
+
+  private isStoredCardNew(card: any, result?: any) {
+    if (Boolean(card?.isNew)) return true;
+
+    const id = this.getStoredCardId(card);
+    const key = typeof card?.key === 'string' ? card.key : null;
+    const newIds = new Set(
+      (Array.isArray(result?.newCardIds) ? result.newCardIds : [])
+        .map((value: any) => Number(value))
+        .filter((value: number) => Number.isFinite(value)),
+    );
+    const newKeys = new Set(
+      (Array.isArray(result?.newCardKeys) ? result.newCardKeys : [])
+        .map((value: any) => String(value))
+        .filter(Boolean),
+    );
+
+    return (id !== null && newIds.has(id)) || (key !== null && newKeys.has(key));
+  }
+
+  private isOpeningHistoryCard(card: any, result?: any) {
+    return this.isStoredCardNew(card, result) || this.isSavedBigHit(card);
   }
 
   private extractSavedCreditsTotal(result: any): number | null {
@@ -691,22 +727,53 @@ export class BoosterService {
     return Array.isArray(result?.cards) ? result.cards : [];
   }
 
+  private getOpeningHistoryCards(kind: OpeningHistoryKind, result: any) {
+    return this
+      .flattenStoredOpeningCards(kind, result)
+      .filter((card: any) => this.isOpeningHistoryCard(card, result));
+  }
+
+  private buildOpeningHistoryReplayResult(kind: OpeningHistoryKind, result: any) {
+    if (kind === 'display') {
+      const boosters = Array.isArray(result?.boosters)
+        ? result.boosters
+            .map((boosterCards: any) =>
+              Array.isArray(boosterCards)
+                ? boosterCards.filter((card: any) =>
+                    this.isOpeningHistoryCard(card, result),
+                  )
+                : [],
+            )
+            .filter((boosterCards: any[]) => boosterCards.length > 0)
+        : [];
+
+      return {
+        ...result,
+        boosters,
+      };
+    }
+
+    const cards = Array.isArray(result?.cards)
+      ? result.cards.filter((card: any) => this.isOpeningHistoryCard(card, result))
+      : [];
+
+    return {
+      ...result,
+      cards,
+    };
+  }
+
   private buildOpeningHistoryItem(kind: OpeningHistoryKind, row: any) {
     const result = this.normalizeStoredOpeningResult(kind, row);
     const flatCards = this.flattenStoredOpeningCards(kind, result);
+    const historyCards = this.getOpeningHistoryCards(kind, result);
     const newIds = Array.isArray(result?.newCardIds) ? result.newCardIds : [];
-    const newCards = flatCards.filter((card: any) => Boolean(card?.isNew));
+    const newCards = flatCards.filter((card: any) => this.isStoredCardNew(card, result));
     const hitCards = flatCards.filter((card: any) => this.isSavedBigHit(card));
     const coverCard =
-      newCards.find((card: any) => this.isSavedBigHit(card)) ??
-      hitCards[0] ??
-      newCards[0] ??
-      flatCards[0] ??
+      historyCards.find((card: any) => this.isSavedBigHit(card)) ??
+      historyCards[0] ??
       null;
-    const firstDisplayBooster = Array.isArray(result?.boosters?.[0])
-      ? result.boosters[0]
-      : [];
-
     return {
       id: row.id,
       kind,
@@ -717,26 +784,32 @@ export class BoosterService {
         kind === 'display'
           ? row?.boosterCount ?? result?.meta?.boosters ?? this.DISPLAY_BOOSTERS
           : row?.boosterCount ?? 1,
-      cardsCount: flatCards.length,
+      cardsCount: historyCards.length,
+      totalCardsCount: flatCards.length,
       creditsEarnedTotal: this.extractSavedCreditsTotal(result),
       newCount: Math.max(newIds.length, newCards.length),
       hitCount: hitCards.length,
       hasGoldBooster: Boolean(result?.meta?.hasGoldBooster),
       coverCard,
-      canReplay:
-        kind === 'booster'
-          ? flatCards.length > 0
-          : firstDisplayBooster.some((card: any) => card && typeof card === 'object'),
+      previewCards: historyCards.slice(0, 8),
+      canReplay: historyCards.length > 0,
     };
   }
 
-  private async hydrateHistoryCoverCards<T extends { coverCard?: any | null }>(
+  private async hydrateHistoryCoverCards<
+    T extends { coverCard?: any | null; previewCards?: any[] },
+  >(
     items: T[],
   ) {
     const coverIds = Array.from(
       new Set(
         items
-          .map((item) => Number(item.coverCard?.id))
+          .flatMap((item) => [
+            Number(item.coverCard?.id),
+            ...(Array.isArray(item.previewCards)
+              ? item.previewCards.map((card) => Number(card?.id))
+              : []),
+          ])
           .filter((id) => Number.isFinite(id) && id > 0),
       ),
     );
@@ -752,7 +825,28 @@ export class BoosterService {
     return items.map((item) => {
       const cardId = Number(item.coverCard?.id);
       const freshCard = cardsById.get(cardId);
-      if (!freshCard) return item;
+      const previewCards = Array.isArray(item.previewCards)
+        ? item.previewCards.map((card) => {
+            const freshPreviewCard = cardsById.get(Number(card?.id));
+            if (!freshPreviewCard) return card;
+
+            return {
+              ...card,
+              id: freshPreviewCard.id,
+              key: card?.key ?? freshPreviewCard.key,
+              name: card?.name ?? freshPreviewCard.name,
+              rarity: card?.rarity ?? freshPreviewCard.rarity,
+              imageUrl: freshPreviewCard.imageUrl,
+            };
+          })
+        : item.previewCards;
+
+      if (!freshCard) {
+        return {
+          ...item,
+          previewCards,
+        };
+      }
 
       return {
         ...item,
@@ -764,8 +858,62 @@ export class BoosterService {
           rarity: item.coverCard?.rarity ?? freshCard.rarity,
           imageUrl: freshCard.imageUrl,
         },
+        previewCards,
       };
     });
+  }
+
+  private async trimOpeningHistoryForUser(userId: number) {
+    const [boosters, displays] = await Promise.all([
+      this.boosterOpeningRepo.find({
+        where: { user: { id: userId } as any } as any,
+        select: ['id', 'openedAt'],
+        order: { openedAt: 'DESC', id: 'DESC' },
+      }),
+      this.displayOpeningRepo.find({
+        where: { user: { id: userId } as any } as any,
+        select: ['id', 'openedAt'],
+        order: { openedAt: 'DESC', id: 'DESC' },
+      }),
+    ]);
+
+    const combined: OpeningHistoryRowRef[] = [
+      ...boosters.map((row) => ({
+        kind: 'booster' as const,
+        id: row.id,
+        openedAt: row.openedAt,
+      })),
+      ...displays.map((row) => ({
+        kind: 'display' as const,
+        id: row.id,
+        openedAt: row.openedAt,
+      })),
+    ].sort((a, b) => {
+      const dateDiff =
+        new Date(b.openedAt as any).getTime() -
+        new Date(a.openedAt as any).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return b.id - a.id;
+    });
+
+    const rowsToDelete = combined.slice(this.OPENING_HISTORY_MAX_ITEMS);
+    if (rowsToDelete.length === 0) return;
+
+    const boosterIds = rowsToDelete
+      .filter((row) => row.kind === 'booster')
+      .map((row) => row.id);
+    const displayIds = rowsToDelete
+      .filter((row) => row.kind === 'display')
+      .map((row) => row.id);
+
+    await Promise.all([
+      boosterIds.length > 0
+        ? this.boosterOpeningRepo.delete({ id: In(boosterIds) } as any)
+        : Promise.resolve(),
+      displayIds.length > 0
+        ? this.displayOpeningRepo.delete({ id: In(displayIds) } as any)
+        : Promise.resolve(),
+    ]);
   }
 
   async getOpeningHistory(
@@ -774,21 +922,21 @@ export class BoosterService {
     rawPerPage?: string,
     rawLimit?: string,
   ) {
+    await this.trimOpeningHistoryForUser(userId);
+
     const page = this.clampHistoryPage(rawPage);
     const perPage = this.clampHistoryPerPage(rawPerPage, rawLimit);
-    const offset = (page - 1) * perPage;
-    const takeForMerge = offset + perPage;
 
     const [boosters, displays, boosterTotal, displayTotal] = await Promise.all([
       this.boosterOpeningRepo.find({
         where: { user: { id: userId } as any } as any,
-        order: { openedAt: 'DESC' },
-        take: takeForMerge,
+        order: { openedAt: 'DESC', id: 'DESC' },
+        take: this.OPENING_HISTORY_MAX_ITEMS,
       }),
       this.displayOpeningRepo.find({
         where: { user: { id: userId } as any } as any,
-        order: { openedAt: 'DESC' },
-        take: takeForMerge,
+        order: { openedAt: 'DESC', id: 'DESC' },
+        take: this.OPENING_HISTORY_MAX_ITEMS,
       }),
       this.boosterOpeningRepo.count({
         where: { user: { id: userId } as any } as any,
@@ -798,8 +946,13 @@ export class BoosterService {
       }),
     ]);
 
-    const total = boosterTotal + displayTotal;
+    const total = Math.min(
+      this.OPENING_HISTORY_MAX_ITEMS,
+      boosterTotal + displayTotal,
+    );
     const totalPages = Math.max(1, Math.ceil(total / perPage));
+    const safePage = Math.min(page, totalPages);
+    const offset = (safePage - 1) * perPage;
     const rawItems = [
       ...boosters.map((row) => this.buildOpeningHistoryItem('booster', row)),
       ...displays.map((row) => this.buildOpeningHistoryItem('display', row)),
@@ -809,17 +962,18 @@ export class BoosterService {
           new Date(b.openedAt as any).getTime() -
           new Date(a.openedAt as any).getTime(),
       )
+      .slice(0, this.OPENING_HISTORY_MAX_ITEMS)
       .slice(offset, offset + perPage);
     const items = await this.hydrateHistoryCoverCards(rawItems);
 
     return {
       items,
-      page,
+      page: safePage,
       perPage,
       total,
       totalPages,
-      hasPrev: page > 1,
-      hasNext: page < totalPages,
+      hasPrev: safePage > 1,
+      hasNext: safePage < totalPages,
     };
   }
 
@@ -851,7 +1005,7 @@ export class BoosterService {
 
     return {
       ...item,
-      result,
+      result: this.buildOpeningHistoryReplayResult(kind, result),
     };
   }
 
@@ -1135,6 +1289,7 @@ export class BoosterService {
             imageUrl: (c as any).imageUrl,
           })) as any),
       } as any);
+      await this.trimOpeningHistoryForUser(args.userId);
     } catch {
       //
     }
@@ -1166,6 +1321,7 @@ export class BoosterService {
             goldIndex: args.hasGoldBooster ? args.goldIndex : null,
           } as any),
       } as any);
+      await this.trimOpeningHistoryForUser(args.userId);
     } catch {
       //
     }

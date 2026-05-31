@@ -503,13 +503,13 @@
 }
 
 .barRow__fill--legacy {
-  background: linear-gradient(90deg, #ff7ac8, #ffd76b);
-  box-shadow: 0 0 18px rgba(255, 122, 200, 0.22);
+  background: linear-gradient(90deg, #f5c362, #ffd98a);
+  box-shadow: 0 0 18px rgba(245, 195, 98, 0.24);
 }
 
 .barRow__fill--special {
-  background: linear-gradient(90deg, #ffd86f, #ff9e68);
-  box-shadow: 0 0 18px rgba(255, 216, 111, 0.20);
+  background: linear-gradient(90deg, #b28734, #d1a84f);
+  box-shadow: 0 0 18px rgba(178, 135, 52, 0.22);
 }
 
 .barRow__tooltip {

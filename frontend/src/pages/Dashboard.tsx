@@ -484,32 +484,32 @@ export default function Dashboard() {
                     d="M4 7h4.2M13.8 7H20M4 12h9.2M18.8 12H20M4 17h2.7M12.3 17H20"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2.4"
+                    strokeWidth="1.9"
                     strokeLinecap="round"
                   />
                   <circle
                     cx="11"
                     cy="7"
-                    r="2.8"
+                    r="2.55"
                     fill="var(--panel)"
                     stroke="currentColor"
-                    strokeWidth="2.4"
+                    strokeWidth="1.9"
                   />
                   <circle
                     cx="16"
                     cy="12"
-                    r="2.8"
+                    r="2.55"
                     fill="var(--panel)"
                     stroke="currentColor"
-                    strokeWidth="2.4"
+                    strokeWidth="1.9"
                   />
                   <circle
                     cx="9.5"
                     cy="17"
-                    r="2.8"
+                    r="2.55"
                     fill="var(--panel)"
                     stroke="currentColor"
-                    strokeWidth="2.4"
+                    strokeWidth="1.9"
                   />
                 </svg>
               </span>

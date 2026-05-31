@@ -235,8 +235,8 @@ export default function AppNavbar({
 
   const defaultVisibleItems: Array<NavItem["key"]> =
     role === "admin"
-      ? ["dashboard", "booster", "gameplay", "collection", "market", "settings", "admin"]
-      : ["dashboard", "booster", "gameplay", "collection", "market", "settings"];
+      ? ["dashboard", "booster", "gameplay", "collection", "market", "admin"]
+      : ["dashboard", "booster", "gameplay", "collection", "market"];
 
   const allowedItems = visibleItems ?? defaultVisibleItems;
   const links = NAV_ITEMS.filter((item) => allowedItems.includes(item.key));

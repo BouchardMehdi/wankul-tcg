@@ -562,7 +562,7 @@ export default function Booster() {
                         onClick={() => {
                           void replayOpening(item);
                         }}
-                        title={!item.canReplay ? "Ancienne ouverture non rejouable" : undefined}
+                        title={!item.canReplay ? "Aucune carte UR ou NEW à revoir" : undefined}
                       >
                         {busy ? "Chargement..." : "Revoir"}
                       </button>

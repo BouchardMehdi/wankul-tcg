@@ -1120,7 +1120,7 @@ export default function Opening() {
 
   return (
     <div className="app-shell">
-      <AppNavbar currentPage="opening" visibleItems={["dashboard", "booster", "collection", "market", "settings"]} />
+      <AppNavbar currentPage="opening" visibleItems={["dashboard", "booster", "collection", "market"]} />
 
       <div className={`container openingPage ${settings.disableHoloEffects ? "openingPage--noHolo" : ""}`}>
         <div className="openingHeader panel">
