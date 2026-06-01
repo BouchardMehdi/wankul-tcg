@@ -127,4 +127,79 @@ export class AdminController {
 
     return exportData;
   }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Post('economy/corrections/cancel-transaction')
+  async cancelMarketTransaction(
+    @CurrentUser() currentUser: { id: number; username: string; role: string },
+    @Body() body: { transactionId: number; reason?: string },
+  ) {
+    return this.adminService.cancelMarketTransaction(
+      currentUser,
+      Number(body.transactionId),
+      body.reason,
+    );
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Patch('economy/corrections/listings/:id/disable')
+  async disableMarketListing(
+    @CurrentUser() currentUser: { id: number; username: string; role: string },
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { reason?: string },
+  ) {
+    return this.adminService.disableMarketListing(currentUser, id, body.reason);
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Patch('economy/corrections/listings/:id/price')
+  async adjustMarketListingPrice(
+    @CurrentUser() currentUser: { id: number; username: string; role: string },
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { priceCredits: number; reason?: string },
+  ) {
+    return this.adminService.adjustMarketListingPrice(
+      currentUser,
+      id,
+      Number(body.priceCredits),
+      body.reason,
+    );
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Post('economy/corrections/refund-player')
+  async refundPlayer(
+    @CurrentUser() currentUser: { id: number; username: string; role: string },
+    @Body() body: { userId: number; amount: number; reason?: string },
+  ) {
+    return this.adminService.refundPlayer(
+      currentUser,
+      Number(body.userId),
+      Number(body.amount),
+      body.reason,
+    );
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Post('economy/corrections/remove-reward')
+  async removeBuggedReward(
+    @CurrentUser() currentUser: { id: number; username: string; role: string },
+    @Body()
+    body: {
+      userId: number;
+      credits?: number;
+      cardId?: number;
+      cardQuantity?: number;
+      reason?: string;
+    },
+  ) {
+    return this.adminService.removeBuggedReward(currentUser, {
+      userId: Number(body.userId),
+      credits: body.credits === undefined ? undefined : Number(body.credits),
+      cardId: body.cardId === undefined ? undefined : Number(body.cardId),
+      cardQuantity:
+        body.cardQuantity === undefined ? undefined : Number(body.cardQuantity),
+      reason: body.reason,
+    });
+  }
 }

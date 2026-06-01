@@ -521,3 +521,75 @@ export async function downloadAdminEconomyExport(days = 30, format: 'json' | 'cs
     filename: match?.[1] ?? `wankul-economy-${days}d.${format}`,
   };
 }
+
+export type AdminCorrectionResponse = {
+  message?: string;
+  correction?: Record<string, any>;
+};
+
+export async function adminCancelMarketTransaction(body: {
+  transactionId: number;
+  reason: string;
+}) {
+  return adminFetch<AdminCorrectionResponse>(
+    '/admin/economy/corrections/cancel-transaction',
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function adminDisableMarketListing(listingId: number, reason: string) {
+  return adminFetch<AdminCorrectionResponse>(
+    `/admin/economy/corrections/listings/${listingId}/disable`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
+    },
+  );
+}
+
+export async function adminAdjustMarketListingPrice(
+  listingId: number,
+  priceCredits: number,
+  reason: string,
+) {
+  return adminFetch<AdminCorrectionResponse>(
+    `/admin/economy/corrections/listings/${listingId}/price`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ priceCredits, reason }),
+    },
+  );
+}
+
+export async function adminRefundPlayer(body: {
+  userId: number;
+  amount: number;
+  reason: string;
+}) {
+  return adminFetch<AdminCorrectionResponse>(
+    '/admin/economy/corrections/refund-player',
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function adminRemoveBuggedReward(body: {
+  userId: number;
+  credits?: number;
+  cardId?: number;
+  cardQuantity?: number;
+  reason: string;
+}) {
+  return adminFetch<AdminCorrectionResponse>(
+    '/admin/economy/corrections/remove-reward',
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  );
+}

@@ -12,6 +12,11 @@ import {
   getAdminEconomyOverview,
   getAdminEconomyLogs,
   downloadAdminEconomyExport,
+  adminCancelMarketTransaction,
+  adminDisableMarketListing,
+  adminAdjustMarketListingPrice,
+  adminRefundPlayer,
+  adminRemoveBuggedReward,
   type AdminTicketsResponse,
   type BugReportListItem,
   type BugReportStatus,
@@ -29,6 +34,12 @@ const STATUS_LABELS: Record<BugReportStatus, string> = {
 };
 
 type AdminTab = "dashboard" | "reports";
+type AdminCorrectionKind =
+  | "cancelTransaction"
+  | "disableListing"
+  | "adjustPrice"
+  | "refundPlayer"
+  | "removeReward";
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -99,6 +110,11 @@ const ECONOMY_ACTION_OPTIONS = [
   { value: "ECONOMY_FREE_BOOSTER_ADD", label: "Ajout booster gratuit" },
   { value: "ECONOMY_RESET", label: "Reset économie" },
   { value: "ECONOMY_ROLLBACK", label: "Rollback économie" },
+  { value: "ADMIN_TRANSACTION_CANCEL", label: "Admin annulation transaction" },
+  { value: "ADMIN_LISTING_DISABLE", label: "Admin désactivation annonce" },
+  { value: "ADMIN_LISTING_PRICE_ADJUST", label: "Admin ajustement prix" },
+  { value: "ADMIN_PLAYER_REFUND", label: "Admin remboursement joueur" },
+  { value: "ADMIN_REWARD_REMOVE", label: "Admin retrait récompense" },
   { value: "ANTI_ABUSE_OPENING_SPIKE", label: "Alerte pic d'openings" },
   { value: "ANTI_ABUSE_PAIR_TRADING", label: "Alerte comptes liés" },
   { value: "ANTI_ABUSE_PRICE_OUTLIER", label: "Alerte prix anormal" },
@@ -212,6 +228,34 @@ export default function Admin() {
   const [ecoLogFrom, setEcoLogFrom] = useState("");
   const [ecoLogTo, setEcoLogTo] = useState("");
   const [ecoExporting, setEcoExporting] = useState<"json" | "csv" | null>(null);
+  const [correctionLoading, setCorrectionLoading] = useState<AdminCorrectionKind | null>(null);
+  const [correctionError, setCorrectionError] = useState("");
+  const [correctionSuccess, setCorrectionSuccess] = useState("");
+  const [cancelTransactionForm, setCancelTransactionForm] = useState({
+    transactionId: "",
+    reason: "",
+  });
+  const [disableListingForm, setDisableListingForm] = useState({
+    listingId: "",
+    reason: "",
+  });
+  const [adjustPriceForm, setAdjustPriceForm] = useState({
+    listingId: "",
+    priceCredits: "",
+    reason: "",
+  });
+  const [refundPlayerForm, setRefundPlayerForm] = useState({
+    userId: "",
+    amount: "",
+    reason: "",
+  });
+  const [removeRewardForm, setRemoveRewardForm] = useState({
+    userId: "",
+    credits: "",
+    cardId: "",
+    cardQuantity: "",
+    reason: "",
+  });
 
   const currentAdminUsername = user?.username ?? me?.username ?? "";
   const canAccess = role === "admin";
@@ -507,6 +551,96 @@ export default function Admin() {
       setEcoError(err?.message || "Export économie impossible.");
     } finally {
       setEcoExporting(null);
+    }
+  }
+
+  async function refreshEconomyAfterCorrection() {
+    await Promise.all([
+      loadEconomyOverview(ecoDays),
+      loadEconomyLogs(ecoLogsPage, ecoDays),
+    ]);
+  }
+
+  async function handleCorrection(kind: AdminCorrectionKind) {
+    setCorrectionError("");
+    setCorrectionSuccess("");
+
+    const labels: Record<AdminCorrectionKind, string> = {
+      cancelTransaction: "annuler cette transaction",
+      disableListing: "désactiver cette annonce",
+      adjustPrice: "ajuster ce prix",
+      refundPlayer: "rembourser ce joueur",
+      removeReward: "retirer cette récompense",
+    };
+
+    if (!window.confirm(`Confirmer: ${labels[kind]} ? Cette action sera journalisée.`)) {
+      return;
+    }
+
+    setCorrectionLoading(kind);
+
+    try {
+      let res: { message?: string } | null = null;
+
+      if (kind === "cancelTransaction") {
+        res = await adminCancelMarketTransaction({
+          transactionId: Number(cancelTransactionForm.transactionId),
+          reason: cancelTransactionForm.reason,
+        });
+        setCancelTransactionForm({ transactionId: "", reason: "" });
+      }
+
+      if (kind === "disableListing") {
+        res = await adminDisableMarketListing(
+          Number(disableListingForm.listingId),
+          disableListingForm.reason
+        );
+        setDisableListingForm({ listingId: "", reason: "" });
+      }
+
+      if (kind === "adjustPrice") {
+        res = await adminAdjustMarketListingPrice(
+          Number(adjustPriceForm.listingId),
+          Number(adjustPriceForm.priceCredits),
+          adjustPriceForm.reason
+        );
+        setAdjustPriceForm({ listingId: "", priceCredits: "", reason: "" });
+      }
+
+      if (kind === "refundPlayer") {
+        res = await adminRefundPlayer({
+          userId: Number(refundPlayerForm.userId),
+          amount: Number(refundPlayerForm.amount),
+          reason: refundPlayerForm.reason,
+        });
+        setRefundPlayerForm({ userId: "", amount: "", reason: "" });
+      }
+
+      if (kind === "removeReward") {
+        res = await adminRemoveBuggedReward({
+          userId: Number(removeRewardForm.userId),
+          credits: removeRewardForm.credits ? Number(removeRewardForm.credits) : undefined,
+          cardId: removeRewardForm.cardId ? Number(removeRewardForm.cardId) : undefined,
+          cardQuantity: removeRewardForm.cardQuantity
+            ? Number(removeRewardForm.cardQuantity)
+            : undefined,
+          reason: removeRewardForm.reason,
+        });
+        setRemoveRewardForm({
+          userId: "",
+          credits: "",
+          cardId: "",
+          cardQuantity: "",
+          reason: "",
+        });
+      }
+
+      setCorrectionSuccess(res?.message || "Correction appliquée.");
+      await refreshEconomyAfterCorrection();
+    } catch (err: any) {
+      setCorrectionError(err?.message || "Correction admin impossible.");
+    } finally {
+      setCorrectionLoading(null);
     }
   }
 
@@ -874,6 +1008,263 @@ export default function Admin() {
                         ) : (
                           <div className="adminEmpty">Aucune alerte anti-abus sur cette période.</div>
                         )}
+                      </div>
+                    </section>
+
+                    <section className="adminDashboardPanel adminCorrectionPanel">
+                      <div className="adminDashboardPanel__head">
+                        <h3>Outils de correction</h3>
+                        <p className="small">
+                          Actions sensibles réservées aux corrections économie. Chaque action demande une raison et crée une trace admin.
+                        </p>
+                      </div>
+
+                      {correctionError ? <div className="adminError">{correctionError}</div> : null}
+                      {correctionSuccess ? <div className="adminSuccess">{correctionSuccess}</div> : null}
+
+                      <div className="adminCorrectionGrid">
+                        <form
+                          className="adminCorrectionCard"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleCorrection("cancelTransaction");
+                          }}
+                        >
+                          <h4>Annuler une transaction</h4>
+                          <p>Rembourse l'acheteur, rend la carte au vendeur et bloque la récompense pending.</p>
+                          <label className="adminField">
+                            <span>Transaction ID</span>
+                            <input
+                              type="number"
+                              min={1}
+                              value={cancelTransactionForm.transactionId}
+                              onChange={(e) =>
+                                setCancelTransactionForm((form) => ({ ...form, transactionId: e.target.value }))
+                              }
+                              required
+                            />
+                          </label>
+                          <label className="adminField">
+                            <span>Raison</span>
+                            <textarea
+                              value={cancelTransactionForm.reason}
+                              onChange={(e) =>
+                                setCancelTransactionForm((form) => ({ ...form, reason: e.target.value }))
+                              }
+                              required
+                            />
+                          </label>
+                          <button type="submit" className="btn adminDangerBtn" disabled={!!correctionLoading}>
+                            {correctionLoading === "cancelTransaction" ? "Correction..." : "Annuler"}
+                          </button>
+                        </form>
+
+                        <form
+                          className="adminCorrectionCard"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleCorrection("disableListing");
+                          }}
+                        >
+                          <h4>Désactiver une annonce</h4>
+                          <p>Ferme l'annonce active et déverrouille les copies restantes du vendeur.</p>
+                          <label className="adminField">
+                            <span>Annonce ID</span>
+                            <input
+                              type="number"
+                              min={1}
+                              value={disableListingForm.listingId}
+                              onChange={(e) =>
+                                setDisableListingForm((form) => ({ ...form, listingId: e.target.value }))
+                              }
+                              required
+                            />
+                          </label>
+                          <label className="adminField">
+                            <span>Raison</span>
+                            <textarea
+                              value={disableListingForm.reason}
+                              onChange={(e) =>
+                                setDisableListingForm((form) => ({ ...form, reason: e.target.value }))
+                              }
+                              required
+                            />
+                          </label>
+                          <button type="submit" className="btn adminDangerBtn" disabled={!!correctionLoading}>
+                            {correctionLoading === "disableListing" ? "Correction..." : "Désactiver"}
+                          </button>
+                        </form>
+
+                        <form
+                          className="adminCorrectionCard"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleCorrection("adjustPrice");
+                          }}
+                        >
+                          <h4>Ajuster un prix suspect</h4>
+                          <p>Remplace le prix en WunkulCoins d'une annonce active trop basse ou trop haute.</p>
+                          <div className="adminCorrectionFields">
+                            <label className="adminField">
+                              <span>Annonce ID</span>
+                              <input
+                                type="number"
+                                min={1}
+                                value={adjustPriceForm.listingId}
+                                onChange={(e) =>
+                                  setAdjustPriceForm((form) => ({ ...form, listingId: e.target.value }))
+                                }
+                                required
+                              />
+                            </label>
+                            <label className="adminField">
+                              <span>Nouveau prix</span>
+                              <input
+                                type="number"
+                                min={0}
+                                value={adjustPriceForm.priceCredits}
+                                onChange={(e) =>
+                                  setAdjustPriceForm((form) => ({ ...form, priceCredits: e.target.value }))
+                                }
+                                required
+                              />
+                            </label>
+                          </div>
+                          <label className="adminField">
+                            <span>Raison</span>
+                            <textarea
+                              value={adjustPriceForm.reason}
+                              onChange={(e) =>
+                                setAdjustPriceForm((form) => ({ ...form, reason: e.target.value }))
+                              }
+                              required
+                            />
+                          </label>
+                          <button type="submit" className="btn adminPrimaryBtn" disabled={!!correctionLoading}>
+                            {correctionLoading === "adjustPrice" ? "Correction..." : "Ajuster"}
+                          </button>
+                        </form>
+
+                        <form
+                          className="adminCorrectionCard"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleCorrection("refundPlayer");
+                          }}
+                        >
+                          <h4>Rembourser un joueur</h4>
+                          <p>Ajoute des WunkulCoins au joueur après bug ou compensation validée.</p>
+                          <div className="adminCorrectionFields">
+                            <label className="adminField">
+                              <span>Joueur ID</span>
+                              <input
+                                type="number"
+                                min={1}
+                                value={refundPlayerForm.userId}
+                                onChange={(e) =>
+                                  setRefundPlayerForm((form) => ({ ...form, userId: e.target.value }))
+                                }
+                                required
+                              />
+                            </label>
+                            <label className="adminField">
+                              <span>Montant</span>
+                              <input
+                                type="number"
+                                min={1}
+                                value={refundPlayerForm.amount}
+                                onChange={(e) =>
+                                  setRefundPlayerForm((form) => ({ ...form, amount: e.target.value }))
+                                }
+                                required
+                              />
+                            </label>
+                          </div>
+                          <label className="adminField">
+                            <span>Raison</span>
+                            <textarea
+                              value={refundPlayerForm.reason}
+                              onChange={(e) =>
+                                setRefundPlayerForm((form) => ({ ...form, reason: e.target.value }))
+                              }
+                              required
+                            />
+                          </label>
+                          <button type="submit" className="btn adminPrimaryBtn" disabled={!!correctionLoading}>
+                            {correctionLoading === "refundPlayer" ? "Correction..." : "Rembourser"}
+                          </button>
+                        </form>
+
+                        <form
+                          className="adminCorrectionCard adminCorrectionCard--wide"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleCorrection("removeReward");
+                          }}
+                        >
+                          <h4>Retirer une récompense bugguée</h4>
+                          <p>Retire des WunkulCoins et/ou des copies disponibles sans toucher aux cartes verrouillées.</p>
+                          <div className="adminCorrectionFields adminCorrectionFields--four">
+                            <label className="adminField">
+                              <span>Joueur ID</span>
+                              <input
+                                type="number"
+                                min={1}
+                                value={removeRewardForm.userId}
+                                onChange={(e) =>
+                                  setRemoveRewardForm((form) => ({ ...form, userId: e.target.value }))
+                                }
+                                required
+                              />
+                            </label>
+                            <label className="adminField">
+                              <span>WunkulCoins</span>
+                              <input
+                                type="number"
+                                min={0}
+                                value={removeRewardForm.credits}
+                                onChange={(e) =>
+                                  setRemoveRewardForm((form) => ({ ...form, credits: e.target.value }))
+                                }
+                              />
+                            </label>
+                            <label className="adminField">
+                              <span>Carte ID</span>
+                              <input
+                                type="number"
+                                min={1}
+                                value={removeRewardForm.cardId}
+                                onChange={(e) =>
+                                  setRemoveRewardForm((form) => ({ ...form, cardId: e.target.value }))
+                                }
+                              />
+                            </label>
+                            <label className="adminField">
+                              <span>Quantité</span>
+                              <input
+                                type="number"
+                                min={0}
+                                value={removeRewardForm.cardQuantity}
+                                onChange={(e) =>
+                                  setRemoveRewardForm((form) => ({ ...form, cardQuantity: e.target.value }))
+                                }
+                              />
+                            </label>
+                          </div>
+                          <label className="adminField">
+                            <span>Raison</span>
+                            <textarea
+                              value={removeRewardForm.reason}
+                              onChange={(e) =>
+                                setRemoveRewardForm((form) => ({ ...form, reason: e.target.value }))
+                              }
+                              required
+                            />
+                          </label>
+                          <button type="submit" className="btn adminDangerBtn" disabled={!!correctionLoading}>
+                            {correctionLoading === "removeReward" ? "Correction..." : "Retirer la récompense"}
+                          </button>
+                        </form>
                       </div>
                     </section>
 

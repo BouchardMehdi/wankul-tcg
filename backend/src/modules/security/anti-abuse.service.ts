@@ -31,6 +31,11 @@ export type EconomicAction =
   | 'ECONOMY_FREE_BOOSTER_ADD'
   | 'ECONOMY_RESET'
   | 'ECONOMY_ROLLBACK'
+  | 'ADMIN_TRANSACTION_CANCEL'
+  | 'ADMIN_LISTING_DISABLE'
+  | 'ADMIN_LISTING_PRICE_ADJUST'
+  | 'ADMIN_PLAYER_REFUND'
+  | 'ADMIN_REWARD_REMOVE'
   | 'ANTI_ABUSE_OPENING_SPIKE'
   | 'ANTI_ABUSE_PAIR_TRADING'
   | 'ANTI_ABUSE_PRICE_OUTLIER'
@@ -523,6 +528,18 @@ export class AntiAbuseService {
         targetType: params.targetType?.trim() || null,
       },
     };
+  }
+
+  async hasActionLog(action: string, targetType: string, targetId: number) {
+    const count = await this.logRepo.count({
+      where: {
+        action,
+        targetType,
+        targetId,
+      },
+    });
+
+    return count > 0;
   }
 
   private async detectAutomatedAlerts(

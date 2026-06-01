@@ -12,11 +12,25 @@ import { BugReport } from '../report/bug-report.entity';
 import { BugReportStatusHistory } from '../report/bug-report-status-history.entity';
 import { EconomyAnalyticsModule } from '../economy/economy-analytics.module';
 import { SecurityModule } from '../security/security.module';
+import { MarketListing } from '../market/market-listing.entity';
+import { MarketTransaction } from '../market/market-transaction.entity';
+import { UserCard } from '../users/user-card.entity';
+import { UserEconomy } from '../economy/user-economy.entity';
+import { Card } from '../cards/card.entity';
 
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User, BugReport, BugReportStatusHistory]),
+    TypeOrmModule.forFeature([
+      User,
+      BugReport,
+      BugReportStatusHistory,
+      MarketListing,
+      MarketTransaction,
+      UserCard,
+      UserEconomy,
+      Card,
+    ]),
     EconomyAnalyticsModule,
     SecurityModule,
     JwtModule.registerAsync({

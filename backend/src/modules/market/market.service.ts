@@ -1017,6 +1017,18 @@ export class MarketService {
         );
       }
 
+      const wasCancelledByAdmin = await this.antiAbuseService.hasActionLog(
+        'ADMIN_TRANSACTION_CANCEL',
+        'transaction',
+        transaction.id,
+      );
+
+      if (wasCancelledByAdmin) {
+        throw new BadRequestException(
+          'Cette transaction a ete annulee par un administrateur.',
+        );
+      }
+
       if (transaction.sellerRewardClaimedAt) {
         throw new BadRequestException('Reward already claimed for this sale.');
       }
