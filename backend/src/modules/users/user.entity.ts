@@ -39,4 +39,16 @@ export class User {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   adminPasswordHash!: string | null;
+
+  @Column({ name: 'suspended_until', type: 'datetime', nullable: true })
+  suspendedUntil!: Date | null;
+
+  @Column({ name: 'suspension_reason', type: 'varchar', length: 255, nullable: true })
+  suspensionReason!: string | null;
+
+  @Column({ name: 'market_blocked_until', type: 'datetime', nullable: true })
+  marketBlockedUntil!: Date | null;
+
+  @Column({ name: 'market_block_reason', type: 'varchar', length: 255, nullable: true })
+  marketBlockReason!: string | null;
 }

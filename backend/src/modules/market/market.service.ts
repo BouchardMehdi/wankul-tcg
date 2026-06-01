@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -24,6 +25,7 @@ import { MarketPricePosition } from './market-price-position.enum';
 import { EconomyAnalyticsService } from '../economy/economy-analytics.service';
 import { PushService } from '../push/push.service';
 import { AntiAbuseService } from '../security/anti-abuse.service';
+import { User } from '../users/user.entity';
 
 export interface QuickSellResult {
   success: true;
@@ -75,6 +77,9 @@ export class MarketService {
 
     @InjectRepository(MarketTransaction)
     private readonly marketTransactionRepository: Repository<MarketTransaction>,
+
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
   ) {}
 
   async getMarketPrice(cardId: number) {
@@ -144,6 +149,7 @@ export class MarketService {
     cardId: number,
     quantity: number,
   ): Promise<QuickSellResult> {
+    await this.assertMarketAccess(userId);
     await this.antiAbuseService.assertRateLimit(userId, 'QUICK_SELL');
 
     if (!Number.isInteger(quantity) || quantity < 1) {
@@ -260,6 +266,7 @@ export class MarketService {
   }
 
   async createListing(userId: number, input: CreateListingInput) {
+    await this.assertMarketAccess(userId);
     await this.antiAbuseService.assertRateLimit(
       userId,
       'MARKET_LISTING_CREATE',
@@ -517,6 +524,7 @@ export class MarketService {
   }
 
   async cancelListing(userId: number, listingId: number) {
+    await this.assertMarketAccess(userId);
     await this.antiAbuseService.assertRateLimit(
       userId,
       'MARKET_LISTING_CANCEL',
@@ -617,6 +625,7 @@ export class MarketService {
   }
 
   async buyListing(userId: number, listingId: number, dto: BuyListingDto) {
+    await this.assertMarketAccess(userId);
     await this.antiAbuseService.assertRateLimit(userId, 'MARKET_BUY');
 
     if (!Number.isInteger(dto.quantity) || dto.quantity < 1) {
@@ -989,6 +998,7 @@ export class MarketService {
   }
 
   async claimTransactionReward(userId: number, transactionId: number) {
+    await this.assertMarketAccess(userId);
     await this.antiAbuseService.assertRateLimit(userId, 'MARKET_REWARD_CLAIM');
 
     const result = await this.dataSource.transaction(async (manager) => {
@@ -1189,6 +1199,36 @@ export class MarketService {
     return transactions.map((transaction) =>
       this.mapTransaction(transaction, userId),
     );
+  }
+
+  private async assertMarketAccess(userId: number) {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Utilisateur introuvable.');
+    }
+
+    const now = Date.now();
+
+    if (user.suspendedUntil) {
+      const suspendedUntil = new Date(user.suspendedUntil);
+      if (!Number.isNaN(suspendedUntil.getTime()) && suspendedUntil.getTime() > now) {
+        throw new ForbiddenException(
+          `Compte suspendu jusqu'au ${suspendedUntil.toLocaleString('fr-FR')}.`,
+        );
+      }
+    }
+
+    if (user.marketBlockedUntil) {
+      const marketBlockedUntil = new Date(user.marketBlockedUntil);
+      if (
+        !Number.isNaN(marketBlockedUntil.getTime()) &&
+        marketBlockedUntil.getTime() > now
+      ) {
+        throw new ForbiddenException(
+          `Market bloqué jusqu'au ${marketBlockedUntil.toLocaleString('fr-FR')}.`,
+        );
+      }
+    }
   }
 
   private normalizeCreateListingInput(

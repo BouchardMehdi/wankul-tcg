@@ -82,6 +82,62 @@ export class AdminController {
   }
 
   @UseGuards(AdminJwtAuthGuard)
+  @Get('moderation/overview')
+  async getModerationOverview() {
+    return this.adminService.getModerationOverview();
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Post('moderation/users/:id/suspend')
+  async suspendUser(
+    @CurrentUser() currentUser: { id: number; username: string; role: string },
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { durationHours?: number; until?: string; reason?: string },
+  ) {
+    return this.adminService.suspendUser(currentUser, id, body);
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Patch('moderation/users/:id/suspension/clear')
+  async clearUserSuspension(
+    @CurrentUser() currentUser: { id: number; username: string; role: string },
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { reason?: string },
+  ) {
+    return this.adminService.clearUserSuspension(currentUser, id, body.reason);
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Post('moderation/users/:id/market-block')
+  async blockUserMarket(
+    @CurrentUser() currentUser: { id: number; username: string; role: string },
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { durationHours?: number; until?: string; reason?: string },
+  ) {
+    return this.adminService.blockUserMarket(currentUser, id, body);
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Patch('moderation/users/:id/market-block/clear')
+  async clearUserMarketBlock(
+    @CurrentUser() currentUser: { id: number; username: string; role: string },
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { reason?: string },
+  ) {
+    return this.adminService.clearUserMarketBlock(currentUser, id, body.reason);
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
+  @Patch('moderation/listings/:id/hide')
+  async hideMarketListing(
+    @CurrentUser() currentUser: { id: number; username: string; role: string },
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { reason?: string },
+  ) {
+    return this.adminService.hideMarketListing(currentUser, id, body.reason);
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
   @Get('economy/logs')
   async getEconomyLogs(
     @Query('days') days?: string,

@@ -13,12 +13,18 @@ import {
   getAdminEconomyLogs,
   getAdminSeasonCardsOverview,
   getAdminPwaMonitoring,
+  getAdminModerationOverview,
   downloadAdminEconomyExport,
   adminCancelMarketTransaction,
   adminDisableMarketListing,
   adminAdjustMarketListingPrice,
   adminRefundPlayer,
   adminRemoveBuggedReward,
+  adminSuspendUser,
+  adminClearUserSuspension,
+  adminBlockUserMarket,
+  adminClearUserMarketBlock,
+  adminHideMarketListing,
   downloadAdminBackupExport,
   type AdminTicketsResponse,
   type BugReportListItem,
@@ -28,6 +34,7 @@ import {
   type AdminBackupScope,
   type AdminSeasonCardsResponse,
   type AdminPwaMonitoringResponse,
+  type AdminModerationOverviewResponse,
 } from "../api/auth";
 
 const STATUS_LABELS: Record<BugReportStatus, string> = {
@@ -46,6 +53,12 @@ type AdminCorrectionKind =
   | "adjustPrice"
   | "refundPlayer"
   | "removeReward";
+type AdminModerationKind =
+  | "suspendUser"
+  | "clearSuspension"
+  | "blockMarket"
+  | "clearMarketBlock"
+  | "hideListing";
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -118,9 +131,14 @@ const ECONOMY_ACTION_OPTIONS = [
   { value: "ECONOMY_ROLLBACK", label: "Rollback économie" },
   { value: "ADMIN_TRANSACTION_CANCEL", label: "Admin annulation transaction" },
   { value: "ADMIN_LISTING_DISABLE", label: "Admin désactivation annonce" },
+  { value: "ADMIN_LISTING_HIDE", label: "Admin masquage annonce" },
   { value: "ADMIN_LISTING_PRICE_ADJUST", label: "Admin ajustement prix" },
   { value: "ADMIN_PLAYER_REFUND", label: "Admin remboursement joueur" },
   { value: "ADMIN_REWARD_REMOVE", label: "Admin retrait récompense" },
+  { value: "ADMIN_USER_SUSPEND", label: "Admin suspension compte" },
+  { value: "ADMIN_USER_UNSUSPEND", label: "Admin fin suspension" },
+  { value: "ADMIN_MARKET_BLOCK", label: "Admin blocage market" },
+  { value: "ADMIN_MARKET_UNBLOCK", label: "Admin fin blocage market" },
   { value: "ANTI_ABUSE_OPENING_SPIKE", label: "Alerte pic d'openings" },
   { value: "ANTI_ABUSE_PAIR_TRADING", label: "Alerte comptes liés" },
   { value: "ANTI_ABUSE_PRICE_OUTLIER", label: "Alerte prix anormal" },
@@ -276,6 +294,25 @@ export default function Admin() {
   const [pwaMonitoring, setPwaMonitoring] = useState<AdminPwaMonitoringResponse | null>(null);
   const [pwaMonitoringLoading, setPwaMonitoringLoading] = useState(false);
   const [pwaMonitoringError, setPwaMonitoringError] = useState("");
+  const [moderationOverview, setModerationOverview] = useState<AdminModerationOverviewResponse | null>(null);
+  const [moderationLoading, setModerationLoading] = useState(false);
+  const [moderationError, setModerationError] = useState("");
+  const [moderationSuccess, setModerationSuccess] = useState("");
+  const [moderationActionLoading, setModerationActionLoading] = useState<AdminModerationKind | null>(null);
+  const [suspendUserForm, setSuspendUserForm] = useState({
+    userId: "",
+    durationHours: "24",
+    reason: "",
+  });
+  const [marketBlockForm, setMarketBlockForm] = useState({
+    userId: "",
+    durationHours: "24",
+    reason: "",
+  });
+  const [hideListingForm, setHideListingForm] = useState({
+    listingId: "",
+    reason: "",
+  });
   const [correctionLoading, setCorrectionLoading] = useState<AdminCorrectionKind | null>(null);
   const [correctionError, setCorrectionError] = useState("");
   const [correctionSuccess, setCorrectionSuccess] = useState("");
@@ -382,6 +419,20 @@ export default function Admin() {
     }
   }
 
+  async function loadModerationOverview() {
+    setModerationLoading(true);
+    setModerationError("");
+
+    try {
+      const res = await getAdminModerationOverview();
+      setModerationOverview(res);
+    } catch (err: any) {
+      setModerationError(err?.message || "Impossible de charger les outils de modération.");
+    } finally {
+      setModerationLoading(false);
+    }
+  }
+
   async function loadEconomyLogs(
     nextPage = ecoLogsPage,
     nextDays = ecoDays,
@@ -432,6 +483,7 @@ export default function Admin() {
     loadEconomyOverview(ecoDays).catch(() => {});
     loadSeasonCardsOverview().catch(() => {});
     loadPwaMonitoring(ecoDays).catch(() => {});
+    loadModerationOverview().catch(() => {});
     setEcoLogsPage(1);
     loadEconomyLogs(1, ecoDays).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -561,6 +613,14 @@ export default function Admin() {
     seasonObtainableFilter,
     seasonImageFilter,
   ]);
+  const moderationTotals = moderationOverview?.totals ?? {
+    activeSuspensions: 0,
+    activeMarketBlocks: 0,
+    hiddenListings: 0,
+    openReports: 0,
+    urgentReports: 0,
+  };
+  const moderationRecentActions = moderationOverview?.recentActions ?? [];
 
   async function handleAdminLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -684,6 +744,7 @@ export default function Admin() {
     await Promise.all([
       loadEconomyOverview(ecoDays),
       loadEconomyLogs(ecoLogsPage, ecoDays),
+      loadModerationOverview(),
     ]);
   }
 
@@ -767,6 +828,80 @@ export default function Admin() {
       setCorrectionError(err?.message || "Correction admin impossible.");
     } finally {
       setCorrectionLoading(null);
+    }
+  }
+
+  async function refreshAfterModeration() {
+    await Promise.all([
+      loadModerationOverview(),
+      loadEconomyLogs(ecoLogsPage, ecoDays),
+      loadEconomyOverview(ecoDays),
+    ]);
+  }
+
+  async function handleModeration(kind: AdminModerationKind, options?: { userId?: number }) {
+    setModerationError("");
+    setModerationSuccess("");
+
+    const labels: Record<AdminModerationKind, string> = {
+      suspendUser: "suspendre ce compte",
+      clearSuspension: "retirer cette suspension",
+      blockMarket: "bloquer le market de ce joueur",
+      clearMarketBlock: "retirer ce blocage market",
+      hideListing: "masquer cette annonce",
+    };
+
+    if (!window.confirm(`Confirmer: ${labels[kind]} ? Cette action sera journalisée.`)) {
+      return;
+    }
+
+    setModerationActionLoading(kind);
+
+    try {
+      let res: { message?: string } | null = null;
+
+      if (kind === "suspendUser") {
+        res = await adminSuspendUser(Number(suspendUserForm.userId), {
+          durationHours: Number(suspendUserForm.durationHours),
+          reason: suspendUserForm.reason,
+        });
+        setSuspendUserForm({ userId: "", durationHours: "24", reason: "" });
+      }
+
+      if (kind === "clearSuspension") {
+        const reason = window.prompt("Raison de fin de suspension ?");
+        if (!reason) return;
+        res = await adminClearUserSuspension(Number(options?.userId), reason);
+      }
+
+      if (kind === "blockMarket") {
+        res = await adminBlockUserMarket(Number(marketBlockForm.userId), {
+          durationHours: Number(marketBlockForm.durationHours),
+          reason: marketBlockForm.reason,
+        });
+        setMarketBlockForm({ userId: "", durationHours: "24", reason: "" });
+      }
+
+      if (kind === "clearMarketBlock") {
+        const reason = window.prompt("Raison de fin du blocage market ?");
+        if (!reason) return;
+        res = await adminClearUserMarketBlock(Number(options?.userId), reason);
+      }
+
+      if (kind === "hideListing") {
+        res = await adminHideMarketListing(
+          Number(hideListingForm.listingId),
+          hideListingForm.reason
+        );
+        setHideListingForm({ listingId: "", reason: "" });
+      }
+
+      setModerationSuccess(res?.message || "Action de modération appliquée.");
+      await refreshAfterModeration();
+    } catch (err: any) {
+      setModerationError(err?.message || "Action de modération impossible.");
+    } finally {
+      setModerationActionLoading(null);
     }
   }
 
@@ -895,6 +1030,7 @@ export default function Admin() {
                       loadEconomyOverview(ecoDays).catch(() => {});
                       loadSeasonCardsOverview().catch(() => {});
                       loadPwaMonitoring(ecoDays).catch(() => {});
+                      loadModerationOverview().catch(() => {});
                     } else {
                       loadTickets(page, statusFilter, adminFilter).catch(() => {});
                     }
@@ -1517,6 +1653,290 @@ export default function Admin() {
                         ) : (
                           <div className="adminEmpty">Aucune alerte anti-abus sur cette période.</div>
                         )}
+                      </div>
+                    </section>
+
+                    <section className="adminDashboardPanel adminModerationPanel">
+                      <div className="adminDashboardPanel__head adminModerationHead">
+                        <div>
+                          <h3>Outils de modération</h3>
+                          <p className="small">
+                            Suspendre un compte, bloquer temporairement son market, masquer une annonce et garder un œil sur les signalements.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => loadModerationOverview().catch(() => {})}
+                          disabled={moderationLoading}
+                        >
+                          {moderationLoading ? "Scan..." : "Actualiser modération"}
+                        </button>
+                      </div>
+
+                      {moderationError ? <div className="adminError">{moderationError}</div> : null}
+                      {moderationSuccess ? <div className="adminSuccess">{moderationSuccess}</div> : null}
+                      {moderationLoading && !moderationOverview ? (
+                        <div className="adminEmpty">Chargement des outils de modération...</div>
+                      ) : null}
+
+                      <div className="adminModerationStats">
+                        <article className={moderationTotals.activeSuspensions > 0 ? "is-danger" : "is-ok"}>
+                          <span>Comptes suspendus</span>
+                          <strong>{formatNumber(moderationTotals.activeSuspensions)}</strong>
+                        </article>
+                        <article className={moderationTotals.activeMarketBlocks > 0 ? "is-watch" : "is-ok"}>
+                          <span>Market bloqué</span>
+                          <strong>{formatNumber(moderationTotals.activeMarketBlocks)}</strong>
+                        </article>
+                        <article className={moderationTotals.hiddenListings > 0 ? "is-watch" : ""}>
+                          <span>Annonces masquées</span>
+                          <strong>{formatNumber(moderationTotals.hiddenListings)}</strong>
+                        </article>
+                        <article className={moderationTotals.urgentReports > 0 ? "is-danger" : "is-ok"}>
+                          <span>Signalements actifs</span>
+                          <strong>{formatNumber(moderationTotals.openReports)}</strong>
+                          <small>{formatNumber(moderationTotals.urgentReports)} urgent(s)</small>
+                        </article>
+                      </div>
+
+                      <div className="adminModerationGrid">
+                        <form
+                          className="adminModerationCard"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleModeration("suspendUser");
+                          }}
+                        >
+                          <h4>Suspendre un compte</h4>
+                          <p>Coupe la connexion et bloque aussi les tokens déjà actifs jusqu'à la fin définie.</p>
+                          <div className="adminCorrectionFields">
+                            <label className="adminField">
+                              <span>Joueur ID</span>
+                              <input
+                                type="number"
+                                min={1}
+                                value={suspendUserForm.userId}
+                                onChange={(e) =>
+                                  setSuspendUserForm((form) => ({ ...form, userId: e.target.value }))
+                                }
+                                required
+                              />
+                            </label>
+                            <label className="adminField">
+                              <span>Durée</span>
+                              <select
+                                value={suspendUserForm.durationHours}
+                                onChange={(e) =>
+                                  setSuspendUserForm((form) => ({ ...form, durationHours: e.target.value }))
+                                }
+                              >
+                                <option value="1">1 heure</option>
+                                <option value="6">6 heures</option>
+                                <option value="24">24 heures</option>
+                                <option value="72">3 jours</option>
+                                <option value="168">7 jours</option>
+                              </select>
+                            </label>
+                          </div>
+                          <label className="adminField">
+                            <span>Raison</span>
+                            <textarea
+                              value={suspendUserForm.reason}
+                              onChange={(e) =>
+                                setSuspendUserForm((form) => ({ ...form, reason: e.target.value }))
+                              }
+                              required
+                            />
+                          </label>
+                          <button type="submit" className="btn adminDangerBtn" disabled={!!moderationActionLoading}>
+                            {moderationActionLoading === "suspendUser" ? "Suspension..." : "Suspendre"}
+                          </button>
+                        </form>
+
+                        <form
+                          className="adminModerationCard"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleModeration("blockMarket");
+                          }}
+                        >
+                          <h4>Bloquer le market</h4>
+                          <p>Empêche achats, ventes, quick sell, annulations et récupération de récompenses market.</p>
+                          <div className="adminCorrectionFields">
+                            <label className="adminField">
+                              <span>Joueur ID</span>
+                              <input
+                                type="number"
+                                min={1}
+                                value={marketBlockForm.userId}
+                                onChange={(e) =>
+                                  setMarketBlockForm((form) => ({ ...form, userId: e.target.value }))
+                                }
+                                required
+                              />
+                            </label>
+                            <label className="adminField">
+                              <span>Durée</span>
+                              <select
+                                value={marketBlockForm.durationHours}
+                                onChange={(e) =>
+                                  setMarketBlockForm((form) => ({ ...form, durationHours: e.target.value }))
+                                }
+                              >
+                                <option value="1">1 heure</option>
+                                <option value="6">6 heures</option>
+                                <option value="24">24 heures</option>
+                                <option value="72">3 jours</option>
+                                <option value="168">7 jours</option>
+                              </select>
+                            </label>
+                          </div>
+                          <label className="adminField">
+                            <span>Raison</span>
+                            <textarea
+                              value={marketBlockForm.reason}
+                              onChange={(e) =>
+                                setMarketBlockForm((form) => ({ ...form, reason: e.target.value }))
+                              }
+                              required
+                            />
+                          </label>
+                          <button type="submit" className="btn adminDangerBtn" disabled={!!moderationActionLoading}>
+                            {moderationActionLoading === "blockMarket" ? "Blocage..." : "Bloquer le market"}
+                          </button>
+                        </form>
+
+                        <form
+                          className="adminModerationCard adminModerationCard--wide"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleModeration("hideListing");
+                          }}
+                        >
+                          <h4>Masquer une annonce</h4>
+                          <p>Retire l'annonce du market et rend les copies verrouillées au vendeur.</p>
+                          <div className="adminCorrectionFields">
+                            <label className="adminField">
+                              <span>Annonce ID</span>
+                              <input
+                                type="number"
+                                min={1}
+                                value={hideListingForm.listingId}
+                                onChange={(e) =>
+                                  setHideListingForm((form) => ({ ...form, listingId: e.target.value }))
+                                }
+                                required
+                              />
+                            </label>
+                            <label className="adminField">
+                              <span>Raison</span>
+                              <input
+                                value={hideListingForm.reason}
+                                onChange={(e) =>
+                                  setHideListingForm((form) => ({ ...form, reason: e.target.value }))
+                                }
+                                required
+                              />
+                            </label>
+                          </div>
+                          <button type="submit" className="btn adminDangerBtn" disabled={!!moderationActionLoading}>
+                            {moderationActionLoading === "hideListing" ? "Masquage..." : "Masquer l'annonce"}
+                          </button>
+                        </form>
+                      </div>
+
+                      <div className="adminModerationLists">
+                        <article className="adminModerationList">
+                          <div className="adminModerationList__head">
+                            <h4>Suspensions actives</h4>
+                          </div>
+                          {(moderationOverview?.activeSuspensions ?? []).length > 0 ? (
+                            moderationOverview?.activeSuspensions.map((item) => (
+                              <div className="adminModerationItem" key={`suspension-${item.id}`}>
+                                <div>
+                                  <strong>{item.username} #{item.id}</strong>
+                                  <span>Jusqu'au {formatDate(item.suspendedUntil)}</span>
+                                  <p>{item.suspensionReason}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn"
+                                  onClick={() => handleModeration("clearSuspension", { userId: item.id })}
+                                  disabled={!!moderationActionLoading}
+                                >
+                                  Réactiver
+                                </button>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="adminEmpty">Aucun compte suspendu actuellement.</div>
+                          )}
+                        </article>
+
+                        <article className="adminModerationList">
+                          <div className="adminModerationList__head">
+                            <h4>Markets bloqués</h4>
+                          </div>
+                          {(moderationOverview?.activeMarketBlocks ?? []).length > 0 ? (
+                            moderationOverview?.activeMarketBlocks.map((item) => (
+                              <div className="adminModerationItem" key={`market-${item.id}`}>
+                                <div>
+                                  <strong>{item.username} #{item.id}</strong>
+                                  <span>Jusqu'au {formatDate(item.marketBlockedUntil)}</span>
+                                  <p>{item.marketBlockReason}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn"
+                                  onClick={() => handleModeration("clearMarketBlock", { userId: item.id })}
+                                  disabled={!!moderationActionLoading}
+                                >
+                                  Débloquer
+                                </button>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="adminEmpty">Aucun market bloqué actuellement.</div>
+                          )}
+                        </article>
+                      </div>
+
+                      <div className="adminModerationGrid adminModerationGrid--bottom">
+                        <article className="adminModerationCard">
+                          <h4>Signalements à regarder</h4>
+                          {(moderationOverview?.recentReports ?? []).length > 0 ? (
+                            <div className="adminMiniList">
+                              {moderationOverview?.recentReports.map((report) => (
+                                <span key={report.id}>
+                                  <b>Ticket #{report.id}</b>
+                                  {report.usernameSnapshot} · {report.page} · {report.priority}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p>Aucun signalement actif.</p>
+                          )}
+                          <button type="button" className="btn" onClick={() => setActiveTab("reports")}>
+                            Voir les signalements
+                          </button>
+                        </article>
+
+                        <article className="adminModerationCard">
+                          <h4>Dernières actions admin</h4>
+                          {moderationRecentActions.length > 0 ? (
+                            <div className="adminMiniList">
+                              {moderationRecentActions.slice(0, 6).map((action) => (
+                                <span key={action.id}>
+                                  <b>{getSecurityActionLabel(action.action)}</b>
+                                  {formatDate(action.createdAt)}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p>Aucune action de modération journalisée.</p>
+                          )}
+                        </article>
                       </div>
                     </section>
 

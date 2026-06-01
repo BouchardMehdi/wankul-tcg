@@ -905,6 +905,189 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.adminModerationPanel {
+  border-color: rgba(255, 97, 123, 0.18);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 97, 123, 0.10), transparent 34%),
+    radial-gradient(circle at 100% 10%, rgba(90, 170, 255, 0.09), transparent 34%),
+    rgba(255,255,255,0.03);
+}
+
+.adminModerationHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.adminModerationStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+  min-width: 0;
+}
+
+.adminModerationStats article,
+.adminModerationCard,
+.adminModerationList {
+  min-width: 0;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.022));
+}
+
+.adminModerationStats article {
+  padding: 13px 14px;
+}
+
+.adminModerationStats article.is-ok {
+  border-color: rgba(86, 214, 144, 0.24);
+  background: rgba(86, 214, 144, 0.08);
+}
+
+.adminModerationStats article.is-watch {
+  border-color: rgba(255, 204, 102, 0.26);
+  background: rgba(255, 204, 102, 0.10);
+}
+
+.adminModerationStats article.is-danger {
+  border-color: rgba(255, 97, 123, 0.30);
+  background: rgba(255, 97, 123, 0.10);
+}
+
+.adminModerationStats span,
+.adminModerationStats small {
+  display: block;
+  color: rgba(255,255,255,0.66);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.adminModerationStats span {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.adminModerationStats strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 24px;
+  font-weight: 950;
+}
+
+.adminModerationStats small {
+  margin-top: 4px;
+}
+
+.adminModerationGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.adminModerationGrid--bottom {
+  margin-top: 12px;
+}
+
+.adminModerationCard {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 16px;
+}
+
+.adminModerationCard--wide {
+  grid-column: 1 / -1;
+}
+
+.adminModerationCard h4,
+.adminModerationList h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.adminModerationCard p,
+.adminModerationItem p {
+  margin: -4px 0 0;
+  color: rgba(255,255,255,0.66);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.adminModerationCard textarea {
+  min-height: 72px;
+}
+
+.adminModerationLists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+  min-width: 0;
+}
+
+.adminModerationList {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 16px;
+}
+
+.adminModerationList__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.adminModerationItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(0,0,0,0.14);
+}
+
+.adminModerationItem strong,
+.adminModerationItem span {
+  display: block;
+}
+
+.adminModerationItem span {
+  margin-top: 3px;
+  color: rgba(255,255,255,0.66);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.adminMiniList {
+  display: grid;
+  gap: 8px;
+}
+
+.adminMiniList span {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 13px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.68);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.adminMiniList b {
+  color: rgba(255,255,255,0.92);
+}
+
 .adminSecurityPanel {
   display: grid;
   gap: 16px;
@@ -1665,7 +1848,8 @@
 
   .adminSeasonStats,
   .adminFiltersBar--seasons,
-  .adminPwaStats {
+  .adminPwaStats,
+  .adminModerationStats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1711,6 +1895,9 @@
   .adminPwaStats,
   .adminPwaGrid,
   .adminCorrectionGrid,
+  .adminModerationStats,
+  .adminModerationGrid,
+  .adminModerationLists,
   .adminRiskStrip__metrics,
   .adminSecurityStats,
   .adminSecurityEvents {
@@ -1736,6 +1923,7 @@
 
   .adminSeasonHead,
   .adminPwaHead,
+  .adminModerationHead,
   .adminSeasonSummaryCard {
     flex-direction: column;
   }
@@ -1799,6 +1987,10 @@
 [data-theme="light"] .adminPwaCard,
 [data-theme="light"] .adminPwaRiskItem,
 [data-theme="light"] .adminCorrectionCard,
+[data-theme="light"] .adminModerationStats article,
+[data-theme="light"] .adminModerationCard,
+[data-theme="light"] .adminModerationList,
+[data-theme="light"] .adminModerationItem,
 [data-theme="light"] .adminKpiRow,
 [data-theme="light"] .adminInsightCard,
 [data-theme="light"] .adminSuspiciousCard,
@@ -1978,8 +2170,29 @@
     rgba(255, 250, 239, 0.72);
 }
 
+[data-theme="light"] .adminModerationPanel {
+  border-color: rgba(143, 29, 45, 0.18);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(233, 79, 85, 0.12), transparent 34%),
+    radial-gradient(circle at 100% 10%, rgba(90, 170, 255, 0.11), transparent 34%),
+    rgba(255, 250, 239, 0.72);
+}
+
 [data-theme="light"] .adminCorrectionCard p {
   color: rgba(72, 67, 82, 0.72);
+}
+
+[data-theme="light"] .adminModerationCard p,
+[data-theme="light"] .adminModerationItem p,
+[data-theme="light"] .adminModerationItem span,
+[data-theme="light"] .adminMiniList span,
+[data-theme="light"] .adminModerationStats span,
+[data-theme="light"] .adminModerationStats small {
+  color: rgba(72, 67, 82, 0.72);
+}
+
+[data-theme="light"] .adminMiniList b {
+  color: rgba(27, 25, 34, 0.92);
 }
 
 [data-theme="light"] .adminStatCard--accent {
@@ -2021,6 +2234,21 @@
 }
 
 [data-theme="light"] .adminPwaStats article.is-danger {
+  border-color: rgba(143, 29, 45, 0.24);
+  background: rgba(233, 79, 85, 0.10);
+}
+
+[data-theme="light"] .adminModerationStats article.is-ok {
+  border-color: rgba(22, 101, 58, 0.22);
+  background: rgba(70, 196, 126, 0.12);
+}
+
+[data-theme="light"] .adminModerationStats article.is-watch {
+  border-color: rgba(201, 138, 24, 0.24);
+  background: rgba(246, 201, 69, 0.15);
+}
+
+[data-theme="light"] .adminModerationStats article.is-danger {
   border-color: rgba(143, 29, 45, 0.24);
   background: rgba(233, 79, 85, 0.10);
 }
@@ -2189,6 +2417,9 @@
   .adminPwaStats,
   .adminPwaGrid,
   .adminCorrectionGrid,
+  .adminModerationStats,
+  .adminModerationGrid,
+  .adminModerationLists,
   .adminCorrectionFields,
   .adminCorrectionFields--four,
   .adminSecurityStats,
@@ -2207,6 +2438,10 @@
   .adminTicketCard__top {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .adminModerationItem {
+    grid-template-columns: 1fr;
   }
 
   .adminTicketCard__line2,

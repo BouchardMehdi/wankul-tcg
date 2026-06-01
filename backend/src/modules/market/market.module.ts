@@ -13,6 +13,7 @@ import { MarketPriceHistory } from './market-price-history.entity';
 import { UserCard } from '../users/user-card.entity';
 import { UserEconomy } from '../economy/user-economy.entity';
 import { Card } from '../cards/card.entity';
+import { User } from '../users/user.entity';
 
 import { EconomyAnalyticsModule } from '../economy/economy-analytics.module';
 import { PushModule } from '../push/push.module';
@@ -24,6 +25,7 @@ import { SecurityModule } from '../security/security.module';
       UserCard,
       UserEconomy,
       Card,
+      User,
       MarketListing,
       MarketTransaction,
       MarketPriceHistory,

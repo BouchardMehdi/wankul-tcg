@@ -68,6 +68,19 @@ export class AuthService {
     });
   }
 
+  private assertUserNotSuspended(user: User) {
+    if (!user.suspendedUntil) return;
+
+    const suspendedUntil = new Date(user.suspendedUntil);
+    if (Number.isNaN(suspendedUntil.getTime()) || suspendedUntil.getTime() <= Date.now()) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      `Compte suspendu jusqu'au ${suspendedUntil.toLocaleString('fr-FR')}.`,
+    );
+  }
+
   private async saveScreenshotFromDataUrl(
     screenshotDataUrl?: string,
     screenshotFilename?: string,
@@ -468,6 +481,8 @@ export class AuthService {
 
     const user = await this.usersRepo.findOne({ where: { username } });
     if (!user) throw new ForbiddenException('Identifiants invalides');
+
+    this.assertUserNotSuspended(user);
 
     if (!user.emailVerified) {
       throw new ForbiddenException('Email non vérifié');

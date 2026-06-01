@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, DataSource, MoreThanOrEqual, Repository } from 'typeorm';
+import { Brackets, DataSource, In, MoreThanOrEqual, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -65,6 +65,20 @@ type AdminSeasonAvailability = {
   source: string;
   reason: string;
 };
+
+type ModerationDurationInput = {
+  durationHours?: number;
+  until?: string;
+  reason?: string;
+};
+
+const MODERATION_ACTIONS = [
+  'ADMIN_USER_SUSPEND',
+  'ADMIN_USER_UNSUSPEND',
+  'ADMIN_MARKET_BLOCK',
+  'ADMIN_MARKET_UNBLOCK',
+  'ADMIN_LISTING_HIDE',
+];
 
 @Injectable()
 export class AdminService {
@@ -992,6 +1006,337 @@ export class AdminService {
     };
   }
 
+  async getModerationOverview() {
+    const now = new Date();
+    const logRepo = this.dataSource.getRepository(EconomicActionLog);
+
+    const [
+      activeSuspensions,
+      activeMarketBlocks,
+      hiddenListings,
+      hiddenListingsTotal,
+      openReports,
+      urgentReportsTotal,
+      moderationLogs,
+    ] = await Promise.all([
+      this.usersRepo
+        .createQueryBuilder('user')
+        .where('user.suspendedUntil IS NOT NULL')
+        .andWhere('user.suspendedUntil > :now', { now })
+        .orderBy('user.suspendedUntil', 'ASC')
+        .take(20)
+        .getMany(),
+      this.usersRepo
+        .createQueryBuilder('user')
+        .where('user.marketBlockedUntil IS NOT NULL')
+        .andWhere('user.marketBlockedUntil > :now', { now })
+        .orderBy('user.marketBlockedUntil', 'ASC')
+        .take(20)
+        .getMany(),
+      this.marketListingRepo.find({
+        where: { status: MarketListingStatus.HIDDEN },
+        relations: ['seller', 'card'],
+        order: { closedAt: 'DESC', updatedAt: 'DESC' },
+        take: 12,
+      }),
+      this.marketListingRepo.count({
+        where: { status: MarketListingStatus.HIDDEN },
+      }),
+      this.reportsRepo.find({
+        where: { status: In(['open', 'investigating', 'planned']) },
+        order: { createdAt: 'DESC' },
+        take: 6,
+      }),
+      this.reportsRepo.count({
+        where: {
+          status: In(['open', 'investigating', 'planned']),
+          priority: In(['high', 'blocking']),
+        },
+      }),
+      logRepo.find({
+        where: { action: In(MODERATION_ACTIONS) },
+        order: { createdAt: 'DESC' },
+        take: 12,
+      }),
+    ]);
+
+    const reportCounts = await this.reportsRepo
+      .createQueryBuilder('report')
+      .select('report.status', 'status')
+      .addSelect('COUNT(report.id)', 'count')
+      .where('report.status IN (:...statuses)', {
+        statuses: ['open', 'investigating', 'planned'],
+      })
+      .groupBy('report.status')
+      .getRawMany<{ status: BugReportStatus; count: string }>();
+
+    const countsByStatus = reportCounts.reduce<Record<string, number>>((acc, row) => {
+      acc[row.status] = Number(row.count ?? 0);
+      return acc;
+    }, {});
+
+    return {
+      generatedAt: new Date().toISOString(),
+      totals: {
+        activeSuspensions: activeSuspensions.length,
+        activeMarketBlocks: activeMarketBlocks.length,
+        hiddenListings: hiddenListingsTotal,
+        openReports: Object.values(countsByStatus).reduce((sum, value) => sum + value, 0),
+        urgentReports: urgentReportsTotal,
+      },
+      reportCounts: countsByStatus,
+      activeSuspensions: activeSuspensions.map((user) => this.mapModeratedUser(user)),
+      activeMarketBlocks: activeMarketBlocks.map((user) => this.mapModeratedUser(user)),
+      hiddenListings: hiddenListings.map((listing) => this.mapModerationListing(listing)),
+      recentReports: openReports.map((report) => ({
+        id: report.id,
+        userId: report.userId,
+        usernameSnapshot: report.usernameSnapshot,
+        page: report.page,
+        feature: report.feature,
+        priority: report.priority,
+        status: report.status,
+        createdAt: report.createdAt,
+      })),
+      recentActions: moderationLogs.map((log) => ({
+        id: log.id,
+        userId: log.userId,
+        relatedUserId: log.relatedUserId,
+        action: log.action,
+        status: log.status,
+        severity: log.severity,
+        targetType: log.targetType,
+        targetId: log.targetId,
+        reason: log.reason,
+        metadata: log.metadata,
+        createdAt: log.createdAt,
+      })),
+    };
+  }
+
+  async suspendUser(
+    adminUser: { id: number; username: string },
+    userId: number,
+    input: ModerationDurationInput,
+  ) {
+    const target = await this.getModerationTarget(adminUser, userId);
+    const reason = this.requireReason(input.reason);
+    const until = this.resolveModerationUntil(input);
+
+    target.suspendedUntil = until;
+    target.suspensionReason = reason;
+    await this.usersRepo.save(target);
+
+    await this.antiAbuseService.logAction({
+      userId: adminUser.id,
+      relatedUserId: target.id,
+      action: 'ADMIN_USER_SUSPEND',
+      status: 'allowed',
+      severity: 'danger',
+      targetType: 'user',
+      targetId: target.id,
+      reason,
+      metadata: {
+        adminUsername: adminUser.username,
+        targetUsername: target.username,
+        until,
+      },
+    });
+
+    return {
+      message: 'Compte suspendu et action journalisée.',
+      user: this.mapModeratedUser(target),
+    };
+  }
+
+  async clearUserSuspension(
+    adminUser: { id: number; username: string },
+    userId: number,
+    reason?: string,
+  ) {
+    const target = await this.getModerationTarget(adminUser, userId);
+    const safeReason = this.requireReason(reason);
+    const previousUntil = target.suspendedUntil;
+
+    target.suspendedUntil = null;
+    target.suspensionReason = null;
+    await this.usersRepo.save(target);
+
+    await this.antiAbuseService.logAction({
+      userId: adminUser.id,
+      relatedUserId: target.id,
+      action: 'ADMIN_USER_UNSUSPEND',
+      status: 'allowed',
+      severity: 'watch',
+      targetType: 'user',
+      targetId: target.id,
+      reason: safeReason,
+      metadata: {
+        adminUsername: adminUser.username,
+        targetUsername: target.username,
+        previousUntil,
+      },
+    });
+
+    return {
+      message: 'Suspension retirée et action journalisée.',
+      user: this.mapModeratedUser(target),
+    };
+  }
+
+  async blockUserMarket(
+    adminUser: { id: number; username: string },
+    userId: number,
+    input: ModerationDurationInput,
+  ) {
+    const target = await this.getModerationTarget(adminUser, userId);
+    const reason = this.requireReason(input.reason);
+    const until = this.resolveModerationUntil(input);
+
+    target.marketBlockedUntil = until;
+    target.marketBlockReason = reason;
+    await this.usersRepo.save(target);
+
+    await this.antiAbuseService.logAction({
+      userId: adminUser.id,
+      relatedUserId: target.id,
+      action: 'ADMIN_MARKET_BLOCK',
+      status: 'allowed',
+      severity: 'watch',
+      targetType: 'user',
+      targetId: target.id,
+      reason,
+      metadata: {
+        adminUsername: adminUser.username,
+        targetUsername: target.username,
+        until,
+      },
+    });
+
+    return {
+      message: 'Market du joueur bloqué et action journalisée.',
+      user: this.mapModeratedUser(target),
+    };
+  }
+
+  async clearUserMarketBlock(
+    adminUser: { id: number; username: string },
+    userId: number,
+    reason?: string,
+  ) {
+    const target = await this.getModerationTarget(adminUser, userId);
+    const safeReason = this.requireReason(reason);
+    const previousUntil = target.marketBlockedUntil;
+
+    target.marketBlockedUntil = null;
+    target.marketBlockReason = null;
+    await this.usersRepo.save(target);
+
+    await this.antiAbuseService.logAction({
+      userId: adminUser.id,
+      relatedUserId: target.id,
+      action: 'ADMIN_MARKET_UNBLOCK',
+      status: 'allowed',
+      severity: 'info',
+      targetType: 'user',
+      targetId: target.id,
+      reason: safeReason,
+      metadata: {
+        adminUsername: adminUser.username,
+        targetUsername: target.username,
+        previousUntil,
+      },
+    });
+
+    return {
+      message: 'Blocage market retiré et action journalisée.',
+      user: this.mapModeratedUser(target),
+    };
+  }
+
+  async hideMarketListing(
+    adminUser: { id: number; username: string },
+    listingId: number,
+    reason?: string,
+  ) {
+    const safeListingId = this.assertPositiveInt(listingId, 'listingId');
+    const safeReason = this.requireReason(reason);
+
+    const result = await this.dataSource.transaction(async (manager) => {
+      const listingRepo = manager.getRepository(MarketListing);
+      const userCardRepo = manager.getRepository(UserCard);
+
+      const listing = await listingRepo
+        .createQueryBuilder('listing')
+        .leftJoinAndSelect('listing.seller', 'seller')
+        .leftJoinAndSelect('listing.card', 'card')
+        .leftJoinAndSelect('listing.wantedCard', 'wantedCard')
+        .setLock('pessimistic_write')
+        .where('listing.id = :listingId', { listingId: safeListingId })
+        .getOne();
+
+      if (!listing) throw new NotFoundException('Annonce introuvable.');
+      if (listing.status !== MarketListingStatus.ACTIVE) {
+        throw new BadRequestException('Seules les annonces actives peuvent être masquées.');
+      }
+
+      const unlockedQuantity = listing.remainingQuantity;
+      const sellerCard = await this.findUserCardForUpdate(
+        userCardRepo,
+        listing.seller.id,
+        listing.card.id,
+      );
+
+      if (!sellerCard) {
+        throw new NotFoundException('Inventaire vendeur introuvable.');
+      }
+
+      sellerCard.quantityLocked = Math.max(0, sellerCard.quantityLocked - unlockedQuantity);
+      listing.status = MarketListingStatus.HIDDEN;
+      listing.remainingQuantity = 0;
+      listing.closedAt = new Date();
+
+      await userCardRepo.save(sellerCard);
+      await listingRepo.save(listing);
+
+      return {
+        listingId: listing.id,
+        sellerId: listing.seller.id,
+        sellerUsername: listing.seller.username,
+        cardId: listing.card.id,
+        cardName: listing.card.name,
+        unlockedQuantity,
+        status: listing.status,
+        closedAt: listing.closedAt,
+      };
+    });
+
+    await this.antiAbuseService.logAction({
+      userId: adminUser.id,
+      relatedUserId: result.sellerId,
+      cardId: result.cardId,
+      action: 'ADMIN_LISTING_HIDE',
+      status: 'allowed',
+      severity: 'watch',
+      targetType: 'listing',
+      targetId: result.listingId,
+      reason: safeReason,
+      metadata: {
+        adminUsername: adminUser.username,
+        sellerUsername: result.sellerUsername,
+        cardName: result.cardName,
+        unlockedQuantity: result.unlockedQuantity,
+        status: result.status,
+        closedAt: result.closedAt,
+      },
+    });
+
+    return {
+      message: 'Annonce masquée et copies déverrouillées.',
+      listing: result,
+    };
+  }
+
   async getEconomyLogs(params: EconomyLogParams = {}) {
     return this.antiAbuseService.getLogs(params);
   }
@@ -1238,6 +1583,81 @@ export class AdminService {
     ];
 
     return rows.map((row) => row.map((value) => this.csvValue(value)).join(',')).join('\n');
+  }
+
+  private async getModerationTarget(
+    adminUser: { id: number; username: string },
+    userId: number,
+  ) {
+    const safeUserId = this.assertPositiveInt(userId, 'userId');
+
+    if (safeUserId === adminUser.id) {
+      throw new BadRequestException('Tu ne peux pas modérer ton propre compte admin.');
+    }
+
+    const target = await this.usersRepo.findOne({ where: { id: safeUserId } });
+    if (!target) throw new NotFoundException('Utilisateur introuvable.');
+
+    if (target.role === 'admin') {
+      throw new BadRequestException('La modération directe d’un compte admin est refusée.');
+    }
+
+    return target;
+  }
+
+  private resolveModerationUntil(input: ModerationDurationInput) {
+    const rawUntil = String(input.until ?? '').trim();
+    const durationHours = Number(input.durationHours ?? 24);
+    const now = Date.now();
+    const until = rawUntil
+      ? new Date(rawUntil)
+      : new Date(now + durationHours * 60 * 60 * 1000);
+
+    if (!Number.isFinite(durationHours) || durationHours <= 0) {
+      throw new BadRequestException('La durée doit être supérieure à 0 heure.');
+    }
+
+    if (Number.isNaN(until.getTime()) || until.getTime() <= now) {
+      throw new BadRequestException('La date de fin doit être dans le futur.');
+    }
+
+    const maxUntil = now + 365 * 24 * 60 * 60 * 1000;
+    if (until.getTime() > maxUntil) {
+      throw new BadRequestException('La durée maximale de modération est de 365 jours.');
+    }
+
+    return until;
+  }
+
+  private mapModeratedUser(user: User) {
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      suspendedUntil: user.suspendedUntil,
+      suspensionReason: user.suspensionReason,
+      marketBlockedUntil: user.marketBlockedUntil,
+      marketBlockReason: user.marketBlockReason,
+      createdAt: user.createdAt,
+    };
+  }
+
+  private mapModerationListing(listing: MarketListing) {
+    return {
+      id: listing.id,
+      sellerId: listing.seller?.id ?? null,
+      sellerUsername: listing.seller?.username ?? null,
+      cardId: listing.card?.id ?? null,
+      cardName: listing.card?.name ?? null,
+      rarity: listing.card?.rarity ?? null,
+      status: listing.status,
+      quantity: listing.quantity,
+      remainingQuantity: listing.remainingQuantity,
+      priceCredits: listing.priceCredits,
+      createdAt: listing.createdAt,
+      closedAt: listing.closedAt,
+    };
   }
 
   private assertPositiveInt(value: number, field: string) {

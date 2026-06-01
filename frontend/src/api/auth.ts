@@ -447,6 +447,69 @@ export type AdminPwaMonitoringResponse = {
   }>;
 };
 
+export type AdminModerationOverviewResponse = {
+  generatedAt: string;
+  totals: {
+    activeSuspensions: number;
+    activeMarketBlocks: number;
+    hiddenListings: number;
+    openReports: number;
+    urgentReports: number;
+  };
+  reportCounts: Record<string, number>;
+  activeSuspensions: AdminModeratedUser[];
+  activeMarketBlocks: AdminModeratedUser[];
+  hiddenListings: Array<{
+    id: number;
+    sellerId: number | null;
+    sellerUsername: string | null;
+    cardId: number | null;
+    cardName: string | null;
+    rarity: string | null;
+    status: string;
+    quantity: number;
+    remainingQuantity: number;
+    priceCredits: number;
+    createdAt: string;
+    closedAt: string | null;
+  }>;
+  recentReports: Array<{
+    id: number;
+    userId: number;
+    usernameSnapshot: string;
+    page: string;
+    feature: string;
+    priority: string;
+    status: BugReportStatus;
+    createdAt: string;
+  }>;
+  recentActions: Array<{
+    id: number;
+    userId: number | null;
+    relatedUserId: number | null;
+    action: string;
+    status: 'allowed' | 'flagged' | 'blocked';
+    severity: 'info' | 'watch' | 'danger';
+    targetType: string | null;
+    targetId: number | null;
+    reason: string | null;
+    metadata: Record<string, any> | null;
+    createdAt: string;
+  }>;
+};
+
+export type AdminModeratedUser = {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  suspendedUntil: string | null;
+  suspensionReason: string | null;
+  marketBlockedUntil: string | null;
+  marketBlockReason: string | null;
+  createdAt: string;
+};
+
 export async function login(dto: LoginDto) {
   return apiFetch<LoginResponse>('/auth/login', {
     method: 'POST',
@@ -589,6 +652,12 @@ export async function getAdminPwaMonitoring(days = 30) {
       method: 'GET',
     },
   );
+}
+
+export async function getAdminModerationOverview() {
+  return adminFetch<AdminModerationOverviewResponse>('/admin/moderation/overview', {
+    method: 'GET',
+  });
 }
 
 export async function getAdminEconomyLogs(params?: {
@@ -762,6 +831,62 @@ export async function adminRemoveBuggedReward(body: {
     {
       method: 'POST',
       body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function adminSuspendUser(
+  userId: number,
+  body: { durationHours?: number; until?: string; reason: string },
+) {
+  return adminFetch<{ message?: string; user?: AdminModeratedUser }>(
+    `/admin/moderation/users/${userId}/suspend`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function adminClearUserSuspension(userId: number, reason: string) {
+  return adminFetch<{ message?: string; user?: AdminModeratedUser }>(
+    `/admin/moderation/users/${userId}/suspension/clear`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
+    },
+  );
+}
+
+export async function adminBlockUserMarket(
+  userId: number,
+  body: { durationHours?: number; until?: string; reason: string },
+) {
+  return adminFetch<{ message?: string; user?: AdminModeratedUser }>(
+    `/admin/moderation/users/${userId}/market-block`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export async function adminClearUserMarketBlock(userId: number, reason: string) {
+  return adminFetch<{ message?: string; user?: AdminModeratedUser }>(
+    `/admin/moderation/users/${userId}/market-block/clear`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
+    },
+  );
+}
+
+export async function adminHideMarketListing(listingId: number, reason: string) {
+  return adminFetch<{ message?: string; listing?: Record<string, any> }>(
+    `/admin/moderation/listings/${listingId}/hide`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
     },
   );
 }
