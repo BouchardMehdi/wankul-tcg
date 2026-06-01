@@ -344,6 +344,139 @@
   font-size: 18px;
 }
 
+.adminHealthPanel {
+  display: grid;
+  gap: 16px;
+  border-color: rgba(90, 170, 255, 0.14);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(90, 170, 255, 0.10), transparent 34%),
+    radial-gradient(circle at 92% 0%, rgba(86, 214, 144, 0.08), transparent 32%),
+    rgba(255,255,255,0.03);
+}
+
+.adminHealthGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.adminHealthMetric {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.adminHealthMetric.is-created {
+  border-color: rgba(86, 214, 144, 0.22);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(86, 214, 144, 0.14), transparent 42%),
+    rgba(255,255,255,0.03);
+}
+
+.adminHealthMetric.is-destroyed {
+  border-color: rgba(245, 195, 98, 0.24);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(245, 195, 98, 0.14), transparent 42%),
+    rgba(255,255,255,0.03);
+}
+
+.adminHealthMetric.is-good {
+  border-color: rgba(86, 214, 144, 0.24);
+}
+
+.adminHealthMetric.is-warning {
+  border-color: rgba(255, 204, 102, 0.28);
+}
+
+.adminHealthMetric span,
+.adminHealthSignalCard > div span {
+  display: block;
+  color: rgba(255,255,255,0.66);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.adminHealthMetric strong {
+  display: block;
+  margin-top: 8px;
+  font-size: clamp(20px, 2.3vw, 28px);
+  font-weight: 950;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.adminHealthMetric small {
+  display: block;
+  margin-top: 8px;
+  color: rgba(255,255,255,0.60);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.adminHealthSignals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.adminHealthSignalCard {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.14);
+}
+
+.adminHealthSignalCard > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.adminHealthSignalCard > div strong {
+  font-size: 24px;
+  font-weight: 950;
+}
+
+.adminHealthSignalCard ul {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.adminHealthSignalCard li {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.045);
+}
+
+.adminHealthSignalCard b {
+  display: block;
+  font-weight: 950;
+}
+
+.adminHealthSignalCard li span,
+.adminHealthSignalCard p {
+  display: block;
+  margin: 4px 0 0;
+  color: rgba(255,255,255,0.64);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .adminSecurityPanel {
   display: grid;
   gap: 16px;
@@ -1093,6 +1226,10 @@
   .adminDashboardGrid {
     grid-template-columns: 1fr;
   }
+
+  .adminHealthGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -1129,10 +1266,15 @@
   }
 
   .adminRiskStrip,
+  .adminHealthSignals,
   .adminRiskStrip__metrics,
   .adminSecurityStats,
   .adminSecurityEvents {
     grid-template-columns: 1fr;
+  }
+
+  .adminHealthGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .adminToolbar__left {
@@ -1184,6 +1326,8 @@
 [data-theme="light"] .adminSecurityPill,
 [data-theme="light"] .adminSecurityEvent,
 [data-theme="light"] .adminFiltersBar--economyLogs,
+[data-theme="light"] .adminHealthMetric,
+[data-theme="light"] .adminHealthSignalCard,
 [data-theme="light"] .adminKpiRow,
 [data-theme="light"] .adminInsightCard,
 [data-theme="light"] .adminSuspiciousCard,
@@ -1206,6 +1350,14 @@
     radial-gradient(circle at 8% 0%, rgba(255, 96, 128, 0.12), transparent 36%),
     radial-gradient(circle at 92% 16%, rgba(245, 195, 98, 0.18), transparent 34%),
     rgba(255,255,255,0.64);
+}
+
+[data-theme="light"] .adminHealthPanel {
+  border-color: rgba(45, 111, 191, 0.14);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(90, 170, 255, 0.10), transparent 34%),
+    radial-gradient(circle at 92% 0%, rgba(70, 196, 126, 0.12), transparent 32%),
+    rgba(255, 250, 239, 0.72);
 }
 
 [data-theme="light"] .adminTabBtn {
@@ -1238,6 +1390,11 @@
 [data-theme="light"] .adminSecurityEvent time,
 [data-theme="light"] .adminSecurityEvent p,
 [data-theme="light"] .adminSecurityEvent__details summary,
+[data-theme="light"] .adminHealthMetric span,
+[data-theme="light"] .adminHealthMetric small,
+[data-theme="light"] .adminHealthSignalCard > div span,
+[data-theme="light"] .adminHealthSignalCard li span,
+[data-theme="light"] .adminHealthSignalCard p,
 [data-theme="light"] .adminBarChartRow__label,
 [data-theme="light"] .adminChartLegend,
 [data-theme="light"] .adminKpiRow span,
@@ -1307,10 +1464,25 @@
     linear-gradient(180deg, rgba(255, 252, 244, 0.86), rgba(244, 233, 213, 0.68));
 }
 
+[data-theme="light"] .adminHealthMetric.is-created {
+  border-color: rgba(22, 101, 58, 0.20);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(70, 196, 126, 0.15), transparent 42%),
+    rgba(255, 250, 239, 0.74);
+}
+
+[data-theme="light"] .adminHealthMetric.is-destroyed {
+  border-color: rgba(201, 138, 24, 0.22);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(246, 201, 69, 0.16), transparent 42%),
+    rgba(255, 250, 239, 0.74);
+}
+
 [data-theme="light"] .adminStatCard.is-positive,
 [data-theme="light"] .adminStatCard--risk.is-ok,
 [data-theme="light"] .adminSecurityPill.is-ok,
-[data-theme="light"] .adminInsightCard.is-good {
+[data-theme="light"] .adminInsightCard.is-good,
+[data-theme="light"] .adminHealthMetric.is-good {
   border-color: rgba(22, 101, 58, 0.22);
   background: rgba(70, 196, 126, 0.11);
 }
@@ -1340,12 +1512,14 @@
 [data-theme="light"] .adminRiskStrip.is-watch,
 [data-theme="light"] .adminSecurityPill.is-watch,
 [data-theme="light"] .adminSecurityEvent.is-watch,
-[data-theme="light"] .adminInsightCard.is-warning {
+[data-theme="light"] .adminInsightCard.is-warning,
+[data-theme="light"] .adminHealthMetric.is-warning {
   border-color: rgba(201, 138, 24, 0.26);
   background: rgba(246, 201, 69, 0.13);
 }
 
 [data-theme="light"] .adminRiskStrip__metrics div,
+[data-theme="light"] .adminHealthSignalCard li,
 [data-theme="light"] .adminSuspiciousCard__grid span {
   border-color: rgba(42, 35, 54, 0.10);
   background: rgba(255, 250, 239, 0.58);
@@ -1448,6 +1622,8 @@
 
   .adminDashboardGrid,
   .adminDashboardGrid--analytics,
+  .adminHealthGrid,
+  .adminHealthSignals,
   .adminSecurityStats,
   .adminSecurityEvents,
   .adminRiskStrip__metrics,

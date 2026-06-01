@@ -387,6 +387,10 @@ export default function Admin() {
     [ecoRows]
   );
 
+  const averageOpeningValue =
+    totalBoostersOpened + totalDisplaysOpened > 0
+      ? Math.round(totalOpeningEarned / (totalBoostersOpened + totalDisplaysOpened))
+      : 0;
   const averageBoosterNet = totalBoostersOpened > 0 ? Math.round(totalOpeningEarned / totalBoostersOpened) : 0;
   const averageDisplayNet = totalDisplaysOpened > 0 ? Math.round(totalOpeningEarned / totalDisplaysOpened) : 0;
   const creditsCreated = health?.creditsCreated ?? ecoTotals.creditsEarned;
@@ -398,6 +402,8 @@ export default function Admin() {
   const riskLevel = health?.riskLevel ?? "ok";
   const rarityProfitability = advanced?.rarityProfitability ?? [];
   const manipulatedCards = advanced?.manipulatedCards ?? [];
+  const topManipulatedCards = manipulatedCards.slice(0, 4);
+  const topProfitableRarities = rarityProfitability.slice(0, 4);
   const suspiciousUsers = advanced?.suspiciousUsers ?? [];
   const security = ecoOverview?.security ?? null;
   const securityTotals = security?.totals ?? {
@@ -762,6 +768,97 @@ export default function Admin() {
                         </div>
                       </div>
                     </div>
+
+                    <section className="adminDashboardPanel adminHealthPanel">
+                      <div className="adminDashboardPanel__head">
+                        <h3>Dashboard santé économie</h3>
+                        <p className="small">
+                          Vue simple des signaux qui disent si l'économie reste saine sur la période.
+                        </p>
+                      </div>
+
+                      <div className="adminHealthGrid">
+                        <article className={`adminHealthMetric ${ecoInflation >= 0 ? "is-warning" : "is-good"}`}>
+                          <span>Inflation nette</span>
+                          <strong>{formatSignedNumber(ecoInflation)}</strong>
+                          <small>{formatPercent(health?.inflationRatePercent ?? 0)} sur {ecoOverview?.days ?? ecoDays} jours</small>
+                        </article>
+
+                        <article className="adminHealthMetric is-created">
+                          <span>WunkulCoins créés</span>
+                          <strong><CurrencyAmount value={creditsCreated} /></strong>
+                          <small>Opening, quick sell, récompenses et bonus.</small>
+                        </article>
+
+                        <article className="adminHealthMetric is-destroyed">
+                          <span>WunkulCoins détruits</span>
+                          <strong><CurrencyAmount value={creditsDestroyed} /></strong>
+                          <small>Achats de boosters et displays.</small>
+                        </article>
+
+                        <article className="adminHealthMetric">
+                          <span>Volume market</span>
+                          <strong><CurrencyAmount value={totalMarketVolume} /></strong>
+                          <small>Échanges réalisés entre joueurs.</small>
+                        </article>
+
+                        <article className="adminHealthMetric">
+                          <span>Quick sell</span>
+                          <strong><CurrencyAmount value={totalQuickSellEarned} /></strong>
+                          <small>{formatPercent(quickSellShareOfCreatedPercent, false)} des WunkulCoins créés.</small>
+                        </article>
+
+                        <article className="adminHealthMetric">
+                          <span>Valeur moyenne opening</span>
+                          <strong><CurrencyAmount value={averageOpeningValue} /></strong>
+                          <small>Booster moyen : {formatCurrencyText(averageBoosterNet)}.</small>
+                        </article>
+                      </div>
+
+                      <div className="adminHealthSignals">
+                        <article className="adminHealthSignalCard">
+                          <div>
+                            <span>Top cartes manipulées</span>
+                            <strong>{topManipulatedCards.length}</strong>
+                          </div>
+                          {topManipulatedCards.length > 0 ? (
+                            <ul>
+                              {topManipulatedCards.map((card) => (
+                                <li key={card.cardId}>
+                                  <b>{card.cardName}</b>
+                                  <span>
+                                    Score {card.score} · Écart {formatPercent(card.avgVsMarketPercent)} · Volatilité {formatPercent(card.volatilityPercent, false)}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>Aucune carte à risque détectée.</p>
+                          )}
+                        </article>
+
+                        <article className="adminHealthSignalCard">
+                          <div>
+                            <span>Raretés trop rentables</span>
+                            <strong>{topProfitableRarities.length}</strong>
+                          </div>
+                          {topProfitableRarities.length > 0 ? (
+                            <ul>
+                              {topProfitableRarities.map((rarity) => (
+                                <li key={rarity.rarity}>
+                                  <b>{rarity.rarity}</b>
+                                  <span>
+                                    Score {rarity.score} · Prix moy. {formatCurrencyText(rarity.avgUnitPrice)} · Reward/carte {formatCurrencyText(rarity.estimatedRewardPerOpenedCard)}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>Pas assez de ventes pour faire ressortir une rareté.</p>
+                          )}
+                        </article>
+                      </div>
+                    </section>
 
                     <section className="adminDashboardPanel adminSecurityPanel adminSecurityPanel--alerts">
                       <div className="adminDashboardPanel__head">
