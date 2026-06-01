@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, In, MoreThanOrEqual, Repository } from 'typeorm';
@@ -10,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
 import * as path from 'path';
 import { JwtService } from '@nestjs/jwt';
+import type { StringValue } from 'ms';
 
 import { User } from '../users/user.entity';
 import { BugReport } from '../report/bug-report.entity';
@@ -80,6 +82,8 @@ const MODERATION_ACTIONS = [
   'ADMIN_LISTING_HIDE',
 ];
 
+const ADMIN_REFRESH_EXPIRES_IN = '8h' as StringValue;
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -139,6 +143,44 @@ export class AdminService {
     const user = await this.usersRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
+    this.assertAdminSessionAllowed(user);
+
+    const isValid = await bcrypt.compare(adminPassword, user.adminPasswordHash!);
+    if (!isValid) {
+      throw new ForbiddenException('Invalid admin password');
+    }
+
+    return this.createAdminSession(user);
+  }
+
+  async refreshAdminSession(adminRefreshToken: string) {
+    const token = (adminRefreshToken ?? '').trim();
+    if (!token) {
+      throw new UnauthorizedException('Session admin à renouveler.');
+    }
+
+    let payload: any;
+    try {
+      payload = await this.jwt.verifyAsync(token);
+    } catch {
+      throw new UnauthorizedException('Session admin expirée.');
+    }
+
+    if (payload?.scope !== 'admin_refresh' || !payload?.sub) {
+      throw new UnauthorizedException('Session admin invalide.');
+    }
+
+    const user = await this.usersRepo.findOne({ where: { id: Number(payload.sub) } });
+    if (!user) {
+      throw new UnauthorizedException('Session admin invalide.');
+    }
+
+    this.assertAdminSessionAllowed(user);
+
+    return this.createAdminSession(user);
+  }
+
+  private assertAdminSessionAllowed(user: User) {
     if (user.role !== 'admin') {
       throw new ForbiddenException('Admin role required');
     }
@@ -147,11 +189,17 @@ export class AdminService {
       throw new ForbiddenException('Admin password not configured');
     }
 
-    const isValid = await bcrypt.compare(adminPassword, user.adminPasswordHash);
-    if (!isValid) {
-      throw new ForbiddenException('Invalid admin password');
+    if (user.suspendedUntil) {
+      const suspendedUntil = new Date(user.suspendedUntil);
+      if (!Number.isNaN(suspendedUntil.getTime()) && suspendedUntil.getTime() > Date.now()) {
+        throw new ForbiddenException(
+          `Compte suspendu jusqu'au ${suspendedUntil.toLocaleString('fr-FR')}.`,
+        );
+      }
     }
+  }
 
+  private async createAdminSession(user: User) {
     const admin_access_token = await this.jwt.signAsync({
       sub: user.id,
       username: user.username,
@@ -159,7 +207,21 @@ export class AdminService {
       scope: 'admin',
     });
 
-    return { admin_access_token };
+    const admin_refresh_token = await this.jwt.signAsync(
+      {
+        sub: user.id,
+        username: user.username,
+        role: user.role,
+        scope: 'admin_refresh',
+      },
+      { expiresIn: ADMIN_REFRESH_EXPIRES_IN },
+    );
+
+    return {
+      admin_access_token,
+      admin_refresh_token,
+      admin_refresh_expires_in: ADMIN_REFRESH_EXPIRES_IN,
+    };
   }
 
   async getAllTickets(params: GetAllTicketsParams = {}) {

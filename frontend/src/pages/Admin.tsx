@@ -46,7 +46,15 @@ const STATUS_LABELS: Record<BugReportStatus, string> = {
   rejected: "Rejeté",
 };
 
-type AdminTab = "dashboard" | "reports";
+type AdminTab =
+  | "economy"
+  | "security"
+  | "moderation"
+  | "corrections"
+  | "pwa"
+  | "seasons"
+  | "backup"
+  | "reports";
 type AdminCorrectionKind =
   | "cancelTransaction"
   | "disableListing"
@@ -239,10 +247,21 @@ const BACKUP_EXPORT_OPTIONS: Array<{ scope: AdminBackupScope; label: string; des
   { scope: "openings", label: "Openings", description: "Boosters, displays et résultats." },
 ];
 
+const ADMIN_TABS: Array<{ key: AdminTab; label: string }> = [
+  { key: "economy", label: "Économie" },
+  { key: "security", label: "Sécurité" },
+  { key: "moderation", label: "Modération" },
+  { key: "corrections", label: "Corrections" },
+  { key: "pwa", label: "PWA" },
+  { key: "seasons", label: "Saisons" },
+  { key: "backup", label: "Backup" },
+  { key: "reports", label: "Signalements" },
+];
+
 export default function Admin() {
   const { role, isAdminAuthenticated, setAdminToken, clearAdminSession, me, user } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
+  const [activeTab, setActiveTab] = useState<AdminTab>("economy");
 
   const [adminPassword, setAdminPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -491,7 +510,7 @@ export default function Admin() {
 
   useEffect(() => {
     if (!isAdminAuthenticated) return;
-    if (activeTab !== "dashboard") return;
+    if (activeTab !== "security") return;
     loadEconomyLogs(ecoLogsPage, ecoDays).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdminAuthenticated, activeTab, ecoLogsPage]);
@@ -629,7 +648,7 @@ export default function Admin() {
 
     try {
       const res = await adminLogin(adminPassword);
-      setAdminToken(res.admin_access_token);
+      setAdminToken(res.admin_access_token, res.admin_refresh_token);
       setAdminPassword("");
     } catch (err: any) {
       setLoginError(err?.message || "Mot de passe admin invalide.");
@@ -952,6 +971,45 @@ export default function Admin() {
     );
   }
 
+  function refreshCurrentAdminTab() {
+    if (activeTab === "reports") {
+      loadTickets(page, statusFilter, adminFilter).catch(() => {});
+      return;
+    }
+
+    if (activeTab === "economy") {
+      loadEconomyOverview(ecoDays).catch(() => {});
+      return;
+    }
+
+    if (activeTab === "security") {
+      loadEconomyOverview(ecoDays).catch(() => {});
+      loadEconomyLogs(ecoLogsPage, ecoDays).catch(() => {});
+      return;
+    }
+
+    if (activeTab === "moderation") {
+      loadModerationOverview().catch(() => {});
+      return;
+    }
+
+    if (activeTab === "corrections") {
+      return;
+    }
+
+    if (activeTab === "pwa") {
+      loadPwaMonitoring(ecoDays).catch(() => {});
+      return;
+    }
+
+    if (activeTab === "seasons") {
+      loadSeasonCardsOverview().catch(() => {});
+      return;
+    }
+
+    loadEconomyOverview(ecoDays).catch(() => {});
+  }
+
   if (!canAccess) {
     return (
       <div className="app-shell">
@@ -1017,7 +1075,7 @@ export default function Admin() {
               <div>
                 <h2>Administration</h2>
                 <p className="small">
-                  Suivi économie + gestion des signalements dans une seule console admin.
+                  Console découpée par suivi : économie, sécurité, modération, corrections, PWA, saisons, sauvegardes et signalements.
                 </p>
               </div>
 
@@ -1025,16 +1083,7 @@ export default function Admin() {
                 <button
                   type="button"
                   className="btn"
-                  onClick={() => {
-                    if (activeTab === "dashboard") {
-                      loadEconomyOverview(ecoDays).catch(() => {});
-                      loadSeasonCardsOverview().catch(() => {});
-                      loadPwaMonitoring(ecoDays).catch(() => {});
-                      loadModerationOverview().catch(() => {});
-                    } else {
-                      loadTickets(page, statusFilter, adminFilter).catch(() => {});
-                    }
-                  }}
+                  onClick={refreshCurrentAdminTab}
                 >
                   Actualiser
                 </button>
@@ -1045,60 +1094,64 @@ export default function Admin() {
             </div>
 
             <div className="adminTabs">
-              <button
-                type="button"
-                className={`adminTabBtn ${activeTab === "dashboard" ? "is-active" : ""}`}
-                onClick={() => setActiveTab("dashboard")}
-              >
-                Suivi économie
-              </button>
-              <button
-                type="button"
-                className={`adminTabBtn ${activeTab === "reports" ? "is-active" : ""}`}
-                onClick={() => setActiveTab("reports")}
-              >
-                Signalements
-              </button>
+              {ADMIN_TABS.map((tab) => (
+                <button
+                  type="button"
+                  className={`adminTabBtn ${activeTab === tab.key ? "is-active" : ""}`}
+                  onClick={() => setActiveTab(tab.key)}
+                  key={tab.key}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
-            {activeTab === "dashboard" ? (
-              <div className="adminDashboard">
-                <div className="adminToolbar">
-                  <div className="adminToolbar__left">
-                    <label className="adminField adminField--compact">
-                      <span>Période</span>
-                      <select
-                        value={ecoDays}
-                        onChange={(e) => setEcoDays(Number(e.target.value) || 7)}
-                      >
-                        <option value={7}>7 jours</option>
-                        <option value={14}>14 jours</option>
-                        <option value={30}>30 jours</option>
-                      </select>
-                    </label>
-                  </div>
+            {activeTab !== "reports" ? (
+              <div className={`adminDashboard adminDashboard--${activeTab}`}>
+                {activeTab === "economy" || activeTab === "security" || activeTab === "pwa" || activeTab === "backup" ? (
+                  <div className="adminToolbar">
+                    {activeTab === "economy" || activeTab === "security" || activeTab === "pwa" ? (
+                      <div className="adminToolbar__left">
+                        <label className="adminField adminField--compact">
+                          <span>Période</span>
+                          <select
+                            value={ecoDays}
+                            onChange={(e) => setEcoDays(Number(e.target.value) || 7)}
+                          >
+                            <option value={7}>7 jours</option>
+                            <option value={14}>14 jours</option>
+                            <option value={30}>30 jours</option>
+                          </select>
+                        </label>
+                      </div>
+                    ) : (
+                      <div className="adminToolbar__left" />
+                    )}
 
-                  <div className="adminHeaderActions">
-                    <button
-                      type="button"
-                      className="btn adminPrimaryBtn"
-                      onClick={() => handleEconomyExport("json")}
-                      disabled={!!ecoExporting}
-                    >
-                      {ecoExporting === "json" ? "Export..." : "Exporter JSON"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn"
-                      onClick={() => handleEconomyExport("csv")}
-                      disabled={!!ecoExporting}
-                    >
-                      {ecoExporting === "csv" ? "Export..." : "Exporter CSV"}
-                    </button>
+                    {activeTab === "backup" ? (
+                      <div className="adminHeaderActions">
+                        <button
+                          type="button"
+                          className="btn adminPrimaryBtn"
+                          onClick={() => handleEconomyExport("json")}
+                          disabled={!!ecoExporting}
+                        >
+                          {ecoExporting === "json" ? "Export..." : "Exporter économie JSON"}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => handleEconomyExport("csv")}
+                          disabled={!!ecoExporting}
+                        >
+                          {ecoExporting === "csv" ? "Export..." : "Exporter économie CSV"}
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
-                </div>
+                ) : null}
 
-                <section className="adminDashboardPanel adminBackupPanel">
+                <section className="adminDashboardPanel adminBackupPanel" hidden={activeTab !== "backup"}>
                   <div className="adminDashboardPanel__head">
                     <h3>Export / backup</h3>
                     <p className="small">
@@ -1136,7 +1189,7 @@ export default function Admin() {
                   </div>
                 </section>
 
-                <section className="adminDashboardPanel adminPwaPanel">
+                <section className="adminDashboardPanel adminPwaPanel" hidden={activeTab !== "pwa"}>
                   <div className="adminDashboardPanel__head adminPwaHead">
                     <div>
                       <h3>Monitoring PWA</h3>
@@ -1286,7 +1339,7 @@ export default function Admin() {
                   ) : null}
                 </section>
 
-                <section className="adminDashboardPanel adminSeasonPanel">
+                <section className="adminDashboardPanel adminSeasonPanel" hidden={activeTab !== "seasons"}>
                   <div className="adminDashboardPanel__head adminSeasonHead">
                     <div>
                       <h3>Gestion des saisons</h3>
@@ -1479,12 +1532,16 @@ export default function Admin() {
                   ) : null}
                 </section>
 
-                {ecoError ? <div className="adminError">{ecoError}</div> : null}
-                {ecoLoading ? <div className="adminEmpty">Chargement du suivi économie...</div> : null}
+                {(activeTab === "economy" || activeTab === "security") && ecoError ? (
+                  <div className="adminError">{ecoError}</div>
+                ) : null}
+                {(activeTab === "economy" || activeTab === "security") && ecoLoading ? (
+                  <div className="adminEmpty">Chargement du suivi économie...</div>
+                ) : null}
 
-                {!ecoLoading ? (
+                {!ecoLoading || activeTab === "moderation" || activeTab === "corrections" ? (
                   <>
-                    <div className="adminStats adminStats--dashboard">
+                    <div className="adminStats adminStats--dashboard" hidden={activeTab !== "economy"}>
                       <div className="adminStatCard adminStatCard--accent">
                         <div className="adminStatCard__value"><CurrencyAmount value={creditsCreated} /></div>
                         <div className="adminStatCard__label">WunkulCoins créés</div>
@@ -1523,7 +1580,7 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    <div className={`adminRiskStrip is-${riskLevel}`}>
+                    <div className={`adminRiskStrip is-${riskLevel}`} hidden={activeTab !== "economy"}>
                       <div className="adminRiskStrip__main">
                         <span>Santé économie</span>
                         <strong>{getRiskLabel(riskLevel)}</strong>
@@ -1548,7 +1605,7 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    <section className="adminDashboardPanel adminHealthPanel">
+                    <section className="adminDashboardPanel adminHealthPanel" hidden={activeTab !== "economy"}>
                       <div className="adminDashboardPanel__head">
                         <h3>Dashboard santé économie</h3>
                         <p className="small">
@@ -1639,7 +1696,7 @@ export default function Admin() {
                       </div>
                     </section>
 
-                    <section className="adminDashboardPanel adminSecurityPanel adminSecurityPanel--alerts">
+                    <section className="adminDashboardPanel adminSecurityPanel adminSecurityPanel--alerts" hidden={activeTab !== "security"}>
                       <div className="adminDashboardPanel__head">
                         <h3>Alertes anti-abus</h3>
                         <p className="small">
@@ -1656,7 +1713,7 @@ export default function Admin() {
                       </div>
                     </section>
 
-                    <section className="adminDashboardPanel adminModerationPanel">
+                    <section className="adminDashboardPanel adminModerationPanel" hidden={activeTab !== "moderation"}>
                       <div className="adminDashboardPanel__head adminModerationHead">
                         <div>
                           <h3>Outils de modération</h3>
@@ -1940,7 +1997,7 @@ export default function Admin() {
                       </div>
                     </section>
 
-                    <section className="adminDashboardPanel adminCorrectionPanel">
+                    <section className="adminDashboardPanel adminCorrectionPanel" hidden={activeTab !== "corrections"}>
                       <div className="adminDashboardPanel__head">
                         <h3>Outils de correction</h3>
                         <p className="small">
@@ -2197,7 +2254,7 @@ export default function Admin() {
                       </div>
                     </section>
 
-                    <section className="adminDashboardPanel adminSecurityPanel">
+                    <section className="adminDashboardPanel adminSecurityPanel" hidden={activeTab !== "security"}>
                       <div className="adminDashboardPanel__head">
                         <h3>Journal économique</h3>
                         <p className="small">
@@ -2378,7 +2435,7 @@ export default function Admin() {
                       </div>
                     </section>
 
-                    <div className="adminDashboardGrid">
+                    <div className="adminDashboardGrid" hidden={activeTab !== "economy"}>
                       <section className="adminDashboardPanel">
                         <div className="adminDashboardPanel__head">
                           <h3>Flux WunkulCoins / jour</h3>
@@ -2498,7 +2555,7 @@ export default function Admin() {
                       </section>
                     </div>
 
-                    <div className="adminDashboardGrid adminDashboardGrid--analytics">
+                    <div className="adminDashboardGrid adminDashboardGrid--analytics" hidden={activeTab !== "economy"}>
                       <section className="adminDashboardPanel">
                         <div className="adminDashboardPanel__head">
                           <h3>Raretés trop rentables</h3>
@@ -2580,7 +2637,7 @@ export default function Admin() {
                       </section>
                     </div>
 
-                    <section className="adminDashboardPanel adminDashboardPanel--full">
+                    <section className="adminDashboardPanel adminDashboardPanel--full" hidden={activeTab !== "economy"}>
                       <div className="adminDashboardPanel__head">
                         <h3>Cartes possiblement manipulées</h3>
                         <p className="small">Écart au prix snapshot, volatilité historique et trades outliers.</p>
@@ -2627,7 +2684,7 @@ export default function Admin() {
                       </div>
                     </section>
 
-                    <section className="adminDashboardPanel adminDashboardPanel--full">
+                    <section className="adminDashboardPanel adminDashboardPanel--full" hidden={activeTab !== "economy"}>
                       <div className="adminDashboardPanel__head">
                         <h3>Détail journalier</h3>
                         <p className="small">Suivi brut par jour pour vérifier les tests et l’équilibrage.</p>

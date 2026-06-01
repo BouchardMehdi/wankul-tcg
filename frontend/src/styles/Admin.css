@@ -37,7 +37,10 @@
 }
 
 .adminTabs {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
   gap: 8px;
   padding: 6px;
   margin-bottom: 20px;
@@ -89,6 +92,10 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.adminDashboard [hidden] {
+  display: none !important;
 }
 
 .adminFiltersBar {

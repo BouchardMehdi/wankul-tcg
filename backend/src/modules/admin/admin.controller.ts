@@ -14,6 +14,7 @@ import type { Response } from 'express';
 
 import { AdminService } from './admin.service';
 import { AdminLoginDto } from './dto/admin-login.dto';
+import { AdminRefreshDto } from './dto/admin-refresh.dto';
 import { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminJwtAuthGuard } from './admin-jwt-auth.guard';
@@ -30,6 +31,11 @@ export class AdminController {
     @Body() dto: AdminLoginDto,
   ) {
     return this.adminService.adminLogin(currentUser.id, dto.adminPassword);
+  }
+
+  @Post('session/refresh')
+  async refreshAdminSession(@Body() dto: AdminRefreshDto) {
+    return this.adminService.refreshAdminSession(dto.adminRefreshToken);
   }
 
   @UseGuards(AdminJwtAuthGuard)

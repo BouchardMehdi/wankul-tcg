@@ -4,9 +4,50 @@ function getApiBase() {
   return `${API_ORIGIN}/api`;
 }
 
-async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
+export type AdminSessionResponse = {
+  admin_access_token: string;
+  admin_refresh_token: string;
+  admin_refresh_expires_in?: string;
+};
+
+function storeAdminSession(session: AdminSessionResponse) {
+  localStorage.setItem('admin_token', session.admin_access_token);
+  localStorage.setItem('admin_refresh_token', session.admin_refresh_token);
+  window.dispatchEvent(new CustomEvent('admin-session-refreshed', { detail: session }));
+}
+
+function clearStoredAdminSession() {
+  localStorage.removeItem('admin_token');
+  localStorage.removeItem('admin_refresh_token');
+  window.dispatchEvent(new Event('admin-session-cleared'));
+}
+
+export async function adminRefreshSession(adminRefreshToken = localStorage.getItem('admin_refresh_token')) {
+  if (!adminRefreshToken) {
+    clearStoredAdminSession();
+    throw new Error('Session admin expirée.');
+  }
+
+  const res = await fetch(`${getApiBase()}/admin/session/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ adminRefreshToken }),
+  });
+
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : {};
+
+  if (!res.ok) {
+    clearStoredAdminSession();
+    throw new Error(data?.message || 'Session admin expirée.');
+  }
+
+  storeAdminSession(data as AdminSessionResponse);
+  return data as AdminSessionResponse;
+}
+
+async function fetchAdminRequest(url: string, init?: RequestInit, retryOnUnauthorized = true) {
   const adminToken = localStorage.getItem('admin_token');
-  const url = `${getApiBase()}${path}`;
 
   const res = await fetch(url, {
     ...init,
@@ -16,6 +57,18 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
   });
+
+  if (res.status === 401 && retryOnUnauthorized) {
+    await adminRefreshSession();
+    return fetchAdminRequest(url, init, false);
+  }
+
+  return res;
+}
+
+async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const url = `${getApiBase()}${path}`;
+  const res = await fetchAdminRequest(url, init);
 
   const text = await res.text();
   const data = text ? JSON.parse(text) : {};
@@ -587,7 +640,7 @@ export async function getMyBugReports(params?: {
 }
 
 export async function adminLogin(adminPassword: string) {
-  return apiFetch<{ admin_access_token: string }>('/admin/session/login', {
+  return apiFetch<AdminSessionResponse>('/admin/session/login', {
     method: 'POST',
     body: { adminPassword },
   });
@@ -698,14 +751,10 @@ export async function getAdminEconomyLogs(params?: {
 }
 
 export async function downloadAdminEconomyExport(days = 30, format: 'json' | 'csv' = 'json') {
-  const adminToken = localStorage.getItem('admin_token');
   const url = `${getApiBase()}/admin/economy/export?days=${days}&format=${format}`;
 
-  const res = await fetch(url, {
+  const res = await fetchAdminRequest(url, {
     method: 'GET',
-    headers: {
-      ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
-    },
   });
 
   const blob = await res.blob();
@@ -742,14 +791,10 @@ export async function downloadAdminBackupExport(
   days = 30,
   format: 'json' | 'csv' = 'json',
 ) {
-  const adminToken = localStorage.getItem('admin_token');
   const url = `${getApiBase()}/admin/backup/export?scope=${scope}&days=${days}&format=${format}`;
 
-  const res = await fetch(url, {
+  const res = await fetchAdminRequest(url, {
     method: 'GET',
-    headers: {
-      ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
-    },
   });
 
   const blob = await res.blob();

@@ -6,6 +6,7 @@ import React, {
   useState,
 } from "react";
 import { getMe, getWallet, type MeResponse } from "../api/me";
+import { adminRefreshSession, type AdminSessionResponse } from "../api/auth";
 import { unsubscribeCurrentBrowserFromPush } from "../utils/pwaNotifications";
 
 type DecodedPlayerToken = {
@@ -38,7 +39,7 @@ export type AuthState = {
   role: "player" | "admin";
 
   setToken: (t: string | null) => void;
-  setAdminToken: (t: string | null) => void;
+  setAdminToken: (t: string | null, refreshToken?: string | null) => void;
   clearAdminSession: () => void;
   refreshAuth: () => Promise<void>;
   refreshMe: () => Promise<void>;
@@ -67,6 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [adminToken, setAdminTokenState] = useState<string | null>(() =>
     localStorage.getItem("admin_token")
   );
+  const [adminRefreshToken, setAdminRefreshTokenState] = useState<string | null>(() =>
+    localStorage.getItem("admin_refresh_token")
+  );
 
   const [me, setMe] = useState<MeResponse | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
@@ -89,14 +93,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     else localStorage.removeItem("token");
   };
 
-  const setAdminToken = (t: string | null) => {
+  const setAdminToken = (t: string | null, refreshToken?: string | null) => {
     setAdminTokenState(t);
-    if (t) localStorage.setItem("admin_token", t);
-    else localStorage.removeItem("admin_token");
+    if (t) {
+      localStorage.setItem("admin_token", t);
+      if (refreshToken) {
+        setAdminRefreshTokenState(refreshToken);
+        localStorage.setItem("admin_refresh_token", refreshToken);
+      }
+    } else {
+      setAdminRefreshTokenState(null);
+      localStorage.removeItem("admin_token");
+      localStorage.removeItem("admin_refresh_token");
+    }
   };
 
   const clearAdminSession = () => {
     setAdminToken(null);
+  };
+
+  const refreshAdminAccess = async (refreshToken = adminRefreshToken) => {
+    try {
+      const session = await adminRefreshSession(refreshToken);
+      setAdminToken(session.admin_access_token, session.admin_refresh_token);
+      return session;
+    } catch {
+      setAdminToken(null);
+      return null;
+    }
   };
 
   const logout = () => {
@@ -157,12 +181,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!adminToken) return;
 
     const decoded = decodeJwt<DecodedAdminToken>(adminToken);
-    const now = Math.floor(Date.now() / 1000);
+    const refreshDelay = decoded?.exp ? decoded.exp * 1000 - Date.now() - 60_000 : 0;
 
-    if (!decoded?.exp || decoded.exp <= now) {
+    if (!decoded?.exp) {
       setAdminToken(null);
+      return;
     }
-  }, [adminToken]);
+
+    if (refreshDelay <= 0) {
+      refreshAdminAccess().catch(() => {});
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      refreshAdminAccess().catch(() => {});
+    }, refreshDelay);
+
+    return () => window.clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminToken, adminRefreshToken]);
+
+  useEffect(() => {
+    const onAdminSessionRefreshed = (event: Event) => {
+      const session = (event as CustomEvent<AdminSessionResponse>).detail;
+      if (!session?.admin_access_token) return;
+      setAdminToken(session.admin_access_token, session.admin_refresh_token);
+    };
+    const onAdminSessionCleared = () => {
+      setAdminToken(null);
+    };
+
+    window.addEventListener("admin-session-refreshed", onAdminSessionRefreshed);
+    window.addEventListener("admin-session-cleared", onAdminSessionCleared);
+    return () => {
+      window.removeEventListener("admin-session-refreshed", onAdminSessionRefreshed);
+      window.removeEventListener("admin-session-cleared", onAdminSessionCleared);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isAuthenticated = !!token;
   const user = me;
