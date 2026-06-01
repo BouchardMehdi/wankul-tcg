@@ -527,6 +527,45 @@ export type AdminCorrectionResponse = {
   correction?: Record<string, any>;
 };
 
+export type AdminBackupScope =
+  | 'all'
+  | 'logs'
+  | 'sales'
+  | 'users'
+  | 'collections'
+  | 'openings';
+
+export async function downloadAdminBackupExport(
+  scope: AdminBackupScope = 'all',
+  days = 30,
+  format: 'json' | 'csv' = 'json',
+) {
+  const adminToken = localStorage.getItem('admin_token');
+  const url = `${getApiBase()}/admin/backup/export?scope=${scope}&days=${days}&format=${format}`;
+
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+    },
+  });
+
+  const blob = await res.blob();
+
+  if (!res.ok) {
+    const text = await blob.text().catch(() => '');
+    throw new Error(text || 'Export backup admin impossible.');
+  }
+
+  const disposition = res.headers.get('Content-Disposition') ?? '';
+  const match = disposition.match(/filename="([^"]+)"/i);
+
+  return {
+    blob,
+    filename: match?.[1] ?? `wankul-backup-${scope}-${days}d.${format}`,
+  };
+}
+
 export async function adminCancelMarketTransaction(body: {
   transactionId: number;
   reason: string;

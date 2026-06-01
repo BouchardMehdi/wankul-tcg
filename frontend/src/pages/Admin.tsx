@@ -17,11 +17,13 @@ import {
   adminAdjustMarketListingPrice,
   adminRefundPlayer,
   adminRemoveBuggedReward,
+  downloadAdminBackupExport,
   type AdminTicketsResponse,
   type BugReportListItem,
   type BugReportStatus,
   type AdminEconomyOverviewResponse,
   type AdminEconomyLogsResponse,
+  type AdminBackupScope,
 } from "../api/auth";
 
 const STATUS_LABELS: Record<BugReportStatus, string> = {
@@ -183,6 +185,14 @@ function getLogHint(event: AdminEconomyLogsResponse["items"][number]) {
 }
 
 const PAGE_SIZE = 5;
+const BACKUP_EXPORT_OPTIONS: Array<{ scope: AdminBackupScope; label: string; description: string }> = [
+  { scope: "all", label: "Backup complet", description: "Tout regrouper dans un seul export." },
+  { scope: "logs", label: "Logs économiques", description: "Journal admin, alertes et corrections." },
+  { scope: "sales", label: "Ventes", description: "Transactions market et récompenses." },
+  { scope: "users", label: "Joueurs", description: "Comptes sans secrets + soldes." },
+  { scope: "collections", label: "Collections", description: "Cartes possédées et copies verrouillées." },
+  { scope: "openings", label: "Openings", description: "Boosters, displays et résultats." },
+];
 
 export default function Admin() {
   const { role, isAdminAuthenticated, setAdminToken, clearAdminSession, me, user } = useAuth();
@@ -228,6 +238,7 @@ export default function Admin() {
   const [ecoLogFrom, setEcoLogFrom] = useState("");
   const [ecoLogTo, setEcoLogTo] = useState("");
   const [ecoExporting, setEcoExporting] = useState<"json" | "csv" | null>(null);
+  const [backupExporting, setBackupExporting] = useState<string | null>(null);
   const [correctionLoading, setCorrectionLoading] = useState<AdminCorrectionKind | null>(null);
   const [correctionError, setCorrectionError] = useState("");
   const [correctionSuccess, setCorrectionSuccess] = useState("");
@@ -554,6 +565,28 @@ export default function Admin() {
     }
   }
 
+  async function handleBackupExport(scope: AdminBackupScope, format: "json" | "csv") {
+    const key = `${scope}-${format}`;
+    setBackupExporting(key);
+    setEcoError("");
+
+    try {
+      const { blob, filename } = await downloadAdminBackupExport(scope, ecoDays, format);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setEcoError(err?.message || "Export backup impossible.");
+    } finally {
+      setBackupExporting(null);
+    }
+  }
+
   async function refreshEconomyAfterCorrection() {
     await Promise.all([
       loadEconomyOverview(ecoDays),
@@ -833,6 +866,44 @@ export default function Admin() {
                     </button>
                   </div>
                 </div>
+
+                <section className="adminDashboardPanel adminBackupPanel">
+                  <div className="adminDashboardPanel__head">
+                    <h3>Export / backup</h3>
+                    <p className="small">
+                      Exporte les données clés en CSV ou JSON pour analyser, comparer ou restaurer après un bug économie.
+                    </p>
+                  </div>
+
+                  <div className="adminBackupGrid">
+                    {BACKUP_EXPORT_OPTIONS.map((option) => (
+                      <article className="adminBackupCard" key={option.scope}>
+                        <div>
+                          <strong>{option.label}</strong>
+                          <span>{option.description}</span>
+                        </div>
+                        <div className="adminBackupCard__actions">
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() => handleBackupExport(option.scope, "csv")}
+                            disabled={!!backupExporting}
+                          >
+                            {backupExporting === `${option.scope}-csv` ? "Export..." : "CSV"}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn adminPrimaryBtn"
+                            onClick={() => handleBackupExport(option.scope, "json")}
+                            disabled={!!backupExporting}
+                          >
+                            {backupExporting === `${option.scope}-json` ? "Export..." : "JSON"}
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
 
                 {ecoError ? <div className="adminError">{ecoError}</div> : null}
                 {ecoLoading ? <div className="adminEmpty">Chargement du suivi économie...</div> : null}

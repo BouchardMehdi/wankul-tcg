@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, MoreThanOrEqual, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 
@@ -21,6 +21,9 @@ import { MarketListingStatus } from '../market/market-listing-status.enum';
 import { UserCard } from '../users/user-card.entity';
 import { UserEconomy } from '../economy/user-economy.entity';
 import { Card } from '../cards/card.entity';
+import { BoosterOpening } from '../booster/booster-opening.entity';
+import { DisplayOpening } from '../booster/display-opening.entity';
+import { EconomicActionLog } from '../security/economic-action-log.entity';
 
 type GetAllTicketsParams = {
   status?: BugReportStatus | '';
@@ -42,6 +45,14 @@ type EconomyLogParams = {
   cardId?: number;
   targetType?: string;
 };
+
+type AdminBackupScope =
+  | 'all'
+  | 'logs'
+  | 'sales'
+  | 'users'
+  | 'collections'
+  | 'openings';
 
 @Injectable()
 export class AdminService {
@@ -794,6 +805,191 @@ export class AdminService {
     };
   }
 
+  async getBackupExport(scope: string | undefined, days = 30) {
+    const safeScope = this.normalizeBackupScope(scope);
+    const safeDays = Math.min(365, Math.max(1, Number(days) || 30));
+    const since = new Date(Date.now() - safeDays * 24 * 60 * 60 * 1000);
+    const includeAll = safeScope === 'all';
+
+    const [
+      economicLogs,
+      sales,
+      users,
+      collections,
+      openings,
+    ] = await Promise.all([
+      includeAll || safeScope === 'logs'
+        ? this.buildEconomicLogsBackup(since)
+        : Promise.resolve(null),
+      includeAll || safeScope === 'sales'
+        ? this.buildSalesBackup(since)
+        : Promise.resolve(null),
+      includeAll || safeScope === 'users'
+        ? this.buildUsersBackup()
+        : Promise.resolve(null),
+      includeAll || safeScope === 'collections'
+        ? this.buildCollectionsBackup()
+        : Promise.resolve(null),
+      includeAll || safeScope === 'openings'
+        ? this.buildOpeningsBackup(since)
+        : Promise.resolve(null),
+    ]);
+
+    return {
+      exportedAt: new Date().toISOString(),
+      scope: safeScope,
+      days: safeDays,
+      since: since.toISOString(),
+      note:
+        "Export admin sans secrets: aucun hash de mot de passe, code email/reset ou mot de passe admin n'est inclus.",
+      economicLogs,
+      sales,
+      users,
+      collections,
+      openings,
+    };
+  }
+
+  buildBackupExportCsv(exportData: Awaited<ReturnType<AdminService['getBackupExport']>>) {
+    const rows: unknown[][] = [
+      [
+        'section',
+        'id',
+        'type',
+        'user_id',
+        'username',
+        'related_user_id',
+        'card_id',
+        'label',
+        'quantity',
+        'credits',
+        'status',
+        'date',
+        'details_json',
+      ],
+    ];
+
+    for (const log of exportData.economicLogs ?? []) {
+      rows.push([
+        'economic_log',
+        log.id,
+        log.action,
+        log.userId,
+        '',
+        log.relatedUserId,
+        log.cardId,
+        log.reason,
+        '',
+        log.valueCredits,
+        `${log.status}/${log.severity}`,
+        log.createdAt,
+        log,
+      ]);
+    }
+
+    for (const sale of exportData.sales ?? []) {
+      rows.push([
+        'sale',
+        sale.id,
+        sale.transactionType,
+        sale.buyerId,
+        sale.buyerUsername,
+        sale.sellerId,
+        sale.cardId,
+        sale.cardName,
+        sale.quantity,
+        sale.totalPriceCredits,
+        sale.offerType,
+        sale.createdAt,
+        sale,
+      ]);
+    }
+
+    for (const user of exportData.users ?? []) {
+      rows.push([
+        'user',
+        user.id,
+        user.role,
+        user.id,
+        user.username,
+        '',
+        '',
+        user.email,
+        '',
+        user.credits,
+        user.emailVerified ? 'verified' : 'not_verified',
+        user.createdAt,
+        user,
+      ]);
+    }
+
+    for (const item of exportData.collections ?? []) {
+      rows.push([
+        'collection',
+        `${item.userId}-${item.cardId}`,
+        item.cardRarity,
+        item.userId,
+        item.username,
+        '',
+        item.cardId,
+        item.cardName,
+        item.quantity,
+        '',
+        `locked=${item.quantityLocked}`,
+        '',
+        item,
+      ]);
+    }
+
+    for (const opening of exportData.openings?.boosters ?? []) {
+      rows.push([
+        'opening_booster',
+        opening.id,
+        opening.seasonLabel,
+        opening.userId,
+        opening.username,
+        '',
+        '',
+        opening.seasonLabel,
+        opening.cardCount,
+        opening.creditsEarned,
+        `${opening.newCount} new / ${opening.hitCount} hits`,
+        opening.openedAt,
+        opening,
+      ]);
+    }
+
+    for (const opening of exportData.openings?.displays ?? []) {
+      rows.push([
+        'opening_display',
+        opening.id,
+        opening.seasonLabel,
+        opening.userId,
+        opening.username,
+        '',
+        '',
+        opening.seasonLabel,
+        opening.cardCount,
+        opening.creditsEarned,
+        `${opening.newCount} new / ${opening.hitCount} hits`,
+        opening.openedAt,
+        opening,
+      ]);
+    }
+
+    return rows
+      .map((row) =>
+        row
+          .map((value) =>
+            typeof value === 'object' && value !== null
+              ? this.csvValue(JSON.stringify(value))
+              : this.csvValue(value),
+          )
+          .join(','),
+      )
+      .join('\n');
+  }
+
   buildEconomyExportCsv(exportData: Awaited<ReturnType<AdminService['getEconomyExport']>>) {
     const rows = [
       ['section', 'date', 'metric', 'value', 'details'],
@@ -908,6 +1104,234 @@ export class AdminService {
     }
 
     return economy;
+  }
+
+  private normalizeBackupScope(scope?: string): AdminBackupScope {
+    const value = String(scope ?? 'all').trim().toLowerCase();
+    const allowed: AdminBackupScope[] = [
+      'all',
+      'logs',
+      'sales',
+      'users',
+      'collections',
+      'openings',
+    ];
+
+    return allowed.includes(value as AdminBackupScope)
+      ? (value as AdminBackupScope)
+      : 'all';
+  }
+
+  private async buildEconomicLogsBackup(since: Date) {
+    const repo = this.dataSource.getRepository(EconomicActionLog);
+    const rows = await repo.find({
+      where: { createdAt: MoreThanOrEqual(since) },
+      order: { createdAt: 'DESC' },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      userId: row.userId,
+      relatedUserId: row.relatedUserId,
+      cardId: row.cardId,
+      action: row.action,
+      status: row.status,
+      severity: row.severity,
+      targetType: row.targetType,
+      targetId: row.targetId,
+      valueCredits: row.valueCredits,
+      reason: row.reason,
+      metadata: row.metadata,
+      createdAt: row.createdAt,
+    }));
+  }
+
+  private async buildSalesBackup(since: Date) {
+    const repo = this.dataSource.getRepository(MarketTransaction);
+    const rows = await repo.find({
+      where: { createdAt: MoreThanOrEqual(since) },
+      relations: ['listing', 'seller', 'buyer', 'card', 'buyerOfferedCard'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return rows.map((tx) => ({
+      id: tx.id,
+      listingId: tx.listing?.id ?? null,
+      sellerId: tx.seller?.id ?? null,
+      sellerUsername: tx.seller?.username ?? null,
+      buyerId: tx.buyer?.id ?? null,
+      buyerUsername: tx.buyer?.username ?? null,
+      cardId: tx.card?.id ?? null,
+      cardKey: tx.card?.key ?? null,
+      cardName: tx.card?.name ?? null,
+      cardRarity: tx.card?.rarity ?? null,
+      listingMode: tx.listingMode,
+      offerType: tx.offerType,
+      quantity: tx.quantity,
+      unitPriceCredits: tx.unitPriceCredits,
+      totalPriceCredits: tx.totalPriceCredits,
+      buyerOfferedCardId: tx.buyerOfferedCard?.id ?? null,
+      buyerOfferedCardName: tx.buyerOfferedCard?.name ?? null,
+      buyerOfferedCardQuantity: tx.buyerOfferedCardQuantity,
+      transactionType: tx.transactionType,
+      sellerRewardClaimedAt: tx.sellerRewardClaimedAt,
+      createdAt: tx.createdAt,
+    }));
+  }
+
+  private async buildUsersBackup() {
+    const economyRepo = this.dataSource.getRepository(UserEconomy);
+    const [users, economies] = await Promise.all([
+      this.usersRepo.find({ order: { id: 'ASC' } }),
+      economyRepo.find(),
+    ]);
+    const economiesByUserId = new Map(economies.map((row) => [row.userId, row]));
+
+    return users.map((user) => {
+      const economy = economiesByUserId.get(user.id);
+
+      return {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        emailVerified: user.emailVerified,
+        createdAt: user.createdAt,
+        credits: economy?.credits ?? 0,
+        freeBoosterCharges: economy?.freeBoosterCharges ?? 0,
+        freeDisplayCharges: economy?.freeDisplayCharges ?? 0,
+        boosterRechargeAt: economy?.boosterRechargeAt ?? null,
+        displayRechargeAt: economy?.displayRechargeAt ?? null,
+        signupBonusGranted: economy?.signupBonusGranted ?? 0,
+      };
+    });
+  }
+
+  private async buildCollectionsBackup() {
+    const repo = this.dataSource.getRepository(UserCard);
+    const rows = await repo.find({
+      relations: ['user', 'card'],
+      order: { id: 'ASC' },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      userId: row.user?.id ?? null,
+      username: row.user?.username ?? null,
+      cardId: row.card?.id ?? null,
+      cardKey: row.card?.key ?? null,
+      cardName: row.card?.name ?? null,
+      cardNumber: row.card?.displayNumber ?? row.card?.number ?? null,
+      cardRarity: row.card?.rarity ?? null,
+      cardSeason: row.card?.season ?? row.card?.extension ?? null,
+      cardSeasonNumber: row.card?.seasonNumber ?? row.card?.affiliatedSeasonNumber ?? null,
+      quantity: row.quantity,
+      quantityLocked: row.quantityLocked,
+    }));
+  }
+
+  private async buildOpeningsBackup(since: Date) {
+    const boosterRepo = this.dataSource.getRepository(BoosterOpening);
+    const displayRepo = this.dataSource.getRepository(DisplayOpening);
+    const [boosters, displays] = await Promise.all([
+      boosterRepo.find({
+        where: { openedAt: MoreThanOrEqual(since) },
+        relations: ['user'],
+        order: { openedAt: 'DESC' },
+      }),
+      displayRepo.find({
+        where: { openedAt: MoreThanOrEqual(since) },
+        relations: ['user'],
+        order: { openedAt: 'DESC' },
+      }),
+    ]);
+
+    return {
+      boosters: boosters.map((opening) => ({
+        id: opening.id,
+        userId: opening.user?.id ?? null,
+        username: opening.user?.username ?? null,
+        openedAt: opening.openedAt,
+        seasonNumber: opening.seasonNumber,
+        seasonLabel: opening.seasonLabel,
+        boosterCount: opening.boosterCount,
+        cardIds: opening.cardIds,
+        cardCount: Array.isArray(opening.cardIds) ? opening.cardIds.length : 0,
+        creditsEarned: this.extractOpeningCredits(opening.resultJson),
+        newCount: this.extractOpeningNewCount(opening.resultJson),
+        hitCount: this.extractOpeningHitCount(opening.resultJson),
+        resultJson: opening.resultJson,
+      })),
+      displays: displays.map((opening) => ({
+        id: opening.id,
+        userId: opening.user?.id ?? null,
+        username: opening.user?.username ?? null,
+        openedAt: opening.openedAt,
+        seasonNumber: opening.seasonNumber,
+        seasonLabel: opening.season,
+        boosterCount: opening.boosterCount,
+        cardCount: this.extractOpeningCardCount(opening.resultJson),
+        creditsEarned: this.extractOpeningCredits(opening.resultJson),
+        newCount: this.extractOpeningNewCount(opening.resultJson),
+        hitCount: this.extractOpeningHitCount(opening.resultJson),
+        resultJson: opening.resultJson,
+      })),
+    };
+  }
+
+  private extractOpeningCredits(result: any) {
+    const candidates = [
+      result?.creditsEarnedTotal,
+      result?.creditsEarned,
+      result?.creditsGained,
+      result?.totalCredits,
+      result?.credits?.total,
+      result?.breakdown?.total,
+      result?.economy?.earnedCredits,
+      result?.economy?.creditsEarned,
+      result?.economy?.totalEarned,
+    ];
+
+    for (const value of candidates) {
+      const n = Number(value ?? 0);
+      if (Number.isFinite(n) && n > 0) return Math.round(n);
+    }
+
+    return 0;
+  }
+
+  private extractOpeningNewCount(result: any) {
+    if (Number.isFinite(Number(result?.newCount))) return Number(result.newCount);
+    return this.flattenOpeningCards(result).filter((card) => card?.isNew).length;
+  }
+
+  private extractOpeningHitCount(result: any) {
+    if (Number.isFinite(Number(result?.hitCount))) return Number(result.hitCount);
+    return this.flattenOpeningCards(result).filter((card) => card?.isHit).length;
+  }
+
+  private extractOpeningCardCount(result: any) {
+    return this.flattenOpeningCards(result).length;
+  }
+
+  private flattenOpeningCards(result: any): any[] {
+    const cards: any[] = [];
+
+    if (Array.isArray(result?.cards)) {
+      cards.push(...result.cards);
+    }
+
+    if (Array.isArray(result?.boosters)) {
+      for (const booster of result.boosters) {
+        if (Array.isArray(booster)) {
+          cards.push(...booster);
+        } else if (Array.isArray(booster?.cards)) {
+          cards.push(...booster.cards);
+        }
+      }
+    }
+
+    return cards;
   }
 
   private csvValue(value: unknown) {

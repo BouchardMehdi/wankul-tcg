@@ -129,6 +129,39 @@ export class AdminController {
   }
 
   @UseGuards(AdminJwtAuthGuard)
+  @Get('backup/export')
+  async exportBackup(
+    @Query('scope') scope: string | undefined,
+    @Query('days') days: string | undefined,
+    @Query('format') format: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const exportData = await this.adminService.getBackupExport(
+      scope,
+      Number(days ?? 30) || 30,
+    );
+    const safeDate = new Date().toISOString().slice(0, 10);
+    const safeScope = exportData.scope;
+
+    if (format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="wankul-backup-${safeScope}-${safeDate}.csv"`,
+      );
+      return this.adminService.buildBackupExportCsv(exportData);
+    }
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="wankul-backup-${safeScope}-${safeDate}.json"`,
+    );
+
+    return exportData;
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
   @Post('economy/corrections/cancel-transaction')
   async cancelMarketTransaction(
     @CurrentUser() currentUser: { id: number; username: string; role: string },
