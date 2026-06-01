@@ -76,6 +76,12 @@ export class AdminController {
   }
 
   @UseGuards(AdminJwtAuthGuard)
+  @Get('pwa/monitoring')
+  async getPwaMonitoring(@Query('days') days?: string) {
+    return this.adminService.getPwaMonitoring(Number(days ?? 30) || 30);
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
   @Get('economy/logs')
   async getEconomyLogs(
     @Query('days') days?: string,

@@ -12,6 +12,7 @@ import {
   getAdminEconomyOverview,
   getAdminEconomyLogs,
   getAdminSeasonCardsOverview,
+  getAdminPwaMonitoring,
   downloadAdminEconomyExport,
   adminCancelMarketTransaction,
   adminDisableMarketListing,
@@ -26,6 +27,7 @@ import {
   type AdminEconomyLogsResponse,
   type AdminBackupScope,
   type AdminSeasonCardsResponse,
+  type AdminPwaMonitoringResponse,
 } from "../api/auth";
 
 const STATUS_LABELS: Record<BugReportStatus, string> = {
@@ -161,6 +163,29 @@ function getSeverityLabel(severity?: string) {
   return "Info";
 }
 
+function getPushKindLabel(kind?: string | null) {
+  switch (kind) {
+    case "market-reward":
+      return "Récompense vente";
+    case "free-openings-ready":
+      return "Ouvertures gratuites";
+    case "free-openings-soon":
+      return "Recharge bientôt dispo";
+    case "watchlist-price":
+      return "Prix watchlist";
+    case "watchlist-deal":
+      return "Bonne affaire watchlist";
+    case "watchlist-listing":
+      return "Annonce watchlist";
+    case "stale-listing":
+      return "Annonce inactive";
+    case "daily-market-recap":
+      return "Résumé quotidien";
+    default:
+      return kind || "Notification";
+  }
+}
+
 function formatLogActor(event: AdminEconomyLogsResponse["items"][number]) {
   if (!event.userId) return "Système";
   return `${event.username ?? "User"} #${event.userId}`;
@@ -248,6 +273,9 @@ export default function Admin() {
   const [seasonRarityFilter, setSeasonRarityFilter] = useState("all");
   const [seasonObtainableFilter, setSeasonObtainableFilter] = useState("all");
   const [seasonImageFilter, setSeasonImageFilter] = useState("all");
+  const [pwaMonitoring, setPwaMonitoring] = useState<AdminPwaMonitoringResponse | null>(null);
+  const [pwaMonitoringLoading, setPwaMonitoringLoading] = useState(false);
+  const [pwaMonitoringError, setPwaMonitoringError] = useState("");
   const [correctionLoading, setCorrectionLoading] = useState<AdminCorrectionKind | null>(null);
   const [correctionError, setCorrectionError] = useState("");
   const [correctionSuccess, setCorrectionSuccess] = useState("");
@@ -340,6 +368,20 @@ export default function Admin() {
     }
   }
 
+  async function loadPwaMonitoring(nextDays = ecoDays) {
+    setPwaMonitoringLoading(true);
+    setPwaMonitoringError("");
+
+    try {
+      const res = await getAdminPwaMonitoring(nextDays);
+      setPwaMonitoring(res);
+    } catch (err: any) {
+      setPwaMonitoringError(err?.message || "Impossible de charger le monitoring PWA.");
+    } finally {
+      setPwaMonitoringLoading(false);
+    }
+  }
+
   async function loadEconomyLogs(
     nextPage = ecoLogsPage,
     nextDays = ecoDays,
@@ -389,6 +431,7 @@ export default function Admin() {
     if (!isAdminAuthenticated) return;
     loadEconomyOverview(ecoDays).catch(() => {});
     loadSeasonCardsOverview().catch(() => {});
+    loadPwaMonitoring(ecoDays).catch(() => {});
     setEcoLogsPage(1);
     loadEconomyLogs(1, ecoDays).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -851,6 +894,7 @@ export default function Admin() {
                     if (activeTab === "dashboard") {
                       loadEconomyOverview(ecoDays).catch(() => {});
                       loadSeasonCardsOverview().catch(() => {});
+                      loadPwaMonitoring(ecoDays).catch(() => {});
                     } else {
                       loadTickets(page, statusFilter, adminFilter).catch(() => {});
                     }
@@ -954,6 +998,156 @@ export default function Admin() {
                       </article>
                     ))}
                   </div>
+                </section>
+
+                <section className="adminDashboardPanel adminPwaPanel">
+                  <div className="adminDashboardPanel__head adminPwaHead">
+                    <div>
+                      <h3>Monitoring PWA</h3>
+                      <p className="small">
+                        Suit les abonnements push, les notifications envoyées et les échecs de livraison.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => loadPwaMonitoring(ecoDays).catch(() => {})}
+                      disabled={pwaMonitoringLoading}
+                    >
+                      {pwaMonitoringLoading ? "Scan..." : "Actualiser PWA"}
+                    </button>
+                  </div>
+
+                  {pwaMonitoringError ? <div className="adminError">{pwaMonitoringError}</div> : null}
+                  {pwaMonitoringLoading && !pwaMonitoring ? (
+                    <div className="adminEmpty">Chargement du monitoring push...</div>
+                  ) : null}
+
+                  {pwaMonitoring ? (
+                    <>
+                      <div className="adminPwaStats">
+                        <article>
+                          <span>Utilisateurs push</span>
+                          <strong>{formatNumber(pwaMonitoring.totals.subscribedUsers)}</strong>
+                          <small>{formatNumber(pwaMonitoring.totals.totalSubscriptions)} abonnement(s)</small>
+                        </article>
+                        <article className="is-ok">
+                          <span>Notifications envoyées</span>
+                          <strong>{formatNumber(pwaMonitoring.totals.notificationsSent)}</strong>
+                          <small>sur {pwaMonitoring.days} jours</small>
+                        </article>
+                        <article className={pwaMonitoring.totals.failureRatePercent > 10 ? "is-danger" : "is-watch"}>
+                          <span>Taux d'échec</span>
+                          <strong>{formatPercent(pwaMonitoring.totals.failureRatePercent, false)}</strong>
+                          <small>{formatNumber(pwaMonitoring.totals.notificationsFailed)} échec(s)</small>
+                        </article>
+                        <article className={pwaMonitoring.totals.expiredSubscriptions > 0 ? "is-danger" : "is-ok"}>
+                          <span>Abonnements expirés</span>
+                          <strong>{formatNumber(pwaMonitoring.totals.expiredSubscriptions)}</strong>
+                          <small>{formatNumber(pwaMonitoring.totals.failedSubscriptions)} à surveiller</small>
+                        </article>
+                      </div>
+
+                      <div className="adminPwaGrid">
+                        <section className="adminPwaCard">
+                          <h4>Par type de notification</h4>
+                          <div className="adminDataTableWrap adminPwaTableWrap">
+                            <table className="adminDataTable adminDataTable--compact">
+                              <thead>
+                                <tr>
+                                  <th>Type</th>
+                                  <th>Envoyées</th>
+                                  <th>Échecs</th>
+                                  <th>Taux</th>
+                                  <th>Dernier succès</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {pwaMonitoring.byKind.length > 0 ? (
+                                  pwaMonitoring.byKind.map((row) => (
+                                    <tr key={row.kind}>
+                                      <td>{getPushKindLabel(row.kind)}</td>
+                                      <td>{formatNumber(row.sent)}</td>
+                                      <td>{formatNumber(row.failed)}</td>
+                                      <td>{formatPercent(row.failureRatePercent, false)}</td>
+                                      <td>{formatDate(row.lastSentAt)}</td>
+                                    </tr>
+                                  ))
+                                ) : (
+                                  <tr>
+                                    <td colSpan={5}>Aucune livraison push enregistrée sur cette période.</td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </section>
+
+                        <section className="adminPwaCard">
+                          <h4>Préférences activées</h4>
+                          <div className="adminPwaPrefs">
+                            <span>Vente récompense <b>{formatNumber(pwaMonitoring.preferences.saleRewardEnabled)}</b></span>
+                            <span>Ouvertures prêtes <b>{formatNumber(pwaMonitoring.preferences.freeOpeningsReadyEnabled)}</b></span>
+                            <span>Ouvertures bientôt <b>{formatNumber(pwaMonitoring.preferences.freeOpeningsSoonEnabled)}</b></span>
+                            <span>Watchlist prix <b>{formatNumber(pwaMonitoring.preferences.watchlistPriceAlertEnabled)}</b></span>
+                            <span>Annonces inactives <b>{formatNumber(pwaMonitoring.preferences.staleListingAlertEnabled)}</b></span>
+                            <span>Résumé quotidien <b>{formatNumber(pwaMonitoring.preferences.dailyMarketRecapEnabled)}</b></span>
+                          </div>
+                        </section>
+                      </div>
+
+                      <div className="adminPwaGrid">
+                        <section className="adminPwaCard">
+                          <h4>Abonnements à risque</h4>
+                          <div className="adminPwaRiskList">
+                            {pwaMonitoring.atRiskSubscriptions.length > 0 ? (
+                              pwaMonitoring.atRiskSubscriptions.map((subscription) => (
+                                <article className="adminPwaRiskItem" key={subscription.id}>
+                                  <div>
+                                    <strong>{subscription.username ?? "Utilisateur inconnu"}</strong>
+                                    <span>#{subscription.userId ?? "-"} · abonnement #{subscription.id}</span>
+                                  </div>
+                                  <span className={`adminSignalBadge ${subscription.expired ? "is-danger" : "is-watch"}`}>
+                                    {subscription.expired ? "Expiré" : subscription.failed ? "Échec récent" : "Jamais livré"}
+                                  </span>
+                                  <p>
+                                    Dernier succès: {formatDate(subscription.lastSuccessfulPushAt)} · Dernier échec:{" "}
+                                    {formatDate(subscription.lastFailureAt)}
+                                  </p>
+                                  <small>{subscription.userAgent ?? subscription.endpointPreview}</small>
+                                </article>
+                              ))
+                            ) : (
+                              <div className="adminEmpty">Aucun abonnement à risque détecté.</div>
+                            )}
+                          </div>
+                        </section>
+
+                        <section className="adminPwaCard">
+                          <h4>Échecs récents</h4>
+                          <div className="adminPwaRiskList">
+                            {pwaMonitoring.recentFailures.length > 0 ? (
+                              pwaMonitoring.recentFailures.map((failure) => (
+                                <article className="adminPwaRiskItem" key={failure.id}>
+                                  <div>
+                                    <strong>{getPushKindLabel(failure.kind)}</strong>
+                                    <span>{formatDate(failure.createdAt)} · user #{failure.userId ?? "-"}</span>
+                                  </div>
+                                  <span className="adminSignalBadge is-danger">
+                                    {failure.statusCode ?? "Erreur"}
+                                  </span>
+                                  <p>{failure.errorMessage ?? "Échec sans message détaillé."}</p>
+                                  <small>{failure.title ?? failure.tag ?? failure.endpointHash ?? "Notification push"}</small>
+                                </article>
+                              ))
+                            ) : (
+                              <div className="adminEmpty">Aucun échec push récent.</div>
+                            )}
+                          </div>
+                        </section>
+                      </div>
+                    </>
+                  ) : null}
                 </section>
 
                 <section className="adminDashboardPanel adminSeasonPanel">

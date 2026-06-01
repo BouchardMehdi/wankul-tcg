@@ -382,6 +382,71 @@ export type AdminSeasonCardsResponse = {
   }>;
 };
 
+export type AdminPwaMonitoringResponse = {
+  generatedAt: string;
+  days: number;
+  totals: {
+    subscribedUsers: number;
+    totalSubscriptions: number;
+    activeSubscriptions: number;
+    expiredSubscriptions: number;
+    failedSubscriptions: number;
+    staleSubscriptions: number;
+    notificationsSent: number;
+    notificationsFailed: number;
+    deliveryAttempts: number;
+    failureRatePercent: number;
+  };
+  preferences: {
+    total: number;
+    saleRewardEnabled: number;
+    freeOpeningsReadyEnabled: number;
+    freeOpeningsSoonEnabled: number;
+    watchlistPriceAlertEnabled: number;
+    staleListingAlertEnabled: number;
+    dailyMarketRecapEnabled: number;
+  };
+  byKind: Array<{
+    kind: string;
+    sent: number;
+    failed: number;
+    total: number;
+    failureRatePercent: number;
+    lastSentAt: string | null;
+    lastFailureAt: string | null;
+  }>;
+  recentFailures: Array<{
+    id: number;
+    userId: number | null;
+    subscriptionId: number | null;
+    endpointHash: string | null;
+    kind: string;
+    tag: string | null;
+    title: string | null;
+    url: string | null;
+    status: 'sent' | 'failed';
+    statusCode: number | null;
+    errorMessage: string | null;
+    createdAt: string;
+  }>;
+  atRiskSubscriptions: Array<{
+    id: number;
+    userId: number | null;
+    username: string | null;
+    endpointHash: string;
+    endpointPreview: string;
+    userAgent: string | null;
+    expired: boolean;
+    failed: boolean;
+    status: 'expired' | 'failed' | 'stale' | string;
+    expirationTime: string | null;
+    lastSuccessfulPushAt: string | null;
+    lastFailureAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+};
+
 export async function login(dto: LoginDto) {
   return apiFetch<LoginResponse>('/auth/login', {
     method: 'POST',
@@ -515,6 +580,15 @@ export async function getAdminSeasonCardsOverview() {
   return adminFetch<AdminSeasonCardsResponse>('/admin/seasons/cards', {
     method: 'GET',
   });
+}
+
+export async function getAdminPwaMonitoring(days = 30) {
+  return adminFetch<AdminPwaMonitoringResponse>(
+    `/admin/pwa/monitoring?days=${days}`,
+    {
+      method: 'GET',
+    },
+  );
 }
 
 export async function getAdminEconomyLogs(params?: {

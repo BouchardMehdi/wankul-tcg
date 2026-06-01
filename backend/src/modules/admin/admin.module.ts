@@ -17,6 +17,9 @@ import { MarketTransaction } from '../market/market-transaction.entity';
 import { UserCard } from '../users/user-card.entity';
 import { UserEconomy } from '../economy/user-economy.entity';
 import { Card } from '../cards/card.entity';
+import { PushDeliveryLogEntity } from '../push/push-delivery-log.entity';
+import { PushNotificationPreferenceEntity } from '../push/push-preference.entity';
+import { PushSubscriptionEntity } from '../push/push-subscription.entity';
 
 @Module({
   imports: [
@@ -30,6 +33,9 @@ import { Card } from '../cards/card.entity';
       UserCard,
       UserEconomy,
       Card,
+      PushSubscriptionEntity,
+      PushNotificationPreferenceEntity,
+      PushDeliveryLogEntity,
     ]),
     EconomyAnalyticsModule,
     SecurityModule,

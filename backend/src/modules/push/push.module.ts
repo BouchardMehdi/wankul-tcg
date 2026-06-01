@@ -9,6 +9,7 @@ import { PushSubscriptionEntity } from './push-subscription.entity';
 import { UserEconomy } from '../economy/user-economy.entity';
 import { PushNotificationPreferenceEntity } from './push-preference.entity';
 import { PushWatchlistEntity } from './push-watchlist.entity';
+import { PushDeliveryLogEntity } from './push-delivery-log.entity';
 import { MarketListing } from '../market/market-listing.entity';
 import { MarketTransaction } from '../market/market-transaction.entity';
 import { Card } from '../cards/card.entity';
@@ -22,6 +23,7 @@ import { MarketPricingService } from '../market/market-pricing.service';
     ConfigModule,
     TypeOrmModule.forFeature([
       PushSubscriptionEntity,
+      PushDeliveryLogEntity,
       UserEconomy,
       PushNotificationPreferenceEntity,
       PushWatchlistEntity,

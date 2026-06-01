@@ -26,6 +26,9 @@ import { Card } from '../cards/card.entity';
 import { BoosterOpening } from '../booster/booster-opening.entity';
 import { DisplayOpening } from '../booster/display-opening.entity';
 import { EconomicActionLog } from '../security/economic-action-log.entity';
+import { PushDeliveryLogEntity } from '../push/push-delivery-log.entity';
+import { PushNotificationPreferenceEntity } from '../push/push-preference.entity';
+import { PushSubscriptionEntity } from '../push/push-subscription.entity';
 
 type GetAllTicketsParams = {
   status?: BugReportStatus | '';
@@ -905,6 +908,90 @@ export class AdminService {
     };
   }
 
+  async getPwaMonitoring(days = 30) {
+    const safeDays = Math.min(365, Math.max(1, Number(days) || 30));
+    const since = new Date(Date.now() - safeDays * 24 * 60 * 60 * 1000);
+    const now = Date.now();
+    const subscriptionRepo = this.dataSource.getRepository(PushSubscriptionEntity);
+    const preferenceRepo = this.dataSource.getRepository(PushNotificationPreferenceEntity);
+    const deliveryLogRepo = this.dataSource.getRepository(PushDeliveryLogEntity);
+
+    const [subscriptions, preferences, deliveryLogs] = await Promise.all([
+      subscriptionRepo.find({
+        relations: ['user'],
+        order: { updatedAt: 'DESC' },
+      }),
+      preferenceRepo.find({
+        relations: ['user'],
+      }),
+      deliveryLogRepo.find({
+        where: { createdAt: MoreThanOrEqual(since) },
+        order: { createdAt: 'DESC' },
+      }),
+    ]);
+
+    const subscribedUserIds = new Set(
+      subscriptions
+        .map((subscription) => subscription.user?.id)
+        .filter((value): value is number => Number.isInteger(value) && value > 0),
+    );
+    const expiredSubscriptions = subscriptions.filter((subscription) =>
+      this.isPushSubscriptionExpired(subscription, now),
+    );
+    const failedSubscriptions = subscriptions.filter((subscription) =>
+      this.hasPushSubscriptionRecentFailure(subscription),
+    );
+    const staleSubscriptions = subscriptions.filter(
+      (subscription) => !subscription.lastSuccessfulPushAt && !!subscription.lastFailureAt,
+    );
+    const sentDeliveries = deliveryLogs.filter((log) => log.status === 'sent');
+    const failedDeliveries = deliveryLogs.filter((log) => log.status === 'failed');
+    const deliveryTotal = deliveryLogs.length;
+    const byKind = this.buildPushDeliveryKindStats(deliveryLogs);
+
+    const atRiskMap = new Map<number, PushSubscriptionEntity>();
+    for (const subscription of [...expiredSubscriptions, ...failedSubscriptions, ...staleSubscriptions]) {
+      atRiskMap.set(subscription.id, subscription);
+    }
+
+    return {
+      generatedAt: new Date().toISOString(),
+      days: safeDays,
+      totals: {
+        subscribedUsers: subscribedUserIds.size,
+        totalSubscriptions: subscriptions.length,
+        activeSubscriptions: subscriptions.length - expiredSubscriptions.length,
+        expiredSubscriptions: expiredSubscriptions.length,
+        failedSubscriptions: failedSubscriptions.length,
+        staleSubscriptions: staleSubscriptions.length,
+        notificationsSent: sentDeliveries.length,
+        notificationsFailed: failedDeliveries.length,
+        deliveryAttempts: deliveryTotal,
+        failureRatePercent:
+          deliveryTotal > 0 ? Number(((failedDeliveries.length / deliveryTotal) * 100).toFixed(2)) : 0,
+      },
+      preferences: {
+        total: preferences.length,
+        saleRewardEnabled: preferences.filter((pref) => pref.saleRewardEnabled).length,
+        freeOpeningsReadyEnabled: preferences.filter((pref) => pref.freeOpeningsReadyEnabled).length,
+        freeOpeningsSoonEnabled: preferences.filter((pref) => pref.freeOpeningsSoonEnabled).length,
+        watchlistPriceAlertEnabled: preferences.filter((pref) => pref.watchlistPriceAlertEnabled).length,
+        staleListingAlertEnabled: preferences.filter((pref) => pref.staleListingAlertEnabled).length,
+        dailyMarketRecapEnabled: preferences.filter((pref) => pref.dailyMarketRecapEnabled).length,
+      },
+      byKind,
+      recentFailures: failedDeliveries.slice(0, 12).map((log) => this.mapPushDeliveryLog(log)),
+      atRiskSubscriptions: Array.from(atRiskMap.values())
+        .sort(
+          (a, b) =>
+            new Date(b.lastFailureAt ?? b.updatedAt).getTime() -
+            new Date(a.lastFailureAt ?? a.updatedAt).getTime(),
+        )
+        .slice(0, 12)
+        .map((subscription) => this.mapPushSubscriptionRisk(subscription, now)),
+    };
+  }
+
   async getEconomyLogs(params: EconomyLogParams = {}) {
     return this.antiAbuseService.getLogs(params);
   }
@@ -1411,6 +1498,121 @@ export class AdminService {
       .replace(/[_-]+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  private isPushSubscriptionExpired(
+    subscription: PushSubscriptionEntity,
+    nowMs = Date.now(),
+  ) {
+    const expirationMs = Number(subscription.expirationTime ?? 0);
+    return Number.isFinite(expirationMs) && expirationMs > 0 && expirationMs <= nowMs;
+  }
+
+  private hasPushSubscriptionRecentFailure(subscription: PushSubscriptionEntity) {
+    if (!subscription.lastFailureAt) return false;
+    if (!subscription.lastSuccessfulPushAt) return true;
+    return (
+      new Date(subscription.lastFailureAt).getTime() >
+      new Date(subscription.lastSuccessfulPushAt).getTime()
+    );
+  }
+
+  private buildPushDeliveryKindStats(logs: PushDeliveryLogEntity[]) {
+    const byKind = new Map<
+      string,
+      {
+        kind: string;
+        sent: number;
+        failed: number;
+        total: number;
+        failureRatePercent: number;
+        lastSentAt: Date | null;
+        lastFailureAt: Date | null;
+      }
+    >();
+
+    for (const log of logs) {
+      const key = log.kind || 'unknown';
+      const current =
+        byKind.get(key) ??
+        {
+          kind: key,
+          sent: 0,
+          failed: 0,
+          total: 0,
+          failureRatePercent: 0,
+          lastSentAt: null,
+          lastFailureAt: null,
+        };
+
+      current.total += 1;
+
+      if (log.status === 'sent') {
+        current.sent += 1;
+        if (!current.lastSentAt || log.createdAt > current.lastSentAt) {
+          current.lastSentAt = log.createdAt;
+        }
+      } else {
+        current.failed += 1;
+        if (!current.lastFailureAt || log.createdAt > current.lastFailureAt) {
+          current.lastFailureAt = log.createdAt;
+        }
+      }
+
+      current.failureRatePercent =
+        current.total > 0
+          ? Number(((current.failed / current.total) * 100).toFixed(2))
+          : 0;
+      byKind.set(key, current);
+    }
+
+    return Array.from(byKind.values()).sort((a, b) => b.total - a.total);
+  }
+
+  private mapPushDeliveryLog(log: PushDeliveryLogEntity) {
+    return {
+      id: log.id,
+      userId: log.userId,
+      subscriptionId: log.subscriptionId,
+      endpointHash: log.endpointHash,
+      kind: log.kind,
+      tag: log.tag,
+      title: log.title,
+      url: log.url,
+      status: log.status,
+      statusCode: log.statusCode,
+      errorMessage: log.errorMessage,
+      createdAt: log.createdAt,
+    };
+  }
+
+  private mapPushSubscriptionRisk(
+    subscription: PushSubscriptionEntity,
+    nowMs = Date.now(),
+  ) {
+    const expired = this.isPushSubscriptionExpired(subscription, nowMs);
+    const failed = this.hasPushSubscriptionRecentFailure(subscription);
+    const expirationMs = Number(subscription.expirationTime ?? 0);
+
+    return {
+      id: subscription.id,
+      userId: subscription.user?.id ?? null,
+      username: subscription.user?.username ?? null,
+      endpointHash: subscription.endpointHash,
+      endpointPreview: `${subscription.endpoint.slice(0, 32)}...`,
+      userAgent: subscription.userAgent,
+      expired,
+      failed,
+      status: expired ? 'expired' : failed ? 'failed' : 'stale',
+      expirationTime:
+        Number.isFinite(expirationMs) && expirationMs > 0
+          ? new Date(expirationMs).toISOString()
+          : null,
+      lastSuccessfulPushAt: subscription.lastSuccessfulPushAt,
+      lastFailureAt: subscription.lastFailureAt,
+      createdAt: subscription.createdAt,
+      updatedAt: subscription.updatedAt,
+    };
   }
 
   private normalizeBackupScope(scope?: string): AdminBackupScope {

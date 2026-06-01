@@ -20,6 +20,7 @@ import { PushNotificationPreferenceEntity } from './push-preference.entity';
 import { UpdatePushPreferencesDto } from './dto/update-push-preferences.dto';
 import { UpsertWatchlistItemDto } from './dto/upsert-watchlist-item.dto';
 import { PushWatchlistEntity } from './push-watchlist.entity';
+import { PushDeliveryLogEntity } from './push-delivery-log.entity';
 import { Card } from '../cards/card.entity';
 import { MarketPricingService } from '../market/market-pricing.service';
 import { MarketListing } from '../market/market-listing.entity';
@@ -77,6 +78,9 @@ export class PushService {
 
     @InjectRepository(PushSubscriptionEntity)
     private readonly pushSubscriptionRepository: Repository<PushSubscriptionEntity>,
+
+    @InjectRepository(PushDeliveryLogEntity)
+    private readonly pushDeliveryLogRepository: Repository<PushDeliveryLogEntity>,
 
     @InjectRepository(UserEconomy)
     private readonly userEconomyRepository: Repository<UserEconomy>,
@@ -1123,11 +1127,16 @@ export class PushService {
       subscription.lastSuccessfulPushAt = new Date();
       subscription.lastFailureAt = null;
       await this.pushSubscriptionRepository.save(subscription);
+      await this.logDelivery(subscription, payload, 'sent');
       return true;
     } catch (error: any) {
       subscription.lastFailureAt = new Date();
 
       const statusCode = Number(error?.statusCode ?? error?.status ?? 0);
+      await this.logDelivery(subscription, payload, 'failed', {
+        statusCode: statusCode || null,
+        errorMessage: error?.message ?? 'unknown error',
+      });
 
       if (statusCode === 404 || statusCode === 410) {
         await this.pushSubscriptionRepository.delete({ id: subscription.id });
@@ -1144,5 +1153,36 @@ export class PushService {
 
   private hashEndpoint(endpoint: string) {
     return createHash('sha256').update(endpoint).digest('hex');
+  }
+
+  private async logDelivery(
+    subscription: PushSubscriptionEntity,
+    payload: PushPayload,
+    status: 'sent' | 'failed',
+    error?: {
+      statusCode?: number | null;
+      errorMessage?: string | null;
+    },
+  ) {
+    try {
+      await this.pushDeliveryLogRepository.save(
+        this.pushDeliveryLogRepository.create({
+          userId: subscription.user?.id ?? null,
+          subscriptionId: subscription.id,
+          endpointHash: subscription.endpointHash,
+          kind: payload.kind,
+          tag: payload.tag?.slice(0, 160) ?? null,
+          title: payload.title?.slice(0, 180) ?? null,
+          url: payload.url?.slice(0, 255) ?? null,
+          status,
+          statusCode: error?.statusCode ?? null,
+          errorMessage: error?.errorMessage?.slice(0, 500) ?? null,
+        }),
+      );
+    } catch (logError: any) {
+      this.logger.warn(
+        `Push delivery log failed for subscription ${subscription.id}: ${logError?.message ?? 'unknown error'}`,
+      );
+    }
   }
 }
