@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import AppNavbar from "../components/AppNavbar";
-import CurrencyAmount from "../components/CurrencyAmount";
+import CurrencyAmount, { CurrencyIcon, formatCurrencyText } from "../components/CurrencyAmount";
 import "../styles.css";
 import "../styles/Dashboard.css";
 import "../styles/Admin.css";
@@ -99,6 +99,10 @@ const ECONOMY_ACTION_OPTIONS = [
   { value: "ECONOMY_FREE_BOOSTER_ADD", label: "Ajout booster gratuit" },
   { value: "ECONOMY_RESET", label: "Reset économie" },
   { value: "ECONOMY_ROLLBACK", label: "Rollback économie" },
+  { value: "ANTI_ABUSE_OPENING_SPIKE", label: "Alerte pic d'openings" },
+  { value: "ANTI_ABUSE_PAIR_TRADING", label: "Alerte comptes liés" },
+  { value: "ANTI_ABUSE_PRICE_OUTLIER", label: "Alerte prix anormal" },
+  { value: "ANTI_ABUSE_FAST_ENRICHMENT", label: "Alerte enrichissement rapide" },
 ];
 
 function getSecurityActionLabel(action?: string) {
@@ -402,6 +406,7 @@ export default function Admin() {
     blocked: 0,
     danger: 0,
   };
+  const antiAbuseAlerts = security?.alerts ?? [];
   const recentSecurityEvents = ecoLogs?.items ?? security?.recentEvents ?? [];
   const ecoLogsPagination = ecoLogs?.pagination ?? {
     page: ecoLogsPage,
@@ -497,6 +502,53 @@ export default function Admin() {
     } finally {
       setEcoExporting(null);
     }
+  }
+
+  function renderSecurityEvent(event: AdminEconomyLogsResponse["items"][number]) {
+    return (
+      <article className={`adminSecurityEvent is-${event.severity}`} key={event.id}>
+        <div className="adminSecurityEvent__top">
+          <div>
+            <strong>{getSecurityActionLabel(event.action)}</strong>
+            <span>
+              {getSecurityStatusLabel(event.status)} · {getSeverityLabel(event.severity)}
+            </span>
+          </div>
+          <time>{formatDate(event.createdAt)}</time>
+        </div>
+
+        <div className="adminSecurityEvent__meta">
+          <span>Joueur : {formatLogActor(event)}</span>
+          {formatRelatedActor(event) ? <span>Lié : {formatRelatedActor(event)}</span> : null}
+          {event.cardId ? (
+            <span>
+              Carte : {event.cardName ?? "Carte"} #{event.cardId}
+              {event.cardRarity ? ` · ${event.cardRarity}` : ""}
+            </span>
+          ) : null}
+          {event.valueCredits ? (
+            <span className="adminSecurityEvent__coinValue">
+              Valeur : {formatCurrencyText(event.valueCredits)} <CurrencyIcon className="adminSecurityEvent__coinIcon" />
+            </span>
+          ) : null}
+          {event.targetType ? (
+            <span>
+              Cible : {event.targetType}
+              {event.targetId ? ` #${event.targetId}` : ""}
+            </span>
+          ) : null}
+        </div>
+
+        {getLogHint(event) ? <p>{getLogHint(event)}</p> : null}
+        {event.reason ? <p>{event.reason}</p> : null}
+        {event.metadata ? (
+          <details className="adminSecurityEvent__details">
+            <summary>Détails</summary>
+            <pre>{JSON.stringify(event.metadata, null, 2)}</pre>
+          </details>
+        ) : null}
+      </article>
+    );
   }
 
   if (!canAccess) {
@@ -711,6 +763,23 @@ export default function Admin() {
                       </div>
                     </div>
 
+                    <section className="adminDashboardPanel adminSecurityPanel adminSecurityPanel--alerts">
+                      <div className="adminDashboardPanel__head">
+                        <h3>Alertes anti-abus</h3>
+                        <p className="small">
+                          Détection automatique des pics d'openings, prix anormaux, échanges répétés et enrichissements rapides.
+                        </p>
+                      </div>
+
+                      <div className="adminSecurityEvents adminSecurityEvents--alerts">
+                        {antiAbuseAlerts.length > 0 ? (
+                          antiAbuseAlerts.map(renderSecurityEvent)
+                        ) : (
+                          <div className="adminEmpty">Aucune alerte anti-abus sur cette période.</div>
+                        )}
+                      </div>
+                    </section>
+
                     <section className="adminDashboardPanel adminSecurityPanel">
                       <div className="adminDashboardPanel__head">
                         <h3>Journal économique</h3>
@@ -842,8 +911,8 @@ export default function Admin() {
                                   </span>
                                 ) : null}
                                 {event.valueCredits ? (
-                                  <span>
-                                    Valeur : <CurrencyAmount value={event.valueCredits} />
+                                  <span className="adminSecurityEvent__coinValue">
+                                    Valeur : {formatCurrencyText(event.valueCredits)} <CurrencyIcon className="adminSecurityEvent__coinIcon" />
                                   </span>
                                 ) : null}
                                 {event.targetType ? (

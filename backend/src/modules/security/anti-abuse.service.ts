@@ -5,7 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, MoreThanOrEqual, Repository } from 'typeorm';
+import { Brackets, In, MoreThanOrEqual, Repository } from 'typeorm';
 
 import {
   EconomicActionLog,
@@ -30,7 +30,11 @@ export type EconomicAction =
   | 'ECONOMY_CREDITS_ADD'
   | 'ECONOMY_FREE_BOOSTER_ADD'
   | 'ECONOMY_RESET'
-  | 'ECONOMY_ROLLBACK';
+  | 'ECONOMY_ROLLBACK'
+  | 'ANTI_ABUSE_OPENING_SPIKE'
+  | 'ANTI_ABUSE_PAIR_TRADING'
+  | 'ANTI_ABUSE_PRICE_OUTLIER'
+  | 'ANTI_ABUSE_FAST_ENRICHMENT';
 
 type RateLimitRule = {
   windowMs: number;
@@ -83,6 +87,28 @@ export type AbuseDecision = {
 
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+const ANTI_ABUSE_ALERT_ACTIONS = [
+  'ANTI_ABUSE_OPENING_SPIKE',
+  'ANTI_ABUSE_PAIR_TRADING',
+  'ANTI_ABUSE_PRICE_OUTLIER',
+  'ANTI_ABUSE_FAST_ENRICHMENT',
+];
+
+const OPENING_ACTIONS = ['OPEN_BOOSTER', 'OPEN_DISPLAY'];
+
+const CREDIT_GAIN_ACTIONS = [
+  'OPEN_BOOSTER',
+  'OPEN_DISPLAY',
+  'QUICK_SELL',
+  'MARKET_SALE',
+  'MARKET_REWARD_CLAIM',
+  'BADGE_REWARD',
+  'SIGNUP_BONUS',
+  'ECONOMY_CREDITS_ADD',
+];
 
 const ACTION_RATE_LIMITS: Partial<Record<EconomicAction, RateLimitRule[]>> = {
   OPEN_BOOSTER: [
@@ -294,7 +320,7 @@ export class AntiAbuseService {
 
   async logAction(input: LogActionInput) {
     try {
-      await this.logRepo.save(
+      const savedLog = await this.logRepo.save(
         this.logRepo.create({
           userId: input.userId ?? null,
           relatedUserId: input.relatedUserId ?? null,
@@ -309,6 +335,8 @@ export class AntiAbuseService {
           metadata: input.metadata ?? null,
         }),
       );
+
+      await this.detectAutomatedAlerts(input, savedLog);
     } catch {
       // Le journal anti-abus ne doit jamais casser une action joueur valide.
     }
@@ -319,7 +347,7 @@ export class AntiAbuseService {
     const since = new Date();
     since.setDate(since.getDate() - safeDays);
 
-    const [summaryRows, recentRows] = await Promise.all([
+    const [summaryRows, recentRows, alertRows] = await Promise.all([
       this.logRepo
         .createQueryBuilder('log')
         .select('log.action', 'action')
@@ -340,6 +368,14 @@ export class AntiAbuseService {
         where: { createdAt: MoreThanOrEqual(since) },
         order: { createdAt: 'DESC' },
         take: 12,
+      }),
+      this.logRepo.find({
+        where: {
+          action: In(ANTI_ABUSE_ALERT_ACTIONS),
+          createdAt: MoreThanOrEqual(since),
+        },
+        order: { createdAt: 'DESC' },
+        take: 8,
       }),
     ]);
 
@@ -363,12 +399,16 @@ export class AntiAbuseService {
       };
     });
 
-    const recentEvents = await this.enrichLogRows(recentRows);
+    const [recentEvents, alerts] = await Promise.all([
+      this.enrichLogRows(recentRows),
+      this.enrichLogRows(alertRows),
+    ]);
 
     return {
       totals,
       byAction,
       recentEvents,
+      alerts,
     };
   }
 
@@ -483,6 +523,342 @@ export class AntiAbuseService {
         targetType: params.targetType?.trim() || null,
       },
     };
+  }
+
+  private async detectAutomatedAlerts(
+    input: LogActionInput,
+    sourceLog: EconomicActionLog,
+  ) {
+    const action = String(input.action);
+    if (ANTI_ABUSE_ALERT_ACTIONS.includes(action)) return;
+
+    const tasks: Promise<unknown>[] = [];
+
+    if (input.userId && OPENING_ACTIONS.includes(action)) {
+      tasks.push(this.detectOpeningSpikeAlert(input, sourceLog));
+    }
+
+    if (
+      input.userId &&
+      input.relatedUserId &&
+      (action === 'MARKET_BUY' || action === 'MARKET_SALE')
+    ) {
+      tasks.push(this.detectPairTradingAlert(input, sourceLog));
+    }
+
+    if (
+      input.userId &&
+      (action === 'MARKET_LISTING_CREATE' || action === 'MARKET_BUY')
+    ) {
+      tasks.push(this.detectPriceOutlierAlert(input, sourceLog));
+    }
+
+    if (
+      input.userId &&
+      CREDIT_GAIN_ACTIONS.includes(action) &&
+      Number(input.valueCredits ?? 0) > 0
+    ) {
+      tasks.push(this.detectFastEnrichmentAlert(input, sourceLog));
+    }
+
+    await Promise.all(tasks);
+  }
+
+  private async detectOpeningSpikeAlert(
+    input: LogActionInput,
+    sourceLog: EconomicActionLog,
+  ) {
+    if (!input.userId) return;
+
+    const windowMs = 10 * MINUTE;
+    const since = new Date(Date.now() - windowMs);
+    const rows = await this.logRepo
+      .createQueryBuilder('log')
+      .select('log.action', 'action')
+      .addSelect('COUNT(log.id)', 'count')
+      .where('log.userId = :userId', { userId: input.userId })
+      .andWhere('log.createdAt >= :since', { since })
+      .andWhere('log.action IN (:...actions)', { actions: OPENING_ACTIONS })
+      .andWhere("log.status != 'blocked'")
+      .groupBy('log.action')
+      .getRawMany<{ action: string; count: string }>();
+
+    const boosterCount = this.readActionCount(rows, 'OPEN_BOOSTER');
+    const displayCount = this.readActionCount(rows, 'OPEN_DISPLAY');
+    const totalOpenings = boosterCount + displayCount;
+    const weightedOpenings = boosterCount + displayCount * 10;
+
+    const severity =
+      weightedOpenings >= 60 || displayCount >= 5 || totalOpenings >= 45
+        ? 'danger'
+        : weightedOpenings >= 25 || displayCount >= 2 || totalOpenings >= 18
+          ? 'watch'
+          : null;
+
+    if (!severity) return;
+
+    await this.logAlertOnce({
+      userId: input.userId,
+      action: 'ANTI_ABUSE_OPENING_SPIKE',
+      status: 'flagged',
+      severity,
+      targetType: 'user',
+      targetId: input.userId,
+      valueCredits: input.valueCredits,
+      reason:
+        severity === 'danger'
+          ? "Pic d'openings très élevé"
+          : "Rythme d'openings inhabituel",
+      metadata: {
+        sourceAction: input.action,
+        sourceLogId: sourceLog.id,
+        windowMinutes: Math.round(windowMs / MINUTE),
+        boosterCount,
+        displayCount,
+        totalOpenings,
+        weightedOpenings,
+      },
+      dedupeWindowMs: 15 * MINUTE,
+    });
+  }
+
+  private async detectPairTradingAlert(
+    input: LogActionInput,
+    sourceLog: EconomicActionLog,
+  ) {
+    if (!input.userId || !input.relatedUserId) return;
+
+    const [pairStats1h, pairStats24h] = await Promise.all([
+      this.getPairStats(input.userId, input.relatedUserId, HOUR),
+      this.getPairStats(input.userId, input.relatedUserId, DAY),
+    ]);
+
+    const severity =
+      pairStats24h.count >= 12 ||
+      pairStats24h.volume >= 50000 ||
+      pairStats1h.count >= 8
+        ? 'danger'
+        : pairStats24h.count >= 6 ||
+            pairStats24h.volume >= 15000 ||
+            pairStats1h.count >= 4
+          ? 'watch'
+          : null;
+
+    if (!severity) return;
+
+    const pairUserA = Math.min(input.userId, input.relatedUserId);
+    const pairUserB = Math.max(input.userId, input.relatedUserId);
+
+    await this.logAlertOnce({
+      userId: pairUserA,
+      relatedUserId: pairUserB,
+      action: 'ANTI_ABUSE_PAIR_TRADING',
+      status: 'flagged',
+      severity,
+      targetType: 'user_pair',
+      valueCredits: pairStats24h.volume,
+      reason:
+        severity === 'danger'
+          ? 'Échanges répétés très suspects entre deux comptes'
+          : 'Échanges répétés entre deux comptes',
+      metadata: {
+        sourceAction: input.action,
+        sourceLogId: sourceLog.id,
+        sourceUserId: input.userId,
+        sourceRelatedUserId: input.relatedUserId,
+        sourceCardId: input.cardId ?? null,
+        sourceTargetType: input.targetType ?? null,
+        sourceTargetId: input.targetId ?? null,
+        pairStats1h,
+        pairStats24h,
+      },
+      dedupeWindowMs: 4 * HOUR,
+    });
+  }
+
+  private async detectPriceOutlierAlert(
+    input: LogActionInput,
+    sourceLog: EconomicActionLog,
+  ) {
+    const metadata = input.metadata ?? {};
+    const decision =
+      metadata.decision ?? metadata.priceDecision ?? metadata.abuseDecision ?? null;
+
+    if (!decision || typeof decision !== 'object') return;
+
+    const ratioPercent = this.toFiniteNumber(decision.ratioPercent);
+    const referenceValue = this.toFiniteNumber(
+      decision.referenceValue ?? metadata.referenceListedValue,
+    );
+    const requestedValue = this.toFiniteNumber(
+      decision.requestedValue ??
+        metadata.referenceRequestedValue ??
+        input.valueCredits,
+    );
+    const isOutlier =
+      input.status === 'flagged' ||
+      input.status === 'blocked' ||
+      ratioPercent >= 175 ||
+      (ratioPercent > 0 && ratioPercent <= 45);
+
+    if (!isOutlier) return;
+
+    const severity =
+      input.status === 'blocked' ||
+      input.severity === 'danger' ||
+      ratioPercent >= 300 ||
+      (ratioPercent > 0 && ratioPercent <= 5)
+        ? 'danger'
+        : 'watch';
+
+    await this.logAlertOnce({
+      userId: input.userId,
+      relatedUserId: input.relatedUserId,
+      cardId: input.cardId,
+      action: 'ANTI_ABUSE_PRICE_OUTLIER',
+      status: 'flagged',
+      severity,
+      targetType: input.targetType ?? 'card',
+      targetId: input.targetId ?? input.cardId ?? null,
+      valueCredits: Math.round(requestedValue || input.valueCredits || 0),
+      reason:
+        ratioPercent > 100
+          ? 'Prix anormalement haut par rapport au marché'
+          : 'Prix anormalement bas par rapport au marché',
+      metadata: {
+        sourceAction: input.action,
+        sourceLogId: sourceLog.id,
+        ratioPercent,
+        referenceValue,
+        requestedValue,
+        decision,
+      },
+      dedupeWindowMs: HOUR,
+    });
+  }
+
+  private async detectFastEnrichmentAlert(
+    input: LogActionInput,
+    sourceLog: EconomicActionLog,
+  ) {
+    if (!input.userId) return;
+
+    const [stats30m, stats24h] = await Promise.all([
+      this.getCreditGainStats(input.userId, 30 * MINUTE),
+      this.getCreditGainStats(input.userId, DAY),
+    ]);
+
+    const severity =
+      stats30m.volume >= 75000 || stats24h.volume >= 200000
+        ? 'danger'
+        : stats30m.volume >= 25000 || stats24h.volume >= 75000
+          ? 'watch'
+          : null;
+
+    if (!severity) return;
+
+    await this.logAlertOnce({
+      userId: input.userId,
+      action: 'ANTI_ABUSE_FAST_ENRICHMENT',
+      status: 'flagged',
+      severity,
+      targetType: 'user',
+      targetId: input.userId,
+      valueCredits: stats30m.volume,
+      reason:
+        severity === 'danger'
+          ? 'Enrichissement très rapide'
+          : 'Enrichissement rapide à surveiller',
+      metadata: {
+        sourceAction: input.action,
+        sourceLogId: sourceLog.id,
+        stats30m,
+        stats24h,
+      },
+      dedupeWindowMs: HOUR,
+    });
+  }
+
+  private async logAlertOnce(
+    input: LogActionInput & { dedupeWindowMs?: number },
+  ) {
+    const since = new Date(Date.now() - (input.dedupeWindowMs ?? HOUR));
+    const qb = this.logRepo
+      .createQueryBuilder('log')
+      .where('log.action = :action', { action: input.action })
+      .andWhere('log.createdAt >= :since', { since });
+
+    if (input.userId !== undefined && input.userId !== null) {
+      qb.andWhere('log.userId = :userId', { userId: input.userId });
+    }
+
+    if (input.relatedUserId !== undefined && input.relatedUserId !== null) {
+      qb.andWhere('log.relatedUserId = :relatedUserId', {
+        relatedUserId: input.relatedUserId,
+      });
+    }
+
+    if (input.cardId !== undefined && input.cardId !== null) {
+      qb.andWhere('log.cardId = :cardId', { cardId: input.cardId });
+    }
+
+    if (input.targetType) {
+      qb.andWhere('log.targetType = :targetType', {
+        targetType: input.targetType,
+      });
+    }
+
+    if (input.targetId !== undefined && input.targetId !== null) {
+      qb.andWhere('log.targetId = :targetId', { targetId: input.targetId });
+    }
+
+    const existing = await qb.getCount();
+    if (existing > 0) return;
+
+    await this.logRepo.save(
+      this.logRepo.create({
+        userId: input.userId ?? null,
+        relatedUserId: input.relatedUserId ?? null,
+        cardId: input.cardId ?? null,
+        action: input.action,
+        status: input.status ?? 'flagged',
+        severity: input.severity ?? 'watch',
+        targetType: input.targetType ?? null,
+        targetId: input.targetId ?? null,
+        valueCredits: Math.max(0, Math.round(input.valueCredits ?? 0)),
+        reason: input.reason?.slice(0, 255) ?? null,
+        metadata: input.metadata ?? null,
+      }),
+    );
+  }
+
+  private async getCreditGainStats(userId: number, windowMs: number) {
+    const since = new Date(Date.now() - windowMs);
+    const row = await this.logRepo
+      .createQueryBuilder('log')
+      .select('COUNT(log.id)', 'count')
+      .addSelect('COALESCE(SUM(log.valueCredits), 0)', 'volume')
+      .where('log.userId = :userId', { userId })
+      .andWhere('log.createdAt >= :since', { since })
+      .andWhere('log.action IN (:...actions)', { actions: CREDIT_GAIN_ACTIONS })
+      .andWhere("log.status != 'blocked'")
+      .getRawOne<{ count: string; volume: string }>();
+
+    return {
+      count: Number(row?.count ?? 0),
+      volume: Number(row?.volume ?? 0),
+      windowMinutes: Math.round(windowMs / MINUTE),
+    };
+  }
+
+  private readActionCount(rows: { action: string; count: string }[], action: string) {
+    const row = rows.find((item) => item.action === action);
+    return Number(row?.count ?? 0);
+  }
+
+  private toFiniteNumber(value: unknown) {
+    const num = Number(value ?? 0);
+    return Number.isFinite(num) ? num : 0;
   }
 
   private resolveLogDateRange(params: { days?: number; from?: string; to?: string }) {

@@ -285,6 +285,26 @@ export type AdminEconomyOverviewResponse = {
       metadata: Record<string, any> | null;
       createdAt: string;
     }>;
+    alerts: Array<{
+      id: number;
+      userId: number | null;
+      username?: string | null;
+      relatedUserId?: number | null;
+      relatedUsername?: string | null;
+      cardId?: number | null;
+      cardKey?: string | null;
+      cardName?: string | null;
+      cardRarity?: string | null;
+      action: string;
+      status: 'allowed' | 'flagged' | 'blocked';
+      severity: 'info' | 'watch' | 'danger';
+      targetType: string | null;
+      targetId: number | null;
+      valueCredits: number;
+      reason: string | null;
+      metadata: Record<string, any> | null;
+      createdAt: string;
+    }>;
   };
 };
 
