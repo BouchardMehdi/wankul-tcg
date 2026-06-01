@@ -1,4 +1,4 @@
-import { API_ORIGIN, apiFetch } from './http';
+import { API_ORIGIN, apiFetch, type PlayerSessionResponse } from './http';
 
 function getApiBase() {
   return `${API_ORIGIN}/api`;
@@ -87,6 +87,8 @@ export type LoginDto = {
 
 export type LoginResponse = {
   access_token: string;
+  refresh_token: string;
+  refresh_expires_in?: string;
 };
 
 export type RegisterDto = {
@@ -564,7 +566,7 @@ export type AdminModeratedUser = {
 };
 
 export async function login(dto: LoginDto) {
-  return apiFetch<LoginResponse>('/auth/login', {
+  return apiFetch<PlayerSessionResponse>('/auth/login', {
     method: 'POST',
     body: dto,
     auth: false,

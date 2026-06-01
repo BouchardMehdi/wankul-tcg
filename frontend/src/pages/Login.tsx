@@ -22,17 +22,19 @@ export default function Login() {
     try {
       const data = await apiFetch<{
         access_token?: string;
+        refresh_token?: string;
         token?: string;
         accessToken?: string;
       }>("/auth/login", {
         method: "POST",
         body: { username, password },
+        auth: false,
       });
 
       const token = data.access_token ?? data.token ?? data.accessToken;
       if (!token) throw new Error("Token manquant dans la réponse du serveur");
 
-      setToken(token);
+      setToken(token, data.refresh_token);
       playSoundEffect("auth.login-success");
       navigate("/dashboard", { replace: true });
     } catch (err: any) {

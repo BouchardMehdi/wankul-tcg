@@ -3,12 +3,14 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import type { StringValue } from 'ms';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -39,6 +41,7 @@ function sanitizeFilename(filename: string) {
 const SIGNUP_BONUS = 1500;
 const CODE_EXPIRATION_MINUTES = 15;
 const PLAYER_REPORT_PAGE_SIZE = 5;
+const PLAYER_REFRESH_DEFAULT_EXPIRES_IN = '30d' as StringValue;
 const PLAYER_DEFAULT_VISIBLE_STATUSES: BugReportStatus[] = [
   'open',
   'investigating',
@@ -79,6 +82,42 @@ export class AuthService {
     throw new ForbiddenException(
       `Compte suspendu jusqu'au ${suspendedUntil.toLocaleString('fr-FR')}.`,
     );
+  }
+
+  private assertUserCanUsePlayerSession(user: User) {
+    this.assertUserNotSuspended(user);
+
+    if (!user.emailVerified) {
+      throw new ForbiddenException('Email non vérifié');
+    }
+  }
+
+  private async createPlayerSession(user: User) {
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      role: user.role,
+      scope: 'player',
+    };
+
+    const access_token = await this.jwt.signAsync(payload);
+    const refreshExpiresIn = (this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ??
+      PLAYER_REFRESH_DEFAULT_EXPIRES_IN) as StringValue;
+    const refresh_token = await this.jwt.signAsync(
+      {
+        sub: user.id,
+        username: user.username,
+        role: user.role,
+        scope: 'player_refresh',
+      },
+      { expiresIn: refreshExpiresIn },
+    );
+
+    return {
+      access_token,
+      refresh_token,
+      refresh_expires_in: refreshExpiresIn,
+    };
   }
 
   private async saveScreenshotFromDataUrl(
@@ -482,24 +521,38 @@ export class AuthService {
     const user = await this.usersRepo.findOne({ where: { username } });
     if (!user) throw new ForbiddenException('Identifiants invalides');
 
-    this.assertUserNotSuspended(user);
-
-    if (!user.emailVerified) {
-      throw new ForbiddenException('Email non vérifié');
-    }
+    this.assertUserCanUsePlayerSession(user);
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) throw new ForbiddenException('Identifiants invalides');
 
-    const payload = {
-      sub: user.id,
-      username: user.username,
-      role: user.role,
-      scope: 'player',
-    };
+    return this.createPlayerSession(user);
+  }
 
-    const access_token = await this.jwt.signAsync(payload);
+  async refreshSession(refreshToken: string) {
+    const token = (refreshToken ?? '').trim();
+    if (!token) {
+      throw new UnauthorizedException('Session à renouveler.');
+    }
 
-    return { access_token };
+    let payload: any;
+    try {
+      payload = await this.jwt.verifyAsync(token);
+    } catch {
+      throw new UnauthorizedException('Session expirée.');
+    }
+
+    if (payload?.scope !== 'player_refresh' || !payload?.sub) {
+      throw new UnauthorizedException('Session invalide.');
+    }
+
+    const user = await this.usersRepo.findOne({ where: { id: Number(payload.sub) } });
+    if (!user) {
+      throw new UnauthorizedException('Session invalide.');
+    }
+
+    this.assertUserCanUsePlayerSession(user);
+
+    return this.createPlayerSession(user);
   }
 }

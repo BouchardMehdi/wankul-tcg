@@ -15,9 +15,57 @@ type ApiFetchOptions = {
   auth?: boolean;
 };
 
+export type PlayerSessionResponse = {
+  access_token: string;
+  refresh_token: string;
+  refresh_expires_in?: string;
+};
+
+function storePlayerSession(session: PlayerSessionResponse) {
+  localStorage.setItem("token", session.access_token);
+  localStorage.setItem("refresh_token", session.refresh_token);
+  window.dispatchEvent(new CustomEvent("player-session-refreshed", { detail: session }));
+}
+
+function clearStoredPlayerSession() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("refresh_token");
+  window.dispatchEvent(new Event("player-session-cleared"));
+}
+
+export async function refreshPlayerSession(refreshToken = localStorage.getItem("refresh_token")) {
+  if (!refreshToken) {
+    clearStoredPlayerSession();
+    throw new Error("Session expirée.");
+  }
+
+  const res = await fetch(`${API_ORIGIN}/api/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  const data = await res.json().catch(() => ({} as any));
+
+  if (!res.ok) {
+    clearStoredPlayerSession();
+    const msg =
+      typeof data?.message === "string"
+        ? data.message
+        : Array.isArray(data?.message)
+          ? data.message.join(", ")
+          : "Session expirée.";
+    throw new Error(msg);
+  }
+
+  storePlayerSession(data as PlayerSessionResponse);
+  return data as PlayerSessionResponse;
+}
+
 export async function apiFetch<T = any>(
   path: string,
-  options: ApiFetchOptions = {}
+  options: ApiFetchOptions = {},
+  retryOnUnauthorized = true
 ): Promise<T> {
   const { method = "GET", body, token, headers, auth = true } = options;
 
@@ -41,6 +89,11 @@ export async function apiFetch<T = any>(
   });
 
   const data = await res.json().catch(() => ({} as any));
+
+  if (res.status === 401 && auth && retryOnUnauthorized && path !== "/auth/refresh") {
+    await refreshPlayerSession();
+    return apiFetch<T>(path, options, false);
+  }
 
   if (!res.ok) {
     const msg =

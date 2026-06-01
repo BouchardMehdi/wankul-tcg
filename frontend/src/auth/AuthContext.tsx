@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { getMe, getWallet, type MeResponse } from "../api/me";
 import { adminRefreshSession, type AdminSessionResponse } from "../api/auth";
+import { refreshPlayerSession, type PlayerSessionResponse } from "../api/http";
 import { unsubscribeCurrentBrowserFromPush } from "../utils/pwaNotifications";
 
 type DecodedPlayerToken = {
@@ -38,7 +39,7 @@ export type AuthState = {
   credits: number | null;
   role: "player" | "admin";
 
-  setToken: (t: string | null) => void;
+  setToken: (t: string | null, refreshToken?: string | null) => void;
   setAdminToken: (t: string | null, refreshToken?: string | null) => void;
   clearAdminSession: () => void;
   refreshAuth: () => Promise<void>;
@@ -65,6 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() =>
     localStorage.getItem("token")
   );
+  const [refreshToken, setRefreshTokenState] = useState<string | null>(() =>
+    localStorage.getItem("refresh_token")
+  );
   const [adminToken, setAdminTokenState] = useState<string | null>(() =>
     localStorage.getItem("admin_token")
   );
@@ -87,10 +91,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     decodedAdmin?.scope === "admin" &&
     decodedAdmin?.role === "admin";
 
-  const setToken = (t: string | null) => {
+  const setToken = (t: string | null, nextRefreshToken?: string | null) => {
     setTokenState(t);
-    if (t) localStorage.setItem("token", t);
-    else localStorage.removeItem("token");
+    if (t) {
+      localStorage.setItem("token", t);
+      if (nextRefreshToken) {
+        setRefreshTokenState(nextRefreshToken);
+        localStorage.setItem("refresh_token", nextRefreshToken);
+      }
+    } else {
+      setRefreshTokenState(null);
+      localStorage.removeItem("token");
+      localStorage.removeItem("refresh_token");
+    }
   };
 
   const setAdminToken = (t: string | null, refreshToken?: string | null) => {
@@ -110,6 +123,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const clearAdminSession = () => {
     setAdminToken(null);
+  };
+
+  const refreshPlayerAccess = async (activeRefreshToken = refreshToken) => {
+    try {
+      const session = await refreshPlayerSession(activeRefreshToken);
+      setToken(session.access_token, session.refresh_token);
+      return session;
+    } catch {
+      setToken(null);
+      setMe(null);
+      setCredits(null);
+      return null;
+    }
   };
 
   const refreshAdminAccess = async (refreshToken = adminRefreshToken) => {
@@ -135,19 +161,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshMe = async () => {
-    if (!token) return;
+    if (!token && !localStorage.getItem("token")) return;
     const data = await getMe();
     setMe(data);
   };
 
   const refreshWallet = async () => {
-    if (!token) return;
+    if (!token && !localStorage.getItem("token")) return;
     const data = await getWallet();
     setCredits(typeof data?.credits === "number" ? data.credits : 0);
   };
 
   const refreshAuth = async () => {
-    if (!token) {
+    if (!token && refreshToken) {
+      const session = await refreshPlayerAccess(refreshToken);
+      if (!session) {
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    if (!token && !localStorage.getItem("token")) {
       setIsLoading(false);
       return;
     }
@@ -178,6 +212,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   useEffect(() => {
+    if (!token) return;
+
+    const decoded = decodeJwt<DecodedPlayerToken>(token);
+    const refreshDelay = decoded?.exp ? decoded.exp * 1000 - Date.now() - 60_000 : 0;
+
+    if (!decoded?.exp) {
+      refreshPlayerAccess().catch(() => {});
+      return;
+    }
+
+    if (refreshDelay <= 0) {
+      refreshPlayerAccess().catch(() => {});
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      refreshPlayerAccess().catch(() => {});
+    }, refreshDelay);
+
+    return () => window.clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, refreshToken]);
+
+  useEffect(() => {
     if (!adminToken) return;
 
     const decoded = decodeJwt<DecodedAdminToken>(adminToken);
@@ -202,6 +260,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [adminToken, adminRefreshToken]);
 
   useEffect(() => {
+    const onPlayerSessionRefreshed = (event: Event) => {
+      const session = (event as CustomEvent<PlayerSessionResponse>).detail;
+      if (!session?.access_token) return;
+      setToken(session.access_token, session.refresh_token);
+    };
+    const onPlayerSessionCleared = () => {
+      setToken(null);
+      setMe(null);
+      setCredits(null);
+    };
     const onAdminSessionRefreshed = (event: Event) => {
       const session = (event as CustomEvent<AdminSessionResponse>).detail;
       if (!session?.admin_access_token) return;
@@ -211,9 +279,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAdminToken(null);
     };
 
+    window.addEventListener("player-session-refreshed", onPlayerSessionRefreshed);
+    window.addEventListener("player-session-cleared", onPlayerSessionCleared);
     window.addEventListener("admin-session-refreshed", onAdminSessionRefreshed);
     window.addEventListener("admin-session-cleared", onAdminSessionCleared);
     return () => {
+      window.removeEventListener("player-session-refreshed", onPlayerSessionRefreshed);
+      window.removeEventListener("player-session-cleared", onPlayerSessionCleared);
       window.removeEventListener("admin-session-refreshed", onAdminSessionRefreshed);
       window.removeEventListener("admin-session-cleared", onAdminSessionCleared);
     };
