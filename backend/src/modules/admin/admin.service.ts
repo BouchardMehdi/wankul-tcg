@@ -7,6 +7,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, MoreThanOrEqual, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
 import { JwtService } from '@nestjs/jwt';
 
 import { User } from '../users/user.entity';
@@ -53,6 +55,13 @@ type AdminBackupScope =
   | 'users'
   | 'collections'
   | 'openings';
+
+type AdminSeasonAvailability = {
+  obtainable: boolean;
+  boosterAvailable: boolean;
+  source: string;
+  reason: string;
+};
 
 @Injectable()
 export class AdminService {
@@ -778,6 +787,124 @@ export class AdminService {
     };
   }
 
+  async getSeasonCardsOverview() {
+    const cardRepo = this.dataSource.getRepository(Card);
+    const cards = await cardRepo.find({
+      order: {
+        seasonNumber: 'ASC',
+        affiliatedSeasonNumber: 'ASC',
+        number: 'ASC',
+        id: 'ASC',
+      },
+    });
+
+    const items = cards.map((card) => {
+      const availability = this.getCardAvailability(card);
+      const image = this.getCardImageStatus(card.imageUrl);
+      const seasonGroup = this.getCardSeasonGroup(card);
+      const affiliatedSeasonNumber = this.normalizePositiveInt(card.affiliatedSeasonNumber);
+      const affiliatedSeasonLabel = affiliatedSeasonNumber
+        ? card.affiliatedSeason?.trim() || `Saison ${affiliatedSeasonNumber}`
+        : null;
+
+      return {
+        id: card.id,
+        key: card.key,
+        name: card.name,
+        number: card.number,
+        displayNumber: card.displayNumber,
+        rarity: card.rarity,
+        type: card.type,
+        gameplayType: card.gameplayType,
+        specialEdition: card.specialEdition,
+        specialCategory: card.specialCategory,
+        sourceRarity: card.sourceRarity,
+        sourceRaritySlug: card.sourceRaritySlug,
+        season: card.season,
+        seasonNumber: card.seasonNumber,
+        extension: card.extension,
+        seasonGroupKey: seasonGroup.key,
+        seasonGroupLabel: seasonGroup.label,
+        affiliatedSeason: card.affiliatedSeason,
+        affiliatedSeasonNumber,
+        affiliatedSeasonLabel,
+        imageUrl: card.imageUrl,
+        imageExists: image.exists,
+        imageStatus: image.status,
+        imagePath: image.path,
+        obtainable: availability.obtainable,
+        boosterAvailable: availability.boosterAvailable,
+        availabilitySource: availability.source,
+        availabilityReason: availability.reason,
+      };
+    });
+
+    const seasonsMap = new Map<
+      string,
+      {
+        key: string;
+        label: string;
+        seasonNumber: number | null;
+        totalCards: number;
+        obtainableCards: number;
+        notObtainableCards: number;
+        boosterAvailableCards: number;
+        missingImages: number;
+        rarityCounts: Record<string, number>;
+      }
+    >();
+
+    for (const item of items) {
+      const existing =
+        seasonsMap.get(item.seasonGroupKey) ??
+        {
+          key: item.seasonGroupKey,
+          label: item.seasonGroupLabel,
+          seasonNumber: item.seasonNumber ?? null,
+          totalCards: 0,
+          obtainableCards: 0,
+          notObtainableCards: 0,
+          boosterAvailableCards: 0,
+          missingImages: 0,
+          rarityCounts: {},
+        };
+
+      existing.totalCards += 1;
+      existing.obtainableCards += item.obtainable ? 1 : 0;
+      existing.notObtainableCards += item.obtainable ? 0 : 1;
+      existing.boosterAvailableCards += item.boosterAvailable ? 1 : 0;
+      existing.missingImages += item.imageExists ? 0 : 1;
+      existing.rarityCounts[item.rarity] = (existing.rarityCounts[item.rarity] ?? 0) + 1;
+
+      seasonsMap.set(item.seasonGroupKey, existing);
+    }
+
+    const seasons = Array.from(seasonsMap.values()).sort((a, b) => {
+      if (a.seasonNumber && b.seasonNumber) return a.seasonNumber - b.seasonNumber;
+      if (a.seasonNumber) return -1;
+      if (b.seasonNumber) return 1;
+      return a.label.localeCompare(b.label, 'fr');
+    });
+
+    const rarities = Array.from(new Set(items.map((item) => item.rarity)))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'fr'));
+
+    return {
+      generatedAt: new Date().toISOString(),
+      totals: {
+        totalCards: items.length,
+        obtainableCards: items.filter((item) => item.obtainable).length,
+        notObtainableCards: items.filter((item) => !item.obtainable).length,
+        boosterAvailableCards: items.filter((item) => item.boosterAvailable).length,
+        missingImages: items.filter((item) => !item.imageExists).length,
+      },
+      seasons,
+      rarities,
+      items,
+    };
+  }
+
   async getEconomyLogs(params: EconomyLogParams = {}) {
     return this.antiAbuseService.getLogs(params);
   }
@@ -1104,6 +1231,186 @@ export class AdminService {
     }
 
     return economy;
+  }
+
+  private getCardSeasonGroup(card: Card) {
+    const seasonNumber = this.normalizePositiveInt(card.seasonNumber);
+
+    if (seasonNumber) {
+      return {
+        key: `season-${seasonNumber}`,
+        label: card.extension?.trim() || card.season?.trim() || `Saison ${seasonNumber}`,
+      };
+    }
+
+    return {
+      key: 'special',
+      label: 'Hors série',
+    };
+  }
+
+  private getCardImageStatus(imageUrl?: string | null) {
+    const rawUrl = String(imageUrl ?? '').trim();
+
+    if (!rawUrl) {
+      return {
+        exists: false,
+        status: 'missing',
+        path: null,
+      };
+    }
+
+    if (/^https?:\/\//i.test(rawUrl)) {
+      return {
+        exists: true,
+        status: 'external',
+        path: rawUrl,
+      };
+    }
+
+    const normalized = rawUrl
+      .replace(/^\/+/, '')
+      .replace(/^api\/+/i, '')
+      .replace(/\\/g, '/');
+
+    const candidates = [
+      path.join(process.cwd(), 'public', normalized),
+      path.join(process.cwd(), normalized),
+    ];
+    const exists = candidates.some((candidate) => fs.existsSync(candidate));
+
+    return {
+      exists,
+      status: exists ? 'ok' : 'missing',
+      path: normalized,
+    };
+  }
+
+  private getCardAvailability(card: Card): AdminSeasonAvailability {
+    const seasonNumber = this.normalizePositiveInt(card.seasonNumber);
+    const affiliatedSeasonNumber = this.normalizePositiveInt(card.affiliatedSeasonNumber);
+    const rarity = this.normalizeText(card.rarity);
+    const category = this.normalizeText(card.specialCategory);
+    const sourceRarity = this.normalizeText(card.sourceRarity);
+    const sourceRaritySlug = this.normalizeText(card.sourceRaritySlug);
+    const type = this.normalizeText(card.type);
+    const tokens = [rarity, category, sourceRarity, sourceRaritySlug, type].join(' ');
+
+    const isBoosterGold = tokens.includes('booster') && tokens.includes('gold');
+    const isTicketOr =
+      rarity === "ticket d'or" ||
+      rarity === 'ticket d or' ||
+      category === "ticket d'or" ||
+      category === 'ticket d or' ||
+      sourceRarity === "ticket d'or" ||
+      sourceRarity === 'ticket d or';
+    const isGagnantTicketOr =
+      tokens.includes('gagnant') && tokens.includes('ticket') && tokens.includes('or');
+
+    if (isBoosterGold) {
+      return {
+        obtainable: true,
+        boosterAvailable: true,
+        source: 'Booster Gold',
+        reason: 'Carte disponible via les boosters Gold.',
+      };
+    }
+
+    if (isTicketOr) {
+      return {
+        obtainable: true,
+        boosterAvailable: true,
+        source: '11e carte bonus',
+        reason: "Ticket d'or disponible dans le slot bonus très rare.",
+      };
+    }
+
+    if (isGagnantTicketOr) {
+      const label = affiliatedSeasonNumber
+        ? `Saison ${affiliatedSeasonNumber}`
+        : 'saison affiliée';
+
+      return {
+        obtainable: true,
+        boosterAvailable: true,
+        source: `11e carte bonus ${label}`,
+        reason:
+          "Carte gagnant Ticket d'or disponible dans le slot bonus de sa saison affiliée.",
+      };
+    }
+
+    const isSpecialPack =
+      card.specialEdition ||
+      rarity.includes('starter pack') ||
+      category.includes('starter pack') ||
+      sourceRarity.includes('starter pack') ||
+      sourceRaritySlug.includes('starter pack') ||
+      category.includes('pgw') ||
+      sourceRaritySlug.includes('pgw') ||
+      category.includes('noel') ||
+      sourceRaritySlug.includes('noel') ||
+      category.includes('gemmes') ||
+      sourceRaritySlug.includes('gemmes') ||
+      category.includes('edition speciale') ||
+      sourceRaritySlug.includes('edition speciale') ||
+      rarity.includes('carte speciale') ||
+      sourceRarity.includes('carte speciale');
+
+    if (isSpecialPack) {
+      return {
+        obtainable: false,
+        boosterAvailable: false,
+        source: 'Hors série',
+        reason: "Carte hors série non distribuée dans les boosters pour le moment.",
+      };
+    }
+
+    const isDuo = rarity === 'duo' || rarity.includes('carte duo');
+    if (isDuo) {
+      const isLegacyDuo = seasonNumber === 5;
+
+      return {
+        obtainable: isLegacyDuo,
+        boosterAvailable: isLegacyDuo,
+        source: isLegacyDuo ? 'Boosters Legacy' : 'Non configuré',
+        reason: isLegacyDuo
+          ? 'Carte Duo disponible uniquement dans les boosters/display Legacy.'
+          : 'Rareté Duo non configurée pour cette saison.',
+      };
+    }
+
+    if (seasonNumber) {
+      return {
+        obtainable: true,
+        boosterAvailable: true,
+        source: `Boosters saison ${seasonNumber}`,
+        reason: 'Carte de saison disponible dans les boosters et displays de sa saison.',
+      };
+    }
+
+    return {
+      obtainable: false,
+      boosterAvailable: false,
+      source: 'Non obtenable',
+      reason: "Aucun mode d'obtention automatique configuré.",
+    };
+  }
+
+  private normalizePositiveInt(value: unknown): number | null {
+    const num = Number(value);
+    return Number.isInteger(num) && num > 0 ? num : null;
+  }
+
+  private normalizeText(value?: string | null) {
+    return (value ?? '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[’]/g, "'")
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   private normalizeBackupScope(scope?: string): AdminBackupScope {

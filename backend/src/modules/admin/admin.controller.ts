@@ -70,6 +70,12 @@ export class AdminController {
   }
 
   @UseGuards(AdminJwtAuthGuard)
+  @Get('seasons/cards')
+  async getSeasonCardsOverview() {
+    return this.adminService.getSeasonCardsOverview();
+  }
+
+  @UseGuards(AdminJwtAuthGuard)
   @Get('economy/logs')
   async getEconomyLogs(
     @Query('days') days?: string,

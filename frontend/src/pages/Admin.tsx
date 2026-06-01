@@ -11,6 +11,7 @@ import {
   updateAdminTicketStatus,
   getAdminEconomyOverview,
   getAdminEconomyLogs,
+  getAdminSeasonCardsOverview,
   downloadAdminEconomyExport,
   adminCancelMarketTransaction,
   adminDisableMarketListing,
@@ -24,6 +25,7 @@ import {
   type AdminEconomyOverviewResponse,
   type AdminEconomyLogsResponse,
   type AdminBackupScope,
+  type AdminSeasonCardsResponse,
 } from "../api/auth";
 
 const STATUS_LABELS: Record<BugReportStatus, string> = {
@@ -239,6 +241,13 @@ export default function Admin() {
   const [ecoLogTo, setEcoLogTo] = useState("");
   const [ecoExporting, setEcoExporting] = useState<"json" | "csv" | null>(null);
   const [backupExporting, setBackupExporting] = useState<string | null>(null);
+  const [seasonCards, setSeasonCards] = useState<AdminSeasonCardsResponse | null>(null);
+  const [seasonCardsLoading, setSeasonCardsLoading] = useState(false);
+  const [seasonCardsError, setSeasonCardsError] = useState("");
+  const [seasonFilter, setSeasonFilter] = useState("all");
+  const [seasonRarityFilter, setSeasonRarityFilter] = useState("all");
+  const [seasonObtainableFilter, setSeasonObtainableFilter] = useState("all");
+  const [seasonImageFilter, setSeasonImageFilter] = useState("all");
   const [correctionLoading, setCorrectionLoading] = useState<AdminCorrectionKind | null>(null);
   const [correctionError, setCorrectionError] = useState("");
   const [correctionSuccess, setCorrectionSuccess] = useState("");
@@ -317,6 +326,20 @@ export default function Admin() {
     }
   }
 
+  async function loadSeasonCardsOverview() {
+    setSeasonCardsLoading(true);
+    setSeasonCardsError("");
+
+    try {
+      const res = await getAdminSeasonCardsOverview();
+      setSeasonCards(res);
+    } catch (err: any) {
+      setSeasonCardsError(err?.message || "Impossible de charger la gestion des saisons.");
+    } finally {
+      setSeasonCardsLoading(false);
+    }
+  }
+
   async function loadEconomyLogs(
     nextPage = ecoLogsPage,
     nextDays = ecoDays,
@@ -365,6 +388,7 @@ export default function Admin() {
   useEffect(() => {
     if (!isAdminAuthenticated) return;
     loadEconomyOverview(ecoDays).catch(() => {});
+    loadSeasonCardsOverview().catch(() => {});
     setEcoLogsPage(1);
     loadEconomyLogs(1, ecoDays).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -475,6 +499,25 @@ export default function Admin() {
     total: 0,
     totalPages: 1,
   };
+  const seasonItems = seasonCards?.items ?? [];
+  const filteredSeasonItems = useMemo(() => {
+    return seasonItems.filter((item) => {
+      if (seasonFilter !== "all" && item.seasonGroupKey !== seasonFilter) return false;
+      if (seasonRarityFilter !== "all" && item.rarity !== seasonRarityFilter) return false;
+      if (seasonObtainableFilter === "obtainable" && !item.obtainable) return false;
+      if (seasonObtainableFilter === "not_obtainable" && item.obtainable) return false;
+      if (seasonObtainableFilter === "booster" && !item.boosterAvailable) return false;
+      if (seasonImageFilter === "missing" && item.imageExists) return false;
+      if (seasonImageFilter === "ok" && !item.imageExists) return false;
+      return true;
+    });
+  }, [
+    seasonItems,
+    seasonFilter,
+    seasonRarityFilter,
+    seasonObtainableFilter,
+    seasonImageFilter,
+  ]);
 
   async function handleAdminLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -542,6 +585,13 @@ export default function Admin() {
     setEcoLogTo("");
     setEcoLogsPage(1);
     loadEconomyLogs(1, ecoDays, emptyFilters).catch(() => {});
+  }
+
+  function resetSeasonFilters() {
+    setSeasonFilter("all");
+    setSeasonRarityFilter("all");
+    setSeasonObtainableFilter("all");
+    setSeasonImageFilter("all");
   }
 
   async function handleEconomyExport(format: "json" | "csv") {
@@ -800,6 +850,7 @@ export default function Admin() {
                   onClick={() => {
                     if (activeTab === "dashboard") {
                       loadEconomyOverview(ecoDays).catch(() => {});
+                      loadSeasonCardsOverview().catch(() => {});
                     } else {
                       loadTickets(page, statusFilter, adminFilter).catch(() => {});
                     }
@@ -903,6 +954,199 @@ export default function Admin() {
                       </article>
                     ))}
                   </div>
+                </section>
+
+                <section className="adminDashboardPanel adminSeasonPanel">
+                  <div className="adminDashboardPanel__head adminSeasonHead">
+                    <div>
+                      <h3>Gestion des saisons</h3>
+                      <p className="small">
+                        Contrôle les cartes par saison, leur disponibilité dans les boosters et les images manquantes.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => loadSeasonCardsOverview().catch(() => {})}
+                      disabled={seasonCardsLoading}
+                    >
+                      {seasonCardsLoading ? "Scan..." : "Scanner"}
+                    </button>
+                  </div>
+
+                  {seasonCardsError ? <div className="adminError">{seasonCardsError}</div> : null}
+                  {seasonCardsLoading && !seasonCards ? (
+                    <div className="adminEmpty">Chargement des cartes et vérification des images...</div>
+                  ) : null}
+
+                  {seasonCards ? (
+                    <>
+                      <div className="adminSeasonStats">
+                        <article>
+                          <span>Total cartes</span>
+                          <strong>{formatNumber(seasonCards.totals.totalCards)}</strong>
+                        </article>
+                        <article className="is-ok">
+                          <span>Obtenables</span>
+                          <strong>{formatNumber(seasonCards.totals.obtainableCards)}</strong>
+                        </article>
+                        <article className="is-watch">
+                          <span>Non obtenables</span>
+                          <strong>{formatNumber(seasonCards.totals.notObtainableCards)}</strong>
+                        </article>
+                        <article className={seasonCards.totals.missingImages > 0 ? "is-danger" : "is-ok"}>
+                          <span>Images manquantes</span>
+                          <strong>{formatNumber(seasonCards.totals.missingImages)}</strong>
+                        </article>
+                      </div>
+
+                      <div className="adminSeasonSummary">
+                        {seasonCards.seasons.map((season) => (
+                          <article className="adminSeasonSummaryCard" key={season.key}>
+                            <div>
+                              <span>{season.seasonNumber ? `Saison ${season.seasonNumber}` : "Spécial"}</span>
+                              <strong>{season.label}</strong>
+                            </div>
+                            <div className="adminSeasonSummaryCard__stats">
+                              <b>{formatNumber(season.totalCards)}</b>
+                              <small>{formatNumber(season.obtainableCards)} obtenables</small>
+                              <small>{formatNumber(season.missingImages)} image(s) manquante(s)</small>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+
+                      <div className="adminFiltersBar adminFiltersBar--seasons">
+                        <label className="adminField">
+                          <span>Saison</span>
+                          <select value={seasonFilter} onChange={(e) => setSeasonFilter(e.target.value)}>
+                            <option value="all">Toutes</option>
+                            {seasonCards.seasons.map((season) => (
+                              <option key={season.key} value={season.key}>
+                                {season.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="adminField">
+                          <span>Rareté</span>
+                          <select
+                            value={seasonRarityFilter}
+                            onChange={(e) => setSeasonRarityFilter(e.target.value)}
+                          >
+                            <option value="all">Toutes</option>
+                            {seasonCards.rarities.map((rarity) => (
+                              <option key={rarity} value={rarity}>
+                                {rarity}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="adminField">
+                          <span>Obtention</span>
+                          <select
+                            value={seasonObtainableFilter}
+                            onChange={(e) => setSeasonObtainableFilter(e.target.value)}
+                          >
+                            <option value="all">Toutes</option>
+                            <option value="obtainable">Obtenables</option>
+                            <option value="not_obtainable">Non obtenables</option>
+                            <option value="booster">Disponibles dans boosters</option>
+                          </select>
+                        </label>
+
+                        <label className="adminField">
+                          <span>Images</span>
+                          <select value={seasonImageFilter} onChange={(e) => setSeasonImageFilter(e.target.value)}>
+                            <option value="all">Toutes</option>
+                            <option value="missing">Images manquantes</option>
+                            <option value="ok">Images OK</option>
+                          </select>
+                        </label>
+
+                        <div className="adminFiltersActions">
+                          <button type="button" className="btn" onClick={resetSeasonFilters}>
+                            Réinitialiser
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="adminSeasonResultLine">
+                        <strong>{formatNumber(filteredSeasonItems.length)}</strong> carte(s) affichée(s)
+                      </div>
+
+                      <div className="adminDataTableWrap adminSeasonTableWrap">
+                        <table className="adminDataTable adminSeasonTable">
+                          <thead>
+                            <tr>
+                              <th>Carte</th>
+                              <th>Saison</th>
+                              <th>Rareté</th>
+                              <th>Obtention</th>
+                              <th>Image</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredSeasonItems.length > 0 ? (
+                              filteredSeasonItems.map((card) => (
+                                <tr key={card.id}>
+                                  <td>
+                                    <div className="adminSeasonCardCell">
+                                      <img
+                                        src={toAbsoluteAssetUrl(card.imageUrl)}
+                                        alt=""
+                                        loading="lazy"
+                                        onError={(event) => {
+                                          event.currentTarget.classList.add("is-missing");
+                                        }}
+                                      />
+                                      <div>
+                                        <strong>{card.name}</strong>
+                                        <span className="adminTableSub">
+                                          #{card.displayNumber ?? card.number ?? card.id} - ID {card.id}
+                                        </span>
+                                        {card.specialCategory ? (
+                                          <span className="adminTableSub">{card.specialCategory}</span>
+                                        ) : null}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <strong>{card.seasonGroupLabel}</strong>
+                                    <span className="adminTableSub">
+                                      {card.affiliatedSeasonLabel
+                                        ? `Affiliée ${card.affiliatedSeasonLabel}`
+                                        : card.extension ?? card.season ?? "Carte standard"}
+                                    </span>
+                                  </td>
+                                  <td>{card.rarity}</td>
+                                  <td>
+                                    <span className={`adminSignalBadge ${card.obtainable ? "is-ok" : "is-watch"}`}>
+                                      {card.obtainable ? "Obtenable" : "Non obtenable"}
+                                    </span>
+                                    <span className="adminTableSub">{card.availabilitySource}</span>
+                                    <span className="adminTableSub">{card.availabilityReason}</span>
+                                  </td>
+                                  <td>
+                                    <span className={`adminSignalBadge ${card.imageExists ? "is-ok" : "is-danger"}`}>
+                                      {card.imageExists ? "Image OK" : "Manquante"}
+                                    </span>
+                                    <span className="adminTableSub">{card.imagePath ?? "Aucun chemin"}</span>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={5}>Aucune carte ne correspond aux filtres.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  ) : null}
                 </section>
 
                 {ecoError ? <div className="adminError">{ecoError}</div> : null}

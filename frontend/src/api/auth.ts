@@ -329,6 +329,59 @@ export type AdminEconomyLogsResponse = {
   };
 };
 
+export type AdminSeasonCardsResponse = {
+  generatedAt: string;
+  totals: {
+    totalCards: number;
+    obtainableCards: number;
+    notObtainableCards: number;
+    boosterAvailableCards: number;
+    missingImages: number;
+  };
+  seasons: Array<{
+    key: string;
+    label: string;
+    seasonNumber: number | null;
+    totalCards: number;
+    obtainableCards: number;
+    notObtainableCards: number;
+    boosterAvailableCards: number;
+    missingImages: number;
+    rarityCounts: Record<string, number>;
+  }>;
+  rarities: string[];
+  items: Array<{
+    id: number;
+    key: string;
+    name: string;
+    number: number | null;
+    displayNumber: string | null;
+    rarity: string;
+    type: string | null;
+    gameplayType: string | null;
+    specialEdition: boolean;
+    specialCategory: string | null;
+    sourceRarity: string | null;
+    sourceRaritySlug: string | null;
+    season: string | null;
+    seasonNumber: number | null;
+    extension: string | null;
+    seasonGroupKey: string;
+    seasonGroupLabel: string;
+    affiliatedSeason: string | null;
+    affiliatedSeasonNumber: number | null;
+    affiliatedSeasonLabel: string | null;
+    imageUrl: string;
+    imageExists: boolean;
+    imageStatus: 'ok' | 'missing' | 'external' | string;
+    imagePath: string | null;
+    obtainable: boolean;
+    boosterAvailable: boolean;
+    availabilitySource: string;
+    availabilityReason: string;
+  }>;
+};
+
 export async function login(dto: LoginDto) {
   return apiFetch<LoginResponse>('/auth/login', {
     method: 'POST',
@@ -456,6 +509,12 @@ export async function getAdminEconomyOverview(days = 7) {
       method: 'GET',
     },
   );
+}
+
+export async function getAdminSeasonCardsOverview() {
+  return adminFetch<AdminSeasonCardsResponse>('/admin/seasons/cards', {
+    method: 'GET',
+  });
 }
 
 export async function getAdminEconomyLogs(params?: {
