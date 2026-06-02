@@ -1,5 +1,40 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Environment files
+.env
+.env.*
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build and cache folders
+coverage/
+backend/coverage/
+frontend/coverage/
+frontend/.vite/
+.deploy/
+tmp/
+
 # Production archives
 wankul-tcg-production.zip
+wankul-tcg-hostinger-node.zip
+wankul-tcg-hostinger-app.zip
+wankul-tcg-hostinger-light.zip
+wankul-tcg-hostinger-light.tgz
+wankul-tcg-card-assets.zip
+*.tar.gz
+*.tgz
 
 # Deployment SQL helpers
 database/create-admin-account.sql
