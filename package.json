@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node app.js",
-    "build": "npx nest build",
+    "build": "node ./node_modules/@nestjs/cli/bin/nest.js build",
     "seed:cards": "ts-node -r tsconfig-paths/register src/database/seed-cards.ts",
     "db:backup": "node scripts/db-backup.js",
     "db:restore": "node scripts/db-restore.js",
