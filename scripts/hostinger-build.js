@@ -1,4 +1,4 @@
-const { existsSync } = require('fs');
+const { copyFileSync, existsSync, mkdirSync } = require('fs');
 const { join } = require('path');
 const { spawnSync } = require('child_process');
 
@@ -41,5 +41,18 @@ if (!existsSync(join(root, 'dist/main.js'))) {
   console.error('[hostinger-build] Build finished but dist/main.js was not created.');
   process.exit(1);
 }
+
+const cardsSource = join(root, 'data', 'cards.json');
+const cardsTargetDir = join(root, 'dist', 'data');
+const cardsTarget = join(cardsTargetDir, 'cards.json');
+
+if (!existsSync(cardsSource)) {
+  console.error('[hostinger-build] Missing required file: data/cards.json');
+  process.exit(1);
+}
+
+mkdirSync(cardsTargetDir, { recursive: true });
+copyFileSync(cardsSource, cardsTarget);
+console.log('[hostinger-build] Copied data/cards.json to dist/data/cards.json.');
 
 console.log('[hostinger-build] Build completed successfully.');

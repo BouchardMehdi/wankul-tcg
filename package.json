@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node dist/main.js",
     "build": "node scripts/hostinger-build.js",
-    "seed:cards": "ts-node -r tsconfig-paths/register src/database/seed-cards.ts",
+    "seed:cards": "node dist/database/seed-cards.js",
     "db:backup": "node scripts/db-backup.js",
     "db:restore": "node scripts/db-restore.js",
     "economy:export": "node scripts/export-economy.js",

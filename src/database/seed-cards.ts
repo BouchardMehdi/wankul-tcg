@@ -140,10 +140,15 @@ async function main() {
 
   const dataSource = app.get(DataSource);
 
-  // ✅ Chemin JSON (chez toi: backend/data/cards.json)
-  const filePath = path.join(process.cwd(), 'data', 'cards.json');
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`cards.json introuvable: ${filePath}`);
+  const filePathCandidates = [
+    path.join(process.cwd(), 'data', 'cards.json'),
+    path.join(process.cwd(), 'dist', 'data', 'cards.json'),
+    path.join(__dirname, '..', 'data', 'cards.json'),
+  ];
+  const filePath = filePathCandidates.find((candidate) => fs.existsSync(candidate));
+
+  if (!filePath) {
+    throw new Error(`cards.json introuvable. Chemins testés: ${filePathCandidates.join(', ')}`);
   }
 
   const raw = fs.readFileSync(filePath, 'utf-8');
