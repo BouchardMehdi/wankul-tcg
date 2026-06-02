@@ -2,16 +2,18 @@
   "name": "wankul-tcg",
   "version": "1.0.0",
   "private": true,
-  "main": "backend/dist/main.js",
+  "main": "app.js",
   "engines": {
     "node": "22.x"
   },
   "scripts": {
-    "start": "node backend/dist/main.js",
-    "build": "npm --prefix frontend install && npm --prefix frontend run build && npm --prefix backend install && npm --prefix backend run build",
-    "build:backend": "npm --prefix backend install && npm --prefix backend run build",
-    "build:frontend": "npm --prefix frontend install && npm --prefix frontend run build",
-    "seed:cards": "npm --prefix backend run seed:cards"
+    "start": "node app.js",
+    "build": "nest build",
+    "seed:cards": "ts-node -r tsconfig-paths/register src/database/seed-cards.ts",
+    "db:backup": "node scripts/db-backup.js",
+    "db:restore": "node scripts/db-restore.js",
+    "economy:export": "node scripts/export-economy.js",
+    "push:generate-vapid": "web-push generate-vapid-keys"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

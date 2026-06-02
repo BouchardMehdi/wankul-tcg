@@ -1,0 +1,23 @@
+export type RarityEconomicRule = {
+    rarity: string;
+    aliases?: string[];
+    baseValue: number;
+    floorPrice: number;
+    ceilingPrice: number;
+    quickSellRate: number;
+    duplicateRewardRate: number;
+    duplicateRewardMin: number;
+    duplicateRewardMax: number;
+    newRewardRate: number;
+    newRewardMin: number;
+    newRewardMax: number;
+};
+export declare const DEFAULT_MARKET_BASE_VALUE = 15;
+export declare const MARKET_KEEP_MIN_COPIES = 1;
+export declare const MARKET_PRICE_SMOOTHING_WEIGHT = 0.65;
+export declare const MARKET_DAILY_MAX_UP_PCT = 0.08;
+export declare const MARKET_DAILY_MAX_DOWN_PCT = 0.08;
+export declare const MARKET_SMOOTHING_HISTORY_LIMIT = 7;
+export declare function normalizeMarketRarity(rarity: string): string;
+export declare function getRarityEconomicRule(rarity: string): RarityEconomicRule;
+export declare const MARKET_RARITY_BASE_VALUES: Record<string, number>;

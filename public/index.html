@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="shortcut icon" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#070a12" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Wankul TCG" />
+    <meta
+      name="description"
+      content="Wankul TCG, l'experience de collection, d'ouverture et de market en PWA."
+    />
+    <script>
+      (() => {
+        try {
+          const raw = localStorage.getItem("wankul_app_settings");
+          const settings = raw ? JSON.parse(raw) : {};
+          const mode = settings.themeMode || "system";
+          const systemLight = window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: light)").matches;
+          const theme = mode === "system" ? (systemLight ? "light" : "dark") : mode;
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.dataset.themeMode = mode;
+          document.documentElement.style.colorScheme = theme;
+          const metaTheme = document.querySelector('meta[name="theme-color"]');
+          if (metaTheme) metaTheme.content = theme === "light" ? "#f4eddf" : "#070a12";
+        } catch {
+          document.documentElement.dataset.theme = "dark";
+          document.documentElement.dataset.themeMode = "system";
+        }
+      })();
+    </script>
+    <style>
+      #root:empty {
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 18% 10%, rgba(155, 92, 255, 0.22), transparent 34%),
+          radial-gradient(circle at 86% 12%, rgba(76, 201, 240, 0.18), transparent 34%),
+          #070a12;
+      }
+      [data-theme="light"] #root:empty {
+        background:
+          radial-gradient(circle at 18% 10%, rgba(109, 78, 255, 0.13), transparent 34%),
+          radial-gradient(circle at 86% 12%, rgba(0, 144, 169, 0.16), transparent 34%),
+          #f4eddf;
+      }
+      #root:empty::before {
+        content: "Wankul TCG";
+        padding: 18px 22px;
+        border-radius: 22px;
+        color: rgba(240,245,255,0.96);
+        font: 950 22px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: linear-gradient(135deg, rgba(255,77,109,0.95), rgba(155,92,255,0.95));
+        box-shadow: 0 22px 60px rgba(0,0,0,0.36);
+      }
+    </style>
+    <title>Wankul TCG</title>
+    <script type="module" crossorigin src="/assets/index-BZDtA37k.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DMzGxkQ8.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

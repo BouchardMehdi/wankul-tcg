@@ -1,0 +1,31 @@
+import { User } from '../users/user.entity';
+import { BugReportStatusHistory } from './bug-report-status-history.entity';
+export type BugReportStatus = 'open' | 'investigating' | 'planned' | 'fixed' | 'closed' | 'rejected';
+export declare class BugReport {
+    id: number;
+    user: User;
+    userId: number;
+    usernameSnapshot: string;
+    emailSnapshot: string;
+    category: string;
+    page: string;
+    feature: string;
+    priority: string;
+    description: string;
+    reproductionSteps: string | null;
+    currentUrl: string | null;
+    browserInfo: string | null;
+    screenshotUrl: string | null;
+    status: BugReportStatus;
+    resolutionNote: string | null;
+    treatedAt: Date | null;
+    treatedBy: string | null;
+    fixedAt: Date | null;
+    fixedBy: string | null;
+    closedAt: Date | null;
+    closedBy: string | null;
+    lastStatusChangedBy: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    histories: BugReportStatusHistory[];
+}
