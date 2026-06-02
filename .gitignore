@@ -1,0 +1,17 @@
+# Production archives
+wankul-tcg-production.zip
+
+# Deployment SQL helpers
+database/create-admin-account.sql
+database/production-schema.sql
+
+# Professional documents
+DP_Bouchard_Mehdi.docx
+
+# Generated gameplay extraction files
+backend/data/cards-gameplay.json
+backend/scripts/generate_gameplay_cards.py
+
+# Python cache
+__pycache__/
+*.py[cod]
