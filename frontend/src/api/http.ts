@@ -2,9 +2,23 @@ function getDefaultApiOrigin() {
   return import.meta.env.DEV ? "http://localhost:3000" : "";
 }
 
-export const API_ORIGIN = (import.meta.env.VITE_API_URL ?? getDefaultApiOrigin())
-  .replace(/\/$/, "")
-  .replace(/\/api\/?$/, "");
+function isLocalhostOrigin(origin: string) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(origin);
+}
+
+function resolveApiOrigin() {
+  const configuredOrigin = (import.meta.env.VITE_API_URL ?? "").trim();
+  const rawOrigin = configuredOrigin || getDefaultApiOrigin();
+  const normalizedOrigin = rawOrigin.replace(/\/$/, "").replace(/\/api\/?$/, "");
+
+  if (!import.meta.env.DEV && isLocalhostOrigin(normalizedOrigin)) {
+    return "";
+  }
+
+  return normalizedOrigin;
+}
+
+export const API_ORIGIN = resolveApiOrigin();
 export const API_BASE = API_ORIGIN;
 
 type ApiFetchOptions = {
