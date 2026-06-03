@@ -8,6 +8,7 @@ import AppNavbar from "../components/AppNavbar";
 import CurrencyAmount, { CurrencyIcon } from "../components/CurrencyAmount";
 import SmartImage from "../components/SmartImage";
 import { fetchOwnedCollection } from "../api/collection";
+import { API_ORIGIN } from "../api/http";
 import { fetchAllCards, type CardDto } from "../api/cards";
 import {
   buyMarketListing,
@@ -104,7 +105,7 @@ type MarketPulse = {
   hottestCardName: string | null;
 };
 
-const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_BASE = API_ORIGIN;
 const PREVIEW_COUNT = 3;
 const HISTORY_PAGE_SIZE = 10;
 const DAY_MS = 24 * 60 * 60 * 1000;

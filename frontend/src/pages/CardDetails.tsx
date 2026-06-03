@@ -13,6 +13,7 @@ import "../styles/CardDetails.css";
 import AppNavbar from "../components/AppNavbar";
 import CurrencyAmount from "../components/CurrencyAmount";
 import SmartImage from "../components/SmartImage";
+import { API_ORIGIN } from "../api/http";
 import { fetchOwnedCollection } from "../api/collection";
 import { fetchAllCards, type CardDto } from "../api/cards";
 import {
@@ -38,7 +39,7 @@ import { readAppSettings, subscribeAppSettings } from "../utils/appSettings";
 import { getCardHoloRarity, isHoloRarityKey } from "../utils/cardHolo";
 import { playSoundEffect, playUiErrorSound, primeSound } from "../utils/sound";
 
-const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_BASE = API_ORIGIN;
 const RANGES: Array<{ value: CardPriceHistoryRange; label: string }> = [
   { value: "24H", label: "24h" },
   { value: "7D", label: "7 jours" },

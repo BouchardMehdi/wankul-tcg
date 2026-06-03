@@ -10,6 +10,7 @@ import CurrencyAmount from "../components/CurrencyAmount";
 import SmartImage from "../components/SmartImage";
 
 import { useAuth } from "../auth/AuthContext";
+import { API_ORIGIN } from "../api/http";
 import { getEconomyMe, type EconomySnapshot } from "../api/economy";
 import { openBooster, openDisplay } from "../api/booster";
 import { readAppSettings, subscribeAppSettings, writeLastNewCardIds } from "../utils/appSettings";
@@ -23,8 +24,7 @@ import { warmCardImageCache } from "../utils/pwaCache";
 import { playOpeningRevealSound, playSoundEffect, primeSound } from "../utils/sound";
 import { getSeasonBoosterImage, getSeasonDisplayImage } from "../utils/seasonAssets";
 
-const API_BASE_RAW: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
-const API_BASE = API_BASE_RAW.replace(/\/api\/?$/, "");
+const API_BASE = API_ORIGIN;
 
 const CARD_BACK = new URL("../assets/wankul_back.webp", import.meta.url).href;
 const GOLD_BOOSTER_IMG = new URL("../assets/boosters/booster_gold.png", import.meta.url).href;

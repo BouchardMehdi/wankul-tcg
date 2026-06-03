@@ -5,6 +5,7 @@ import "../styles/PwaPreferences.css";
 
 import AppNavbar from "../components/AppNavbar";
 import { useAuth } from "../auth/AuthContext";
+import { API_ORIGIN } from "../api/http";
 import { fetchAllCards } from "../api/cards";
 import { fetchOwnedCollection } from "../api/collection";
 import {
@@ -120,8 +121,7 @@ const NOTIFICATION_ROWS: Array<{
 ];
 
 function getApiOrigin() {
-  const raw = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
-  return raw.replace(/\/api\/?$/, "");
+  return API_ORIGIN;
 }
 
 function toAbsoluteAssetUrl(url?: string | null) {

@@ -8,6 +8,7 @@ import CurrencyAmount from "../components/CurrencyAmount";
 import MarketPriceChart from "../components/MarketPriceChart";
 import SmartImage from "../components/SmartImage";
 
+import { API_ORIGIN } from "../api/http";
 import { fetchAllCards, type CardDto } from "../api/cards";
 import { fetchOwnedCollection, type OwnedCardRow } from "../api/collection";
 import { getMySellableCards, quickSellCard, type SellableCardRow } from "../api/market";
@@ -30,7 +31,7 @@ import { Fancybox } from "@fancyapps/ui";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
 const PAGE_SIZE = 25;
-const API_BASE: string = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const API_BASE = API_ORIGIN;
 const COLLECTION_META_KEY = "wankul_collection_meta_v1";
 
 type Filters = {

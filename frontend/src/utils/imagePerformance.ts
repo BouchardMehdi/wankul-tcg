@@ -1,3 +1,5 @@
+import { API_ORIGIN } from "../api/http";
+
 type PreloadPriority = "high" | "low" | "auto";
 
 type PreloadOptions = {
@@ -111,8 +113,7 @@ export function resolveImageAssetUrl(imageUrl?: string | null) {
   if (!url) return "";
   if (/^https?:\/\//i.test(url)) return url;
 
-  const rawBase = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-  const assetBase = rawBase.replace(/\/api\/?$/, "");
+  const assetBase = API_ORIGIN;
   if (url.startsWith("/")) return `${assetBase}${url}`;
   return `${assetBase}/${url}`;
 }

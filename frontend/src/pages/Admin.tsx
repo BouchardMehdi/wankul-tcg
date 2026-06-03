@@ -5,6 +5,7 @@ import "../styles.css";
 import "../styles/Dashboard.css";
 import "../styles/Admin.css";
 import { useAuth } from "../auth/AuthContext";
+import { API_ORIGIN } from "../api/http";
 import {
   adminLogin,
   getAdminTickets,
@@ -86,8 +87,7 @@ function formatDay(value?: string | null) {
 }
 
 function getApiOrigin() {
-  const raw = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
-  return raw.replace(/\/api\/?$/, "");
+  return API_ORIGIN;
 }
 
 function toAbsoluteAssetUrl(url?: string | null) {

@@ -1,6 +1,10 @@
-export const API_ORIGIN = (import.meta.env.VITE_API_URL ?? "http://localhost:3000")
+function getDefaultApiOrigin() {
+  return import.meta.env.DEV ? "http://localhost:3000" : "";
+}
+
+export const API_ORIGIN = (import.meta.env.VITE_API_URL ?? getDefaultApiOrigin())
   .replace(/\/$/, "")
-  .replace(/\/api$/, "");
+  .replace(/\/api\/?$/, "");
 export const API_BASE = API_ORIGIN;
 
 type ApiFetchOptions = {

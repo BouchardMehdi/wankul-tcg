@@ -32,6 +32,7 @@ import {
   type BugReportListItem,
   type BugReportStatus,
 } from "../api/auth";
+import { API_ORIGIN } from "../api/http";
 
 type SelectSettingKey = "collectionLayout" | "themeMode";
 type ToggleSettingKey = Exclude<keyof AppSettings, SelectSettingKey | "compactCollectionGrid">;
@@ -273,8 +274,7 @@ function formatDate(value?: string | null) {
 }
 
 function getApiOrigin() {
-  const raw = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
-  return raw.replace(/\/api\/?$/, "");
+  return API_ORIGIN;
 }
 
 function toAbsoluteAssetUrl(url?: string | null) {
