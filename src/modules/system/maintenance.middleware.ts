@@ -8,6 +8,7 @@ import { readMaintenanceStatus } from './maintenance.config';
 const ALLOWED_API_PATHS = new Set([
   '/system/status',
   '/auth/login',
+  '/auth/google',
   '/auth/refresh',
   '/admin/session/login',
   '/admin/session/refresh',
