@@ -20,6 +20,7 @@ import Admin from "./pages/Admin";
 import CardDetails from "./pages/CardDetails";
 import PwaPreferences from "./pages/PwaPreferences";
 import Profile from "./pages/Profile";
+import NotFound from "./pages/NotFound";
 import PwaNotificationManager from "./components/PwaNotificationManager";
 import PwaCacheManager from "./components/PwaCacheManager";
 import InAppNotificationCenter from "./components/InAppNotificationCenter";
@@ -204,7 +205,7 @@ export default function App() {
 
         <Route
           path="*"
-          element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />}
+          element={<NotFound />}
         />
       </Routes>
     </>

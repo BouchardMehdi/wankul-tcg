@@ -16,7 +16,8 @@ type NavPage =
   | "settings"
   | "profile"
   | "opening"
-  | "admin";
+  | "admin"
+  | "not-found";
 
 type NavItem = {
   key: "dashboard" | "booster" | "gameplay" | "collection" | "market" | "settings" | "admin";

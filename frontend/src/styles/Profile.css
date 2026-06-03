@@ -582,6 +582,14 @@
   background: linear-gradient(135deg, color-mix(in srgb, var(--badge-main) 78%, #ffffff), #ffffff);
 }
 
+.profileBadgeItem__meta span:last-child .currencyAmount,
+.profileBadgeItem__meta span:last-child .currencyAmount__value,
+.profileBadgeCard__reward .currencyAmount,
+.profileBadgeCard__reward .currencyAmount__value {
+  color: #08111f;
+  -webkit-text-fill-color: #08111f;
+}
+
 .profileBadgeItem__bottom {
   justify-content: space-between;
 }
