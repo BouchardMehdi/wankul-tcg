@@ -1,5 +1,5 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import { useEffect } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 import { useAuth } from "./auth/AuthContext";
 
@@ -21,6 +21,8 @@ import CardDetails from "./pages/CardDetails";
 import PwaPreferences from "./pages/PwaPreferences";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import Maintenance from "./pages/Maintenance";
+import { getSystemStatus, type SystemStatusResponse } from "./api/system";
 import PwaNotificationManager from "./components/PwaNotificationManager";
 import PwaCacheManager from "./components/PwaCacheManager";
 import InAppNotificationCenter from "./components/InAppNotificationCenter";
@@ -60,10 +62,65 @@ function AdminRoleRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, role } = useAuth();
+  const location = useLocation();
+  const [systemStatus, setSystemStatus] = useState<SystemStatusResponse | null>(null);
+  const [systemLoading, setSystemLoading] = useState(true);
 
-  if (isLoading) {
+  useEffect(() => {
+    let mounted = true;
+
+    async function refreshSystemStatus(showLoader = false) {
+      if (showLoader) {
+        setSystemLoading(true);
+      }
+
+      try {
+        const status = await getSystemStatus();
+        if (mounted) setSystemStatus(status);
+      } catch {
+        if (mounted) {
+          setSystemStatus({
+            maintenanceMode: false,
+            allowAdminBypass: true,
+            message: "",
+            eta: null,
+            sealLabel: "",
+            sealText: "",
+          });
+        }
+      } finally {
+        if (mounted) setSystemLoading(false);
+      }
+    }
+
+    void refreshSystemStatus(true);
+    const intervalId = window.setInterval(() => {
+      void refreshSystemStatus(false);
+    }, 60_000);
+
+    return () => {
+      mounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  if (isLoading || systemLoading) {
     return <PwaSplash />;
+  }
+
+  const maintenanceActive =
+    systemStatus?.maintenanceMode === true &&
+    role !== "admin" &&
+    location.pathname !== "/login";
+
+  if (maintenanceActive) {
+    return (
+      <>
+        <ThemeSync />
+        <Maintenance status={systemStatus} />
+      </>
+    );
   }
 
   return (

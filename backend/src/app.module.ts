@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -19,6 +19,8 @@ import { MarketModule } from './modules/market/market.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { PushModule } from './modules/push/push.module';
 import { ProfileModule } from './modules/profile/profile.module';
+import { SystemModule } from './modules/system/system.module';
+import { MaintenanceMiddleware } from './modules/system/maintenance.middleware';
 
 @Module({
   imports: [
@@ -55,6 +57,12 @@ import { ProfileModule } from './modules/profile/profile.module';
     AdminModule,
     PushModule,
     ProfileModule,
+    SystemModule,
   ],
+  providers: [MaintenanceMiddleware],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(MaintenanceMiddleware).forRoutes('*');
+  }
+}

@@ -1,0 +1,349 @@
+.maintenancePage {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+
+.maintenanceCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(320px, 0.72fr);
+  gap: clamp(1.4rem, 4vw, 3.2rem);
+  width: min(100%, 1120px);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: clamp(28px, 4vw, 44px);
+  padding: clamp(1.4rem, 4vw, 4rem);
+  background:
+    radial-gradient(circle at 12% 10%, color-mix(in srgb, var(--a-pink) 28%, transparent), transparent 34%),
+    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--a-cyan) 22%, transparent), transparent 34%),
+    radial-gradient(circle at 48% 112%, color-mix(in srgb, var(--a-gold) 18%, transparent), transparent 44%),
+    linear-gradient(145deg, var(--panel), var(--panel2));
+  box-shadow: var(--shadow-md);
+}
+
+.maintenanceCard::before {
+  content: "";
+  position: absolute;
+  inset: 16px;
+  border: 1px solid color-mix(in srgb, var(--a-gold) 18%, transparent);
+  border-radius: calc(clamp(28px, 4vw, 44px) - 10px);
+  pointer-events: none;
+}
+
+.maintenanceCard__copy,
+.maintenanceCard__visual {
+  position: relative;
+  z-index: 1;
+}
+
+.maintenanceTopline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.72rem;
+  margin-bottom: clamp(1.2rem, 3vw, 2rem);
+}
+
+.maintenanceBrand {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 0;
+}
+
+.maintenanceBrand__logo {
+  width: clamp(132px, 16vw, 190px);
+  height: auto;
+}
+
+.maintenanceBrand__logo--black,
+[data-theme="light"] .maintenanceBrand__logo--white {
+  display: none;
+}
+
+[data-theme="light"] .maintenanceBrand__logo--black {
+  display: block;
+}
+
+.maintenanceCard__kicker {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-bottom: 0;
+  border: 1px solid color-mix(in srgb, var(--a-gold) 46%, var(--border));
+  border-radius: 999px;
+  padding: 0.46rem 0.78rem;
+  background: color-mix(in srgb, var(--a-gold) 13%, var(--panel));
+  color: var(--a-gold);
+  font-size: 0.76rem;
+  font-weight: 950;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.maintenanceCard h1 {
+  max-width: 720px;
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(3.2rem, 8vw, 7.2rem);
+  line-height: 0.88;
+  letter-spacing: -0.08em;
+}
+
+.maintenanceCard p {
+  max-width: 620px;
+  margin: 1.25rem 0 0;
+  color: var(--text2);
+  font-size: clamp(1rem, 2vw, 1.18rem);
+  line-height: 1.72;
+}
+
+.maintenanceEta {
+  width: fit-content;
+  margin-top: 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--a-cyan) 34%, var(--border));
+  border-radius: 18px;
+  padding: 0.8rem 1rem;
+  background: color-mix(in srgb, var(--a-cyan) 10%, var(--panel));
+}
+
+.maintenanceEta span {
+  display: block;
+  margin-bottom: 0.24rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.maintenanceEta strong {
+  color: var(--text);
+}
+
+.maintenanceActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 1.6rem;
+}
+
+.maintenanceActions .btn {
+  min-width: 154px;
+  height: 46px;
+}
+
+.maintenanceNotes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: clamp(1.4rem, 3vw, 2.2rem);
+}
+
+.maintenanceNotes div {
+  min-height: 100px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.95rem;
+  background: color-mix(in srgb, var(--panel2) 82%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+
+.maintenanceNotes span {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.maintenanceNotes strong {
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.maintenanceCard__visual {
+  min-height: clamp(420px, 46vw, 580px);
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+
+.maintenanceGlow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(44px);
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+.maintenanceGlow--pink {
+  inset: 12% auto auto 8%;
+  width: 220px;
+  height: 220px;
+  background: var(--a-pink);
+}
+
+.maintenanceGlow--cyan {
+  right: 0;
+  bottom: 12%;
+  width: 260px;
+  height: 260px;
+  background: var(--a-cyan);
+}
+
+.maintenancePack {
+  position: relative;
+  width: min(100%, 430px);
+  height: min(78vw, 430px);
+  display: grid;
+  place-items: center;
+}
+
+.maintenancePack__booster {
+  position: absolute;
+  object-fit: contain;
+  filter: drop-shadow(0 28px 34px rgba(0, 0, 0, 0.34));
+}
+
+.maintenancePack__booster--legacy {
+  z-index: 3;
+  max-width: none;
+  width: clamp(376px, 39vw, 504px);
+  height: clamp(708px, 80vw, 1032px);
+  transform: translate(26px, -4px) rotate(7deg);
+}
+
+.maintenancePack__booster--battle {
+  z-index: 2;
+  width: clamp(128px, 13vw, 168px);
+  height: clamp(260px, 27vw, 344px);
+  transform: translate(-104px, 24px) rotate(-14deg);
+  opacity: 0.86;
+}
+
+.maintenancePack__booster--stellar {
+  z-index: 1;
+  width: clamp(128px, 13vw, 168px);
+  height: clamp(260px, 27vw, 344px);
+  transform: translate(122px, 34px) rotate(16deg);
+  opacity: 0.78;
+}
+
+.maintenanceSeal {
+  position: absolute;
+  right: 4%;
+  bottom: 9%;
+  width: min(72%, 250px);
+  border: 1px solid color-mix(in srgb, var(--a-gold) 42%, var(--border));
+  border-radius: 22px;
+  padding: 1rem;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--a-gold) 16%, var(--panel)), color-mix(in srgb, var(--panel2) 88%, transparent));
+  box-shadow: var(--shadow-sm);
+  transform: rotate(-2deg);
+}
+
+.maintenanceSeal span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--a-gold);
+  font-size: 0.74rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.maintenanceSeal strong {
+  color: var(--text);
+}
+
+[data-theme="light"] .maintenanceCard {
+  background:
+    radial-gradient(circle at 12% 10%, color-mix(in srgb, var(--a-pink) 18%, transparent), transparent 34%),
+    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--a-cyan) 16%, transparent), transparent 34%),
+    radial-gradient(circle at 48% 112%, color-mix(in srgb, var(--a-gold) 16%, transparent), transparent 44%),
+    linear-gradient(145deg, rgba(255, 252, 244, 0.94), rgba(244, 233, 213, 0.84));
+}
+
+[data-theme="light"] .maintenanceNotes div,
+[data-theme="light"] .maintenanceSeal,
+[data-theme="light"] .maintenanceEta {
+  background: rgba(255, 250, 239, 0.76);
+}
+
+@media (max-width: 960px) {
+  .maintenanceCard {
+    grid-template-columns: 1fr;
+  }
+
+  .maintenanceNotes {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .maintenancePage {
+    place-items: start center;
+    padding: 1rem;
+  }
+
+  .maintenanceCard {
+    border-radius: 28px;
+    padding: 1.15rem;
+  }
+
+  .maintenanceCard::before {
+    inset: 10px;
+    border-radius: 20px;
+  }
+
+  .maintenanceCard h1 {
+    font-size: clamp(3rem, 17vw, 4.8rem);
+  }
+
+  .maintenanceActions .btn {
+    flex: 1 1 100%;
+  }
+
+  .maintenanceCard__visual {
+    min-height: 340px;
+  }
+
+  .maintenancePack {
+    width: min(100%, 330px);
+    height: 300px;
+  }
+
+  .maintenancePack__booster--legacy {
+    width: 276px;
+    height: 612px;
+    transform: translate(12px, 0) rotate(7deg);
+  }
+
+  .maintenancePack__booster--battle,
+  .maintenancePack__booster--stellar {
+    width: 92px;
+    height: 204px;
+  }
+
+  .maintenancePack__booster--battle {
+    transform: translate(-86px, 20px) rotate(-14deg);
+  }
+
+  .maintenancePack__booster--stellar {
+    transform: translate(92px, 24px) rotate(16deg);
+  }
+
+  .maintenanceSeal {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    margin-top: -22px;
+    transform: none;
+  }
+}
