@@ -5,6 +5,14 @@ import "../styles/Login.css";
 import { useAuth } from "../auth/AuthContext";
 import { apiFetch } from "../api/http";
 import { playSoundEffect, playUiErrorSound, primeSound } from "../utils/sound";
+import GoogleAuthButton from "../components/GoogleAuthButton";
+
+type LoginSessionResponse = {
+  access_token?: string;
+  refresh_token?: string;
+  token?: string;
+  accessToken?: string;
+};
 
 export default function Login() {
   const navigate = useNavigate();
@@ -14,29 +22,28 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  const completeLogin = (data: LoginSessionResponse) => {
+    const token = data.access_token ?? data.token ?? data.accessToken;
+    if (!token) throw new Error("Token manquant dans la réponse du serveur");
+
+    setToken(token, data.refresh_token);
+    playSoundEffect("auth.login-success");
+    navigate("/dashboard", { replace: true });
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     void primeSound();
 
     try {
-      const data = await apiFetch<{
-        access_token?: string;
-        refresh_token?: string;
-        token?: string;
-        accessToken?: string;
-      }>("/auth/login", {
+      const data = await apiFetch<LoginSessionResponse>("/auth/login", {
         method: "POST",
         body: { username, password },
         auth: false,
       });
 
-      const token = data.access_token ?? data.token ?? data.accessToken;
-      if (!token) throw new Error("Token manquant dans la réponse du serveur");
-
-      setToken(token, data.refresh_token);
-      playSoundEffect("auth.login-success");
-      navigate("/dashboard", { replace: true });
+      completeLogin(data);
     } catch (err: any) {
       playUiErrorSound();
       setError(err?.message || "Erreur inconnue");
@@ -51,6 +58,22 @@ export default function Login() {
         </Link>
 
         <h1>Connexion</h1>
+
+        <GoogleAuthButton
+          text="signin_with"
+          onSuccess={(session) => {
+            setError("");
+            completeLogin(session);
+          }}
+          onError={(message) => {
+            playUiErrorSound();
+            setError(message);
+          }}
+        />
+
+        <div className="auth-divider">
+          <span>ou avec ton compte Wankul</span>
+        </div>
 
         <form onSubmit={handleLogin} className="auth-form">
           <div className="form-group">

@@ -3,9 +3,20 @@ import { Link, useNavigate } from "react-router-dom";
 import "../styles.css";
 import "../styles/Register.css";
 import { apiFetch } from "../api/http";
+import { useAuth } from "../auth/AuthContext";
+import GoogleAuthButton from "../components/GoogleAuthButton";
+import { playSoundEffect, playUiErrorSound } from "../utils/sound";
+
+type RegisterSessionResponse = {
+  access_token?: string;
+  refresh_token?: string;
+  token?: string;
+  accessToken?: string;
+};
 
 export default function Register() {
   const navigate = useNavigate();
+  const { setToken } = useAuth();
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -15,6 +26,15 @@ export default function Register() {
   const [code, setCode] = useState("");
 
   const [error, setError] = useState("");
+
+  const completeGoogleRegister = (data: RegisterSessionResponse) => {
+    const token = data.access_token ?? data.token ?? data.accessToken;
+    if (!token) throw new Error("Token manquant dans la réponse du serveur");
+
+    setToken(token, data.refresh_token);
+    playSoundEffect("auth.login-success");
+    navigate("/dashboard", { replace: true });
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +80,22 @@ export default function Register() {
         {step === "register" ? (
           <>
             <h1>Inscription</h1>
+
+            <GoogleAuthButton
+              text="signup_with"
+              onSuccess={(session) => {
+                setError("");
+                completeGoogleRegister(session);
+              }}
+              onError={(message) => {
+                playUiErrorSound();
+                setError(message);
+              }}
+            />
+
+            <div className="auth-divider">
+              <span>ou crée ton compte Wankul</span>
+            </div>
 
             <form onSubmit={handleRegister} className="auth-form">
               <div className="form-group">

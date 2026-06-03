@@ -250,6 +250,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `username` varchar(40) NOT NULL,
   `email` varchar(255) NOT NULL,
   `passwordHash` varchar(255) NOT NULL,
+  `google_id` varchar(255) DEFAULT NULL,
+  `auth_provider` varchar(24) NOT NULL DEFAULT 'local',
   `createdAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `emailVerified` tinyint NOT NULL DEFAULT '0',
   `emailVerificationCodeHash` varchar(64) DEFAULT NULL,
@@ -260,7 +262,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `adminPasswordHash` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `IDX_fe0bb3f6520ee0469504521e71` (`username`),
-  UNIQUE KEY `IDX_97672ac88f789774dd47f7c8be` (`email`)
+  UNIQUE KEY `IDX_97672ac88f789774dd47f7c8be` (`email`),
+  UNIQUE KEY `IDX_users_google_id` (`google_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --

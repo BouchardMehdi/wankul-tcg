@@ -1,6 +1,7 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 export type UserRole = 'player' | 'admin';
+export type UserAuthProvider = 'local' | 'google';
 
 @Entity('users')
 export class User {
@@ -15,6 +16,12 @@ export class User {
 
   @Column()
   passwordHash!: string;
+
+  @Column({ name: 'google_id', type: 'varchar', length: 255, nullable: true, unique: true })
+  googleId!: string | null;
+
+  @Column({ name: 'auth_provider', type: 'varchar', length: 24, default: 'local' })
+  authProvider!: UserAuthProvider;
 
   @CreateDateColumn()
   createdAt!: Date;

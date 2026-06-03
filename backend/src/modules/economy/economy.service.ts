@@ -216,6 +216,44 @@ export class EconomyService {
     }
   }
 
+  async grantSignupBonusIfNeeded(userId: number) {
+    const row = await this.ensure(userId);
+    const amount = ECONOMY_RULES.signupBonus;
+
+    if (row.signupBonusGranted) {
+      return {
+        granted: false,
+        amount,
+        credits: row.credits,
+      };
+    }
+
+    row.credits += amount;
+    row.signupBonusGranted = 1;
+    await this.economyRepo.save(row);
+
+    await this.antiAbuseService.logAction({
+      userId,
+      action: 'SIGNUP_BONUS',
+      status: 'allowed',
+      severity: 'info',
+      targetType: 'user',
+      targetId: userId,
+      valueCredits: amount,
+      reason: 'signup_verified',
+      metadata: {
+        amount,
+        balanceAfter: row.credits,
+      },
+    });
+
+    return {
+      granted: true,
+      amount,
+      credits: row.credits,
+    };
+  }
+
   async addFreeBoosters(userId: number, amount: number, options: EconomyGrantLogOptions = {}) {
     if (!amount) return;
 

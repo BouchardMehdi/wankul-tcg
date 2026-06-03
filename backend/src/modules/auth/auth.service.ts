@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import type { StringValue } from 'ms';
+import { randomBytes } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -20,6 +21,7 @@ import { EconomyService } from '../economy/economy.service';
 
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ReportBugDto } from '../report/dto/report-bug.dto';
@@ -36,6 +38,31 @@ function addMinutes(date: Date, minutes: number) {
 
 function sanitizeFilename(filename: string) {
   return filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+type GoogleTokenInfo = {
+  iss?: string;
+  sub?: string;
+  aud?: string;
+  email?: string;
+  email_verified?: boolean | string;
+  name?: string;
+  given_name?: string;
+  picture?: string;
+};
+
+function isGoogleEmailVerified(value: GoogleTokenInfo['email_verified']) {
+  return value === true || value === 'true';
+}
+
+function normalizeGoogleUsername(value: string) {
+  const cleaned = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '')
+    .slice(0, 32);
+
+  return cleaned || 'player';
 }
 
 const SIGNUP_BONUS = 1500;
@@ -69,6 +96,73 @@ export class AuthService {
     return this.usersRepo.findOne({
       where: [{ username: normalized }, { email: lower }],
     });
+  }
+
+  private getGoogleClientId() {
+    const clientId = this.config.get<string>('GOOGLE_CLIENT_ID')?.trim();
+    if (!clientId) {
+      throw new BadRequestException('Connexion Google non configurée.');
+    }
+
+    return clientId;
+  }
+
+  private async verifyGoogleCredential(credential: string): Promise<GoogleTokenInfo> {
+    const token = credential.trim();
+    if (!token) {
+      throw new BadRequestException('Jeton Google manquant.');
+    }
+
+    let data: GoogleTokenInfo;
+    try {
+      const params = new URLSearchParams({ id_token: token });
+      const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?${params.toString()}`);
+      data = (await res.json()) as GoogleTokenInfo;
+
+      if (!res.ok) {
+        throw new Error('Google tokeninfo rejected token');
+      }
+    } catch {
+      throw new UnauthorizedException('Connexion Google refusée.');
+    }
+
+    const clientId = this.getGoogleClientId();
+    const issuerAllowed =
+      data.iss === 'accounts.google.com' || data.iss === 'https://accounts.google.com';
+
+    if (
+      !issuerAllowed ||
+      data.aud !== clientId ||
+      !data.sub ||
+      !data.email ||
+      !isGoogleEmailVerified(data.email_verified)
+    ) {
+      throw new UnauthorizedException('Compte Google non validé.');
+    }
+
+    data.email = data.email.trim().toLowerCase();
+    return data;
+  }
+
+  private async generateUniqueGoogleUsername(profile: GoogleTokenInfo) {
+    const emailLocalPart = profile.email?.split('@')[0] ?? '';
+    const preferredName = profile.given_name || profile.name || emailLocalPart;
+    let base = normalizeGoogleUsername(preferredName);
+
+    if (base.length < 3) {
+      base = normalizeGoogleUsername(`player${profile.sub?.slice(-6) ?? ''}`);
+    }
+
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      const suffix = attempt === 0 ? '' : `-${attempt + 1}`;
+      const candidate = `${base.slice(0, 40 - suffix.length)}${suffix}`;
+      const existing = await this.usersRepo.findOne({ where: { username: candidate } });
+
+      if (!existing) return candidate;
+    }
+
+    const randomSuffix = randomBytes(3).toString('hex');
+    return `${base.slice(0, 33)}-${randomSuffix}`;
   }
 
   private assertUserNotSuspended(user: User) {
@@ -527,6 +621,87 @@ export class AuthService {
     if (!isMatch) throw new ForbiddenException('Identifiants invalides');
 
     return this.createPlayerSession(user);
+  }
+
+  async loginWithGoogle(dto: GoogleLoginDto) {
+    const profile = await this.verifyGoogleCredential(dto.credential);
+    const email = profile.email!;
+
+    let user = await this.usersRepo.findOne({ where: { googleId: profile.sub! } });
+    let shouldGrantWelcomeBonus = false;
+
+    if (!user) {
+      user = await this.usersRepo.findOne({ where: { email } });
+    }
+
+    if (user) {
+      this.assertUserNotSuspended(user);
+
+      if (!user.emailVerified) {
+        user.emailVerified = true;
+        user.emailVerificationCodeHash = null;
+        user.emailVerificationExpiresAt = null;
+        shouldGrantWelcomeBonus = true;
+      }
+
+      if (!user.googleId) {
+        user.googleId = profile.sub!;
+      }
+
+      await this.usersRepo.save(user);
+
+      const session = await this.createPlayerSession(user);
+      const bonus = shouldGrantWelcomeBonus
+        ? await this.economy.grantSignupBonusIfNeeded(user.id)
+        : null;
+
+      return {
+        ...session,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          isNewUser: false,
+        },
+        signupBonusGranted: bonus?.granted ?? false,
+        bonusAmount: bonus?.granted ? bonus.amount : 0,
+      };
+    }
+
+    const username = await this.generateUniqueGoogleUsername(profile);
+    const passwordHash = await bcrypt.hash(
+      `google:${profile.sub}:${randomBytes(16).toString('hex')}`,
+      10,
+    );
+
+    const created = this.usersRepo.create({
+      username,
+      email,
+      passwordHash,
+      googleId: profile.sub!,
+      authProvider: 'google',
+      emailVerified: true,
+      emailVerificationCodeHash: null,
+      emailVerificationExpiresAt: null,
+      role: 'player',
+      adminPasswordHash: null,
+    });
+
+    const saved = await this.usersRepo.save(created);
+    const bonus = await this.economy.grantSignupBonusIfNeeded(saved.id);
+    const session = await this.createPlayerSession(saved);
+
+    return {
+      ...session,
+      user: {
+        id: saved.id,
+        username: saved.username,
+        email: saved.email,
+        isNewUser: true,
+      },
+      signupBonusGranted: bonus.granted,
+      bonusAmount: bonus.granted ? bonus.amount : 0,
+    };
   }
 
   async refreshSession(refreshToken: string) {
