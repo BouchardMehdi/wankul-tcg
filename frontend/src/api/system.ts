@@ -7,6 +7,7 @@ export type SystemStatusResponse = {
   eta: string | null;
   sealLabel: string;
   sealText: string;
+  googleClientId: string | null;
 };
 
 export async function getSystemStatus(): Promise<SystemStatusResponse> {
@@ -32,6 +33,7 @@ export async function getSystemStatus(): Promise<SystemStatusResponse> {
       eta: data.eta || null,
       sealLabel: data.sealLabel || "",
       sealText: data.sealText || "",
+      googleClientId: data.googleClientId || null,
     };
   } finally {
     window.clearTimeout(timeoutId);

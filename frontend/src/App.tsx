@@ -87,6 +87,7 @@ export default function App() {
             eta: null,
             sealLabel: "",
             sealText: "",
+            googleClientId: null,
           });
         }
       } finally {

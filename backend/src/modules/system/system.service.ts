@@ -8,6 +8,9 @@ export class SystemService {
   constructor(private readonly config: ConfigService) {}
 
   getStatus() {
-    return readMaintenanceStatus(this.config);
+    return {
+      ...readMaintenanceStatus(this.config),
+      googleClientId: this.config.get<string>('GOOGLE_CLIENT_ID')?.trim() || null,
+    };
   }
 }

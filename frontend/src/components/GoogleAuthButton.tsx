@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { apiFetch, type PlayerSessionResponse } from "../api/http";
+import { getSystemStatus } from "../api/system";
 
 type GoogleCredentialResponse = {
   credential?: string;
@@ -40,7 +41,7 @@ declare global {
 }
 
 const GOOGLE_SCRIPT_ID = "google-identity-services";
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? "";
+const viteGoogleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? "";
 
 function loadGoogleIdentityScript() {
   return new Promise<void>((resolve, reject) => {
@@ -77,6 +78,9 @@ export default function GoogleAuthButton({
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
+  const initializedClientIdRef = useRef<string | null>(null);
+  const [googleClientId, setGoogleClientId] = useState(viteGoogleClientId);
+  const [configLoaded, setConfigLoaded] = useState(Boolean(viteGoogleClientId));
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -86,7 +90,31 @@ export default function GoogleAuthButton({
   }, [onError, onSuccess]);
 
   useEffect(() => {
+    if (viteGoogleClientId) return;
+
+    let cancelled = false;
+
+    getSystemStatus()
+      .then((status) => {
+        if (!cancelled) {
+          setGoogleClientId(status.googleClientId?.trim() ?? "");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setGoogleClientId("");
+      })
+      .finally(() => {
+        if (!cancelled) setConfigLoaded(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!googleClientId) return;
+    if (initializedClientIdRef.current === googleClientId) return;
 
     let cancelled = false;
 
@@ -94,6 +122,7 @@ export default function GoogleAuthButton({
       .then(() => {
         if (cancelled || !buttonRef.current || !window.google?.accounts?.id) return;
 
+        initializedClientIdRef.current = googleClientId;
         window.google.accounts.id.initialize({
           client_id: googleClientId,
           callback: async (response) => {
@@ -139,7 +168,15 @@ export default function GoogleAuthButton({
     return () => {
       cancelled = true;
     };
-  }, [text]);
+  }, [googleClientId, text]);
+
+  if (!configLoaded) {
+    return (
+      <div className="auth-googleShell" aria-busy="true">
+        <span className="auth-googleLoading">Chargement Google...</span>
+      </div>
+    );
+  }
 
   if (!googleClientId) {
     return (
