@@ -62,12 +62,12 @@ type BadgeDefinition = {
 const DEFAULT_AVATARS = [
   {
     id: 'default-laink',
-    label: 'Laink focus',
+    label: 'Laink',
     url: '/avatars/wankul_laink.png',
   },
   {
     id: 'default-terra',
-    label: 'Terracid chaos',
+    label: 'Chaos',
     url: '/avatars/wankul_terra.png',
   },
 ];
