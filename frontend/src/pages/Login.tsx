@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import { apiFetch } from "../api/http";
 import { playSoundEffect, playUiErrorSound, primeSound } from "../utils/sound";
 import GoogleAuthButton from "../components/GoogleAuthButton";
+import PasswordField from "../components/PasswordField";
 
 type LoginSessionResponse = {
   access_token?: string;
@@ -87,16 +88,14 @@ export default function Login() {
             />
           </div>
 
-          <div className="form-group">
-            <label>Mot de passe</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          </div>
+          <PasswordField
+            label="Mot de passe"
+            name="login"
+            value={password}
+            onChange={setPassword}
+            required
+            autoComplete="current-password"
+          />
 
           <div className="auth-actions-row">
             <button type="submit" className="btn-primary">

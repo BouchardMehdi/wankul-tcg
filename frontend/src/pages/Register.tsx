@@ -5,6 +5,7 @@ import "../styles/Register.css";
 import { apiFetch } from "../api/http";
 import { useAuth } from "../auth/AuthContext";
 import GoogleAuthButton from "../components/GoogleAuthButton";
+import PasswordField from "../components/PasswordField";
 import { playSoundEffect, playUiErrorSound } from "../utils/sound";
 
 type RegisterSessionResponse = {
@@ -120,16 +121,14 @@ export default function Register() {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Mot de passe</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="new-password"
-                />
-              </div>
+              <PasswordField
+                label="Mot de passe"
+                name="register"
+                value={password}
+                onChange={setPassword}
+                required
+                autoComplete="new-password"
+              />
 
               {error && <p className="error-text">{error}</p>}
 
