@@ -1118,28 +1118,6 @@ export default function Collection() {
                   </div>
                 </div>
 
-                <div className="collectionViewSwitch collectionViewSwitch--filters" role="tablist" aria-label="Vues de collection">
-                  {[
-                    { view: "all" as const, label: "Tout", count: collectionStats.totalCards },
-                    { view: "objective" as const, label: "Objectifs", count: collectionStats.objectives },
-                    { view: "missing" as const, label: "Manquantes", count: collectionStats.missing },
-                    { view: "duplicates" as const, label: "Doublons utiles", count: collectionStats.usefulDuplicates },
-                    { view: "favorites" as const, label: "Favoris", count: collectionStats.favorites },
-                  ].map(({ view, label, count }) => (
-                    <button
-                      key={view}
-                      type="button"
-                      className={["collectionViewSwitch__btn", activeView === view ? "is-active" : ""].join(" ")}
-                      onClick={() => setCollectionView(view, true)}
-                      role="tab"
-                      aria-selected={activeView === view}
-                    >
-                      {label}
-                      <span>{count}</span>
-                    </button>
-                  ))}
-                </div>
-
                 <div className="collectionStatsGrid">
                   <div>
                     <span>Copies totales</span>
@@ -1260,6 +1238,31 @@ export default function Collection() {
             )}
 
             {showCardsPanel && (
+            <>
+            {showCollectionPanels && (
+              <div className="collectionViewSwitch collectionViewSwitch--filters" role="tablist" aria-label="Vues de collection">
+                {[
+                  { view: "all" as const, label: "Tout", count: collectionStats.totalCards },
+                  { view: "objective" as const, label: "Objectifs", count: collectionStats.objectives },
+                  { view: "missing" as const, label: "Manquantes", count: collectionStats.missing },
+                  { view: "duplicates" as const, label: "Doublons utiles", count: collectionStats.usefulDuplicates },
+                  { view: "favorites" as const, label: "Favoris", count: collectionStats.favorites },
+                ].map(({ view, label, count }) => (
+                  <button
+                    key={view}
+                    type="button"
+                    className={["collectionViewSwitch__btn", activeView === view ? "is-active" : ""].join(" ")}
+                    onClick={() => setCollectionView(view, false)}
+                    role="tab"
+                    aria-selected={activeView === view}
+                  >
+                    {label}
+                    <span>{count}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="filterCard">
               <div className="filterRow">
                 <div className="filterGroup">
@@ -1390,6 +1393,7 @@ export default function Collection() {
                 </div>
               </div>
             </div>
+            </>
             )}
 
             {globalFeedback && (

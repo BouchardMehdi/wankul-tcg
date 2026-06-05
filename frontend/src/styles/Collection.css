@@ -12,6 +12,7 @@
 
 .collectionShell {
   width: 100%;
+  max-width: 100%;
   border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.10);
   background: rgba(12, 16, 28, 0.62);
@@ -34,6 +35,18 @@
   padding: 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.10);
   background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+}
+
+.collectionHeader,
+.collectionQualityPanel,
+.collectionQualityHero,
+.collectionStatsGrid,
+.collectionProgressGrid,
+.collectionProgressCard,
+.collectionFocusCard,
+.collectionViewSwitch {
+  min-width: 0;
+  max-width: 100%;
 }
 
 [data-theme="light"] .collectionHeader {
@@ -157,6 +170,10 @@
   overflow: hidden;
 }
 
+.collectionQualityHero > div:first-child {
+  min-width: 0;
+}
+
 [data-theme="light"] .collectionQualityHero {
   border-color: rgba(42, 35, 54, 0.12);
   background:
@@ -189,6 +206,7 @@
   color: var(--text2);
   font-weight: 850;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .collectionQualityHero__ring {
@@ -239,6 +257,28 @@
   border: 1px solid rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.04);
   overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 92, 255, 0.72) transparent;
+}
+
+.collectionViewSwitch::-webkit-scrollbar {
+  height: 8px;
+}
+
+.collectionViewSwitch::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: transparent;
+}
+
+.collectionViewSwitch::-webkit-scrollbar-thumb {
+  min-width: 42px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(90deg, #ff4d6d, #9b5cff) padding-box,
+    transparent border-box;
 }
 
 [data-theme="light"] .collectionViewSwitch {
@@ -256,6 +296,7 @@
 
 .collectionViewSwitch__btn {
   flex: 0 0 auto;
+  min-width: 0;
   min-height: 40px;
   display: inline-flex;
   align-items: center;
@@ -311,6 +352,7 @@
 .collectionStatsGrid > div,
 .collectionProgressCard,
 .collectionFocusCard {
+  min-width: 0;
   padding: 12px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.10);
@@ -343,11 +385,12 @@
   margin-top: 7px;
   font-size: 23px;
   font-weight: 950;
+  overflow-wrap: anywhere;
 }
 
 .collectionProgressGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -1922,17 +1965,35 @@
   .collectionPanelSwitch {
     width: 100%;
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 5px;
     border-radius: 18px;
   }
 
   .collectionPanelSwitch__btn {
     width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    padding: 0 10px;
+    border-radius: 14px;
+    gap: 6px;
+    font-size: 12px;
+    line-height: 1.05;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .collectionPanelSwitch__btn span {
+    min-width: 0;
+    padding: 3px 6px;
+    font-size: 10px;
   }
 
   .collectionQualityHero {
     align-items: flex-start;
     flex-direction: column;
+    gap: 12px;
   }
 
   .collectionQualityHero__ring {
@@ -1946,7 +2007,8 @@
   }
 
   .collectionViewSwitch {
-    margin-inline: -2px;
+    width: 100%;
+    margin-inline: 0;
   }
 
   .collectionMiniRail {
@@ -2144,23 +2206,55 @@
   .collectionPage {
     padding: 10px;
     padding-bottom: calc(10px + var(--mobile-nav-offset));
+    overflow-x: clip;
   }
 
   .collectionShell {
     border-radius: 20px;
+    overflow-x: hidden;
+  }
+
+  .collectionHeader {
+    overflow: hidden;
+  }
+
+  .collectionPanelSwitch {
+    margin-bottom: 12px;
+  }
+
+  .collectionPanelSwitch__btn {
+    font-size: 11px;
   }
 
   .collectionViewSwitch {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     flex-wrap: nowrap;
     overflow-x: auto;
+    overflow-y: hidden;
     padding-bottom: 6px;
     scroll-snap-type: x proximity;
   }
 
   .collectionViewSwitch__btn {
     flex: 0 0 auto;
-    min-width: max-content;
+    min-width: min(126px, 42vw);
+    max-width: 52vw;
     scroll-snap-align: start;
+    white-space: nowrap;
+  }
+
+  .collectionQualityHero {
+    padding: 14px;
+  }
+
+  .collectionQualityHero h3 {
+    font-size: 26px;
+  }
+
+  .collectionQualityHero p {
+    font-size: 14px;
   }
 
   .collectionStatsGrid > div,

@@ -116,6 +116,46 @@
 /* Reset */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--a-violet) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  min-height: 34px;
+  min-width: 34px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background:
+    var(--ui-scrollbar-thumb) padding-box,
+    transparent border-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background:
+    var(--ui-scrollbar-thumb-hover) padding-box,
+    transparent border-box;
+}
+
+*::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  display: none;
+  background: transparent;
+}
+
 html {
   background: var(--bg);
   -webkit-text-size-adjust: 100%;
