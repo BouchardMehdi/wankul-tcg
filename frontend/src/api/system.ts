@@ -7,6 +7,8 @@ export type SystemStatusResponse = {
   eta: string | null;
   sealLabel: string;
   sealText: string;
+  appVersion: string;
+  minSupportedAppVersion: string;
   googleClientId: string | null;
 };
 
@@ -33,6 +35,8 @@ export async function getSystemStatus(): Promise<SystemStatusResponse> {
       eta: data.eta || null,
       sealLabel: data.sealLabel || "",
       sealText: data.sealText || "",
+      appVersion: data.appVersion || "1.0.0",
+      minSupportedAppVersion: data.minSupportedAppVersion || data.appVersion || "1.0.0",
       googleClientId: data.googleClientId || null,
     };
   } finally {

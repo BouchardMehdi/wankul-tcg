@@ -28,6 +28,7 @@ import PwaCacheManager from "./components/PwaCacheManager";
 import InAppNotificationCenter from "./components/InAppNotificationCenter";
 import PwaSplash from "./components/PwaSplash";
 import PwaStatusOverlay from "./components/PwaStatusOverlay";
+import PwaUpdateGate, { getPwaUpdateState } from "./components/PwaUpdateGate";
 import OnboardingTour from "./components/OnboardingTour";
 import AppPopups from "./components/AppPopups";
 import { installThemeSync } from "./utils/theme";
@@ -87,6 +88,8 @@ export default function App() {
             eta: null,
             sealLabel: "",
             sealText: "",
+            appVersion: "1.0.0",
+            minSupportedAppVersion: "1.0.0",
             googleClientId: null,
           });
         }
@@ -108,6 +111,15 @@ export default function App() {
 
   if (isLoading || systemLoading) {
     return <PwaSplash />;
+  }
+
+  if (getPwaUpdateState(systemStatus)) {
+    return (
+      <>
+        <ThemeSync />
+        <PwaUpdateGate status={systemStatus} />
+      </>
+    );
   }
 
   const maintenanceActive =

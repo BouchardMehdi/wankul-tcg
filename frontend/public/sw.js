@@ -1,4 +1,4 @@
-const SHELL_CACHE = "wankul-shell-v5";
+const SHELL_CACHE = "wankul-shell-v6";
 const RUNTIME_CACHE = "wankul-runtime-v2";
 const CARD_IMAGE_CACHE = "wankul-card-images-v1";
 const CARD_IMAGE_CACHE_LIMIT = 260;
@@ -143,6 +143,11 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("message", (event) => {
   const { type, payload } = event.data || {};
+
+  if (type === "wankul:skip-waiting") {
+    self.skipWaiting();
+    return;
+  }
 
   if (type === "wankul:cache-card-images") {
     event.waitUntil(cacheCardImages(payload?.urls || [], event.source?.id));
