@@ -1107,7 +1107,7 @@ export default function Collection() {
                 <div className="collectionQualityHero">
                   <div>
                     <span className="collectionQualityHero__eyebrow">Objectif collection</span>
-                    <h3>{collectionStats.completion}% completee</h3>
+                    <h3>{collectionStats.completion}% complétée</h3>
                     <p>
                       {collectionStats.ownedUnique}/{collectionStats.totalCards} cartes uniques • {collectionStats.missing} manquantes • {collectionStats.duplicateCopies} doublons.
                     </p>
@@ -1693,12 +1693,12 @@ export default function Collection() {
             <div className="collectionTagModal__body">
               <strong>{tagModal.card.name}</strong>
               <p>
-                Ajoute des tags separes par des virgules : hunt, echange, deck, coup de coeur...
+                Ajoute des tags séparés par des virgules : hunt, échange, deck, coup de cœur...
               </p>
               <input
                 value={tagModal.value}
                 onChange={(e) => setTagModal((prev) => ({ ...prev, value: e.target.value }))}
-                placeholder="ex: hunt, trade, rare preferee"
+                placeholder="ex: hunt, trade, rare préférée"
                 autoFocus
               />
             </div>

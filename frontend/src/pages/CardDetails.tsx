@@ -137,7 +137,7 @@ function formatSignedPercent(value: number | null) {
 }
 
 function formatListingMode(mode: MarketListingRow["listingMode"]) {
-  return mode === "LOT" ? "Lot" : "Unite";
+  return mode === "LOT" ? "Lot" : "Unité";
 }
 
 function formatOfferType(offerType: MarketListingRow["offerType"]) {
@@ -786,7 +786,7 @@ function CardDetails() {
 
   async function handleBuyListing(listing: MarketListingRow) {
     if (listing.offerType !== "CREDITS_ONLY") {
-      setMarketFeedback("Cette offre demande une carte en echange. Ouvre le market pour finaliser.");
+        setMarketFeedback("Cette offre demande une carte en échange. Ouvre le market pour finaliser.");
       return;
     }
 
@@ -1087,7 +1087,7 @@ function CardDetails() {
                             return (
                               <article className="cardDetailsSaleRow" key={sale.id}>
                                 <div>
-                                  <strong>{unitValue ? formatCredits(unitValue) : "Echange"}</strong>
+                                  <strong>{unitValue ? formatCredits(unitValue) : "Échange"}</strong>
                                   <span>{new Date(sale.createdAt).toLocaleString("fr-FR")}</span>
                                 </div>
                                 <em>x{sale.quantity}</em>

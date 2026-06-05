@@ -515,7 +515,7 @@ export default function PwaPreferences() {
           <div className="pwaStatusPanel__head">
             <div>
               <span>État de l'app</span>
-              <h2>Donnees synchronisees</h2>
+              <h2>Données synchronisées</h2>
               <p>
                 Une lecture rapide de ce que l'app peut faire maintenant :
                 connexion, mode hors ligne, images préparées et espace utilisé.

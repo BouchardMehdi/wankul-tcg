@@ -1226,7 +1226,7 @@ export default function Market() {
               <div className="marketSalesMini__row" key={sale.id}>
                 <span>{formatDate(sale.createdAt)}</span>
                 <strong>
-                  {unitValue ? formatCredits(unitValue) : "Echange"}
+                  {unitValue ? formatCredits(unitValue) : "Échange"}
                 </strong>
                 <em>x{sale.quantity}</em>
               </div>

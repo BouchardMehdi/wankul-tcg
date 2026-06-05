@@ -23,7 +23,7 @@ const PILLARS = [
   {
     kicker: "Collection",
     title: "Une progression lisible saison par saison",
-    text: "Tu suis tes cartes possedees, les raretes et les trous de collection sans perdre la sensation TCG.",
+    text: "Tu suis tes cartes possédées, les raretés et les trous de collection sans perdre la sensation TCG.",
   },
   {
     kicker: "Market",
