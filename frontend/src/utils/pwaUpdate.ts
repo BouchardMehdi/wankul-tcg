@@ -1,9 +1,24 @@
+const APP_CACHE_PREFIXES = ["wankul-shell-", "wankul-runtime-"];
+
 function reloadApp() {
-  window.location.reload();
+  const url = new URL(window.location.href);
+  url.searchParams.set("wankul_update", String(Date.now()));
+  window.location.replace(url.toString());
 }
 
 function askWaitingWorkerToActivate(registration: ServiceWorkerRegistration) {
   registration.waiting?.postMessage({ type: "wankul:skip-waiting" });
+}
+
+async function clearAppCaches() {
+  if (!("caches" in window)) return;
+
+  const cacheNames = await caches.keys();
+  await Promise.all(
+    cacheNames
+      .filter((name) => APP_CACHE_PREFIXES.some((prefix) => name.startsWith(prefix)))
+      .map((name) => caches.delete(name)),
+  );
 }
 
 async function waitForInstallingWorker(registration: ServiceWorkerRegistration) {
@@ -24,18 +39,20 @@ async function waitForInstallingWorker(registration: ServiceWorkerRegistration) 
 
 export async function requestPwaUpdate() {
   if (!("serviceWorker" in navigator)) {
+    await clearAppCaches();
     reloadApp();
     return;
   }
 
   let reloaded = false;
-  const reloadOnce = () => {
+  const reloadOnce = async () => {
     if (reloaded) return;
     reloaded = true;
+    await clearAppCaches();
     reloadApp();
   };
 
-  navigator.serviceWorker.addEventListener("controllerchange", reloadOnce, { once: true });
+  navigator.serviceWorker.addEventListener("controllerchange", () => void reloadOnce(), { once: true });
 
   try {
     const registration =
@@ -46,8 +63,8 @@ export async function requestPwaUpdate() {
     await waitForInstallingWorker(registration);
     askWaitingWorkerToActivate(registration);
 
-    window.setTimeout(reloadOnce, 900);
+    window.setTimeout(() => void reloadOnce(), 1200);
   } catch {
-    reloadOnce();
+    await reloadOnce();
   }
 }

@@ -1,5 +1,5 @@
-const SHELL_CACHE = "wankul-shell-v6";
-const RUNTIME_CACHE = "wankul-runtime-v2";
+const SHELL_CACHE = "wankul-shell-v7";
+const RUNTIME_CACHE = "wankul-runtime-v3";
 const CARD_IMAGE_CACHE = "wankul-card-images-v1";
 const CARD_IMAGE_CACHE_LIMIT = 260;
 
