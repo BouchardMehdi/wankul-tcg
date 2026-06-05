@@ -354,7 +354,6 @@ export class PushService {
       tag: `market-reward-${args.transactionId}`,
       kind: 'market-reward',
       accent: 'gold',
-      image: '/push-market.svg',
       requireInteraction: true,
       vibrate: [120, 60, 120],
       actions: [
@@ -403,7 +402,6 @@ export class PushService {
         tag: `free-openings-${userId}`,
         kind: 'free-openings-ready',
         accent: 'cyan',
-        image: '/push-opening.svg',
         vibrate: [100, 40, 80],
         actions: [
           { action: 'open-booster', title: 'Entrer', url: '/booster' },
@@ -454,7 +452,6 @@ export class PushService {
           tag: `free-booster-soon-${userId}`,
           kind: 'free-openings-soon',
           accent: 'violet',
-          image: '/push-opening-soon.svg',
           vibrate: [80, 40, 60],
           actions: [
             { action: 'open-booster', title: 'Voir le timer', url: '/booster' },
@@ -486,7 +483,6 @@ export class PushService {
           tag: `free-display-soon-${userId}`,
           kind: 'free-openings-soon',
           accent: 'violet',
-          image: '/push-opening-soon.svg',
           vibrate: [80, 40, 60],
           actions: [
             { action: 'open-booster', title: 'Voir le timer', url: '/booster' },
@@ -543,7 +539,6 @@ export class PushService {
           tag: `watchlist-${item.id}`,
           kind: 'watchlist-price',
           accent: 'violet',
-          image: '/push-watchlist.svg',
           requireInteraction: true,
           vibrate: [110, 50, 110],
           actions: [
@@ -667,7 +662,6 @@ export class PushService {
           tag: `watchlist-deal-${item.id}-${dealCandidate.listing.id}`,
           kind: 'watchlist-deal',
           accent: 'gold',
-          image: '/push-watchlist.svg',
           requireInteraction: true,
           vibrate: [120, 40, 120],
           actions: [
@@ -720,7 +714,6 @@ export class PushService {
         tag: `watchlist-listing-${item.id}-${listingCandidate.listing.id}`,
         kind: 'watchlist-listing',
         accent: 'cyan',
-        image: '/push-watchlist.svg',
         vibrate: [100, 40, 80],
         actions: [
           { action: 'open-market', title: 'Rechercher', url: '/market' },
@@ -772,7 +765,6 @@ export class PushService {
         tag: `stale-listing-${listing.id}`,
         kind: 'stale-listing',
         accent: 'pink',
-        image: '/push-stale-listing.svg',
         requireInteraction: true,
         vibrate: [90, 40, 90],
         actions: [
@@ -866,7 +858,6 @@ export class PushService {
         tag: `daily-market-recap-${todayKey}-${userId}`,
         kind: 'daily-market-recap',
         accent: 'gold',
-        image: '/push-recap.svg',
         actions: [
           { action: 'open-market', title: 'Lire le récap', url: '/market' },
           { action: 'dismiss', title: 'Plus tard' },

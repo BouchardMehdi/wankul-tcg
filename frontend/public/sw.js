@@ -1,5 +1,5 @@
-const SHELL_CACHE = "wankul-shell-v7";
-const RUNTIME_CACHE = "wankul-runtime-v3";
+const SHELL_CACHE = "wankul-shell-v8";
+const RUNTIME_CACHE = "wankul-runtime-v4";
 const CARD_IMAGE_CACHE = "wankul-card-images-v1";
 const CARD_IMAGE_CACHE_LIMIT = 260;
 
@@ -12,12 +12,6 @@ const APP_SHELL = [
   "/pwa-192.png",
   "/pwa-512.png",
   "/apple-touch-icon.png",
-  "/push-market.svg",
-  "/push-opening-soon.svg",
-  "/push-opening.svg",
-  "/push-recap.svg",
-  "/push-stale-listing.svg",
-  "/push-watchlist.svg",
 ];
 
 function isCardImageRequest(request) {
@@ -259,8 +253,7 @@ self.addEventListener("push", (event) => {
         });
       });
 
-      const hasFocusedClient = clientList.some((client) => client.focused);
-      if (hasFocusedClient) {
+      if (clientList.length > 0) {
         return undefined;
       }
 
@@ -276,7 +269,6 @@ self.addEventListener("push", (event) => {
         tag,
         icon,
         badge,
-        image,
         actions,
         requireInteraction,
         renotify: true,
